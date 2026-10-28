@@ -73,7 +73,7 @@ function weightGraph(){
  const values=Object.entries(T.state.days).filter(([date,d])=>date<=selected&&d.measures?.weight!=null).sort((a,b)=>a[0].localeCompare(b[0])).slice(-9).map(([date,d])=>({date,weight:Number(d.measures.weight)}));
  if(values.length<2)return '<div class="empty">Registre peso em duas datas para visualizar a tendência.</div>';
  const min=Math.min(...values.map(x=>x.weight)),max=Math.max(...values.map(x=>x.weight)),range=max-min||1;
- return '<div class="bargraph" role="img" aria-label="Gráfico de evolução do peso">'+values.map(x=>'<div class="barcol"><span class="micro">'+num(x.weight,1)+'</span><div class="bar" style="height:'+(25+(x.weight-min)/range*70)+'%"></div><small>'+x.date.slice(5)+'</small></div>').join('')+'</div>';
+ return '<div class="bargraph" role="img" aria-label="Gráfico de evolução do peso">'+values.map(x=>'<div class="barcol"><span class="micro">'+num(x.weight,1)+'</span><div class="bar" style="height:'+(25+(x.weight-min)/range*70)+'px"></div><small>'+x.date.slice(5)+'</small></div>').join('')+'</div>';
 }
 function pageEvolution(){
  const days=Array.from({length:7},(_,i)=>T.addDay(selected,i-6)),logged=days.filter(x=>T.dayRead(x).foods.length);
