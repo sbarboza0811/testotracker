@@ -14,6 +14,7 @@ const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const money=(x,digits=0)=>n(x).toLocaleString('pt-BR',{maximumFractionDigits:digits});
 const FOOD_BASE=[
 ['ovo','Ovo inteiro',143,12.6,.7,9.5,0],['arroz','Arroz branco cozido',128,2.5,28.1,.2,.3],
+['feijao','Feijão carioca cozido',76,4.8,13.6,.5,8],['feijao-preto','Feijão preto cozido',77,4.5,14,.5,8.4],
 ['frango','Peito de frango grelhado',165,31,0,3.6,0],['patinho','Patinho grelhado',174,27,0,7,0],
 ['pao','Pão integral',247,13,41,4.2,7],['banana','Banana',89,1.1,22.8,.3,2.6],
 ['aveia','Aveia em flocos',389,16.9,66.3,6.9,10.6],['mamao','Mamão',43,.5,10.8,.3,1.7],
