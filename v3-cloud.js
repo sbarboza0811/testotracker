@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
 const T=window.TT;
-const URL='https://efcjhktuihnldrddrtat.supabase.co';
+const SB_URL='https://efcjhktuihnldrddrtat.supabase.co';
 const KEY='sb_publishable_KWR6qKDnvelXNfmoXeJrjQ_Kh4DzkUI';
 let sb=null,user=null,rev=0,remoteAvailable=false,busy=false,blocked=false,timer=null,lastError='',initialized=false;
 const ownerKey=T.KEY+'-owner',revKey=uid=>T.KEY+'-rev-'+uid,enabledKey=uid=>T.KEY+'-enabled-'+uid;
@@ -13,7 +13,7 @@ function status(text,kind=''){const el=T.$('sync-badge');if(el){el.textContent=t
 async function init(){
  if(initialized)return;initialized=true;
  if(!window.supabase?.createClient){lastError='Biblioteca de autenticação indisponível. Verifique a internet.';status('Somente local','warn');return}
- sb=window.supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+ sb=window.supabase.createClient(SB_URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
  sb.auth.onAuthStateChange((event,session)=>{
    const changed=session?.user?.id!==user?.id;user=session?.user||null;
    if(changed){blocked=false;rev=0;remoteAvailable=false;signal();if(user)queueMicrotask(()=>connect().catch(e=>{lastError=e.message;status('Erro na nuvem','warn')}))}
