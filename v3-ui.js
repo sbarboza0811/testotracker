@@ -7,7 +7,7 @@ function toast(message){const box=T.$('toast');box.textContent=message;box.class
 function error(err){console.error(err);toast(err?.message||'Não foi possível salvar.')}
 function modal(title,html){T.$('modal-title').textContent=title;T.$('modal-body').innerHTML=html;T.$('modal').classList.remove('hidden');T.$('modal').querySelector('input,select,button')?.focus()}
 function close(){T.$('modal').classList.add('hidden')}
-function go(name){tab=name;close();render();window.scrollTo(0,0)}
+function go(name){tab=name;trainLetter='';close();render();window.scrollTo(0,0)}
 function button(label,action,cls,attrs){return '<button type="button" class="btn '+(cls||'secondary')+'" data-action="'+action+'" '+(attrs||'')+'>'+esc(label)+'</button>'}
 function panel(title,body,tools){return '<section class="panel"><div class="label-row"><h2>'+esc(title)+'</h2>'+(tools||'')+'</div>'+body+'</section>'}
 function pct(a,b){return '<div class="progress"><span style="width:'+Math.max(0,Math.min(100,b?100*a/b:0))+'%"></span></div>'}
@@ -87,7 +87,7 @@ function pageEvolution(){
 }
 function pageModels(){
  const c=T.state.config;
- let html='<div class="page-head"><div class="eyebrow">PERSONALIZAR</div><h1>Modelos de rotina</h1><div class="subline">Aplique modelos prontos ou adapte suas metas sem apagar registros anteriores.</div></div>';
+ let html='<div class="page-head"><div class="eyebrow">PERSONALIZAR</div><h1>Modelos de rotina</h1><div class="subline">Aplique modelos prontos ou adapte suas metas sem apagar registros anteriores.</div><div class="date-line"><button data-action="prev">‹</button><input type="date" id="selected-date" value="'+selected+'"><button data-action="next">›</button><span class="small muted">Dia da rotina</span></div></div>';
  html+=panel('Dietas prontas',Object.entries(T.MEAL_TEMPLATES).map(([key,v])=>'<div class="listrow"><div class="content"><b>'+({emagrecer:'Emagrecimento',manter:'Manutenção',ganhar:'Hipertrofia'}[key])+'</b><small>'+num(v.goals.calories)+' kcal · P '+v.goals.protein+' g · C '+v.goals.carbs+' g · G '+v.goals.fat+' g</small></div>'+button(key===c.diet?'Aplicado':'Aplicar','apply-diet','small '+(key===c.diet?'secondary':''),'data-key="'+key+'"')+'</div>').join('')+'<div class="actions" style="margin-top:12px">'+button('Editar refeições e horários','edit-meals','small secondary')+button('Metas e preferências','settings','small secondary')+'</div>');
  html+=panel('Minhas dietas personalizadas',T.state.savedDiets.length?T.state.savedDiets.map(x=>'<div class="listrow"><div class="content"><b>'+esc(x.name)+'</b><small>'+num(x.goals.calories)+' kcal · modelo salvo</small></div>'+button('Aplicar','apply-saved-diet','small','data-key="'+esc(x.id)+'"')+'</div>').join(''):'<p class="muted small">Nenhum modelo personalizado salvo.</p>',button('+ Salvar dieta atual','save-diet','small secondary'));
  html+=panel('Modelos de musculação',['AB','ABC','ABCD'].map(x=>'<div class="listrow"><div class="content"><b>Divisão '+x+'</b><small>Exercícios, séries e repetições personalizáveis</small></div>'+button(x===c.split?'Aplicado':'Aplicar','apply-split','small '+(x===c.split?'secondary':''),'data-key="'+x+'"')+'</div>').join('')+'<div class="actions" style="margin-top:12px">'+button('Editar exercícios','edit-workout','small secondary')+button('Dias da semana','settings','small secondary')+'</div>');
@@ -118,6 +118,7 @@ T.$('fab').addEventListener('click',()=>modal('Adicionar registro','<div class="
 window.addEventListener('tt:change',render);
 window.addEventListener('tt:loaded',render);
 window.addEventListener('tt:cloud',()=>{if(tab==='ajustes')render()});
+setInterval(()=>{const counter=document.getElementById('rest-counter');if(counter){const left=Math.max(0,Math.ceil(((window.TTRestEnd||0)-Date.now())/1000));counter.textContent=left+' s';if(!left){document.getElementById('rest-panel')?.remove();toast('Descanso concluído!')}}},1000);
 render();
 C.init().catch(error);
 if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
