@@ -156,6 +156,17 @@ async function parseMeal(transcript){
  if(!Array.isArray(data?.items))throw Error('A resposta da análise de alimentos foi inválida.');
  return data.items.filter(x=>x&&typeof x.term==='string'&&x.term.length<90).slice(0,12);
 }
+async function estimateFoods(names){
+ if(!sb)await init();
+ if(!sb||!user)throw Error('Entre na sua conta para estimar alimentos automaticamente.');
+ if(!navigator.onLine)throw Error('Sem internet para estimativa de alimentos.');
+ const items=[...new Set((Array.isArray(names)?names:[]).map(x=>String(x||'').trim()).filter(x=>x.length>=3&&x.length<=70))].slice(0,5);
+ if(!items.length)return [];
+ const {data,error}=await sb.functions.invoke('testotrack-transcribe',{body:{nutrition:items}});
+ if(error)throw await speechError(error,'Não foi possível estimar os alimentos.');
+ if(!Array.isArray(data?.foods))throw Error('Estimativa nutricional inválida.');
+ return data.foods;
+}
 async function transcribeAudio(audio){
  if(!sb)await init();
  if(!sb||!user)throw Error('Entre na sua conta em Ajustes para transcrever o áudio.');
@@ -173,5 +184,5 @@ async function transcribeAudio(audio){
 
 window.addEventListener('tt:change',schedule);
 window.addEventListener('online',()=>{if(user){if(blocked)status('Resolver dados','warn');else if(isEnabled())schedule();else status('Conectado','ok')}});
-window.TTCloud={init,login,logout,state,user:authUser,searchFoods,checkTranscription,transcribeAudio,parseMeal,enable,push,download,overwriteCloud,backupRemote,connect,importLegacyCloud};
+window.TTCloud={init,login,logout,state,user:authUser,searchFoods,checkTranscription,transcribeAudio,parseMeal,estimateFoods,enable,push,download,overwriteCloud,backupRemote,connect,importLegacyCloud};
 })();
