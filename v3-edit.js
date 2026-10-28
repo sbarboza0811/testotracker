@@ -51,7 +51,7 @@ function exerciseModal(letter,index){
 }
 function supplementModal(sid){
  const s=T.state.supplements.find(x=>x.id===sid);
- U.modal(s?'Editar suplemento':'Novo suplemento','<form data-form="supplement"><input type="hidden" name="id" value="'+esc(sid||'')+'">'+field('Nome','name',s?.name||'','text','required maxlength="80"')+field('Dose/descrição (não é prescrição)','dose',s?.dose||'','text','maxlength="120"')+field('Horário','time',s?.time||'13:00','time','required')+field('Observações','notes',s?.notes||'','text','maxlength="180"')+'<label class="pill"><input type="checkbox" name="enabled" '+(s?.enabled?'checked':'')+'> Incluir na rotina</label><div style="margin-top:12px"><button class="btn full">Salvar suplemento</button></div></form>');
+ U.modal(s?'Editar suplemento':'Novo suplemento','<form data-form="supplement"><input type="hidden" name="id" value="'+esc(sid||'')+'">'+field('Nome','name',s?.name||'','text','required maxlength="80"')+field('Dose/descrição (não é prescrição)','dose',s?.dose||'','text','maxlength="120"')+field('Horário','time',s?.time||'13:00','time','required')+'<div class="field"><label>Frequência</label><select name="days"><option value="all" '+((s?.days||'all')==='all'?'selected':'')+'>Todos os dias</option><option value="training" '+(s?.days==='training'?'selected':'')+'>Somente nos dias de musculação</option></select></div>'+field('Observações','notes',s?.notes||'','text','maxlength="180"')+'<label class="pill"><input type="checkbox" name="enabled" '+(s?.enabled?'checked':'')+'> Incluir na rotina</label><div style="margin-top:12px"><button class="btn full">Salvar suplemento</button></div></form>');
 }
 function taskOpen(id){
  const task=T.schedule(U.date).find(x=>x.id===id);if(!task)return;
@@ -114,6 +114,7 @@ document.addEventListener('click',async ev=>{
  if(a==='stop-rest'){window.TTRestEnd=0;U.render();U.toast('Descanso encerrado');return}
  if(a==='export'){T.exportJson();return}
  if(a==='import'){document.getElementById('backup-file')?.click();return}
+ if(a==='migrate-cloud'){T.exportJson();const success=await C.importLegacyCloud();if(success)U.toast('Histórico anterior importado sem apagar a versão 2.1.');return}
  if(a==='migrate'){const old=T.legacyAvailable();if(!old)throw Error('Nenhum histórico da versão anterior encontrado neste aparelho.');if(!confirm('Importar dados de sono, peso, cintura, energia e exames da versão 2.1? Seus dados originais permanecerão intactos.'))return;T.importLegacy(old);U.toast('Histórico importado.');return}
  if(a.startsWith('cloud-')){await cloudAction(a);return}
  }catch(ex){err(ex)}
@@ -141,7 +142,7 @@ document.addEventListener('submit',async ev=>{
  else if(form.dataset.form==='meal-time'){const meal=T.state.mealPlans.find(x=>x.id===v('slot'));meal.time=v('time');T.save();editMeals(meal.id);}
  else if(form.dataset.form==='meal-item'){const meal=T.state.mealPlans.find(x=>x.id===v('slot'));const it={foodId:v('foodId'),grams:n('grams')};if(n('index')<0)meal.items.push(it);else meal.items[n('index')]=it;T.save();editMeals(meal.id)}
  else if(form.dataset.form==='exercise'){const letter=v('letter'),index=n('index'),old=T.state.workoutPlans[letter]?.[index];const it={id:old?.id||T.id(),name:v('name'),sets:n('sets'),reps:v('reps'),rest:n('rest')};if(index<0)T.state.workoutPlans[letter].push(it);else T.state.workoutPlans[letter][index]=it;T.save();U.trainLetter=letter;editWorkout()}
- else if(form.dataset.form==='supplement'){const id=v('id')||T.id();const it={id,name:v('name'),dose:v('dose'),time:v('time'),notes:v('notes'),enabled:fd.has('enabled')};const ix=T.state.supplements.findIndex(x=>x.id===id);if(ix<0)T.state.supplements.push(it);else T.state.supplements[ix]=it;T.save();U.close()}
+ else if(form.dataset.form==='supplement'){const id=v('id')||T.id();const it={id,name:v('name'),dose:v('dose'),time:v('time'),days:v('days'),notes:v('notes'),enabled:fd.has('enabled')};const ix=T.state.supplements.findIndex(x=>x.id===id);if(ix<0)T.state.supplements.push(it);else T.state.supplements[ix]=it;T.save();U.close()}
  else if(form.dataset.form==='settings'){
  const c=T.state.config;for(const k of ['calories','protein','carbs','fat','water','sleep']){if(n(k)<=0)throw Error('Informe metas maiores que zero.');c.goals[k]=n(k)}
  c.planStart=v('planStart')||T.today();c.measureDay=n('measureDay');c.trainingDays=[0,1,2,3,4,5,6].filter(i=>fd.has('train'+i));c.times.wake=v('wake');c.times.workout=v('workout');c.times.bed=v('bed');T.save();U.toast('Configurações atualizadas.')
