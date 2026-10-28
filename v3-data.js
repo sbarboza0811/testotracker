@@ -64,7 +64,7 @@ function mealPreset(key='emagrecer'){return SLOTS.map((m,i)=>({id:m[0],name:m[1]
 function routinePreset(split='ABC'){const source=split==='AB'?AB_EXERCISES:EXERCISES;return Object.fromEntries(Object.entries(source).map(([letter,ex])=>[letter,ex.map((e,i)=>({id:letter+'-'+i,name:e[0],sets:e[1],reps:e[2],rest:e[3]}))]))}
 function emptyDay(){return {foods:[],water:[],supplements:{},sleep:null,measures:{},workout:null,cardio:[],tasks:{},notes:'',energy:null,libido:null}}
 function fresh(){
- return {version:3,config:{goals:{...MEAL_TEMPLATES.emagrecer.goals,water:2500,sleep:8},diet:'emagrecer',split:'ABC',planStart:today(),trainingDays:[1,2,4,5],routine:'treino',times:{wake:'07:00',workout:'12:00',bed:'22:30'},measureDay:0,reminders:false},
+ return {version:3,config:{goals:{...MEAL_TEMPLATES.emagrecer.goals,water:2500,sleep:8},diet:'emagrecer',split:'ABC',planStart:today(),protocolStart:today(),trainingDays:[1,2,4,5],routine:'treino',times:{wake:'07:00',workout:'12:00',bed:'22:30'},measureDay:0,reminders:false},
  foods:structuredClone(FOODS),mealPlans:mealPreset('emagrecer'),workoutPlans:routinePreset(),splitPlans:{},supplements:structuredClone(SUPPLEMENT_BASE),savedDiets:[],days:{},exams:[],legacyImported:false};
 }
 function normalize(obj){
