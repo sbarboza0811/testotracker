@@ -11,6 +11,71 @@ const MAX_BYTES = 4*1024*1024;
 function answer(value: unknown,status=200) {
  return new Response(JSON.stringify(value),{status,headers:{...cors,"content-type":"application/json; charset=utf-8","cache-control":"no-store"}});
 }
+function normalizeTerm(value:string) {
+ return value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
+}
+async function parseFoodSpeech(transcript:string, key:string, userId:string){
+ if(!transcript||transcript.length>550)return answer({error:"A fala deve ter até 550 caracteres."},400);
+ if(!acceptUser(userId))return answer({error:"Muitas análises em sequência. Aguarde alguns minutos."},429);
+ const instructions = [
+ "Você é um extrator extremamente conservador de ALIMENTOS EFETIVAMENTE CONSUMIDOS, em português brasileiro.",
+ "Responda APENAS JSON conforme o schema. Extraia alimentos reais, não ideias, perguntas, palavras soltas, nomes de pessoas, frases ou hesitações.",
+ "Jamais invente alimento ou quantidade. O nome do alimento precisa estar explícito na fala; use sua forma curta (arroz, feijão, frango, Monster).",
+ "Identifique números falados por extenso e a unidade de cada alimento; quantidade 0 e unidade vazia se não informada.",
+ "Ignore gaguejos, palavras repetidas, correções incompletas, interjeições, instruções e ruído da transcrição.",
+ "NÃO repita um alimento porque o nome foi repetido sem nova quantidade: '100 gramas de arroz, arroz' é um único item 100 g.",
+ "Quando uma nova quantidade é dita para o mesmo alimento sem corrigir, SOMe: '100g arroz, mais 50g arroz' => arroz 150 g; '100g arroz e 50g arroz' => arroz 150 g.",
+ "Quando a pessoa se corrige com 'não', 'quer dizer', 'na verdade', 'corrigindo', 'aliás', a versão nova substitui a anterior: '100g de arroz, não, 50g de arroz' => arroz 50g.",
+ "Se 'arroz, não, feijão' depois de um número, mantenha só o alimento corrigido com a quantidade original.",
+ "Não retorne produtos alimentícios que não foram consumidos. Não transforme conversa, dúvida ou frases genéricas em comida.",
+ "Exemplos JSON: {\"items\":[{\"name\":\"arroz\",\"quantity\":100,\"unit\":\"g\",\"evidence\":\"100 gramas de arroz\"},{\"name\":\"feijão\",\"quantity\":50,\"unit\":\"g\",\"evidence\":\"50 gramas de feijão\"}]}",
+ "Se não for possível reconhecer um alimento, responda {\"items\":[]}."
+ ].join(" ");
+ let response:Response;
+ try{
+   response=await fetch("https://api.groq.com/openai/v1/chat/completions",{
+     method:"POST",
+     headers:{"Authorization":"Bearer "+key,"Content-Type":"application/json"},
+     body:JSON.stringify({
+       model:"openai/gpt-oss-20b",temperature:0,max_completion_tokens:900,
+       messages:[{"role":"system","content":instructions},{"role":"user","content":transcript}],
+       response_format:{type:"json_schema",json_schema:{name:"meal_speech",strict:true,schema:{
+         type:"object",additionalProperties:false,required:["items"],properties:{
+           items:{type:"array",maxItems:12,items:{type:"object",additionalProperties:false,
+             required:["name","quantity","unit","evidence"],properties:{
+               name:{type:"string"},quantity:{type:"number"},unit:{type:"string"},evidence:{type:"string"}
+             }
+           }}
+         }
+       }}}
+     }),signal:AbortSignal.timeout(22000)
+   });
+ }catch{return answer({error:"Não consegui interpretar a fala agora. Tente novamente."},502)}
+ if(!response.ok){
+   if(response.status===429)return answer({error:"A cota gratuita de interpretação atingiu o limite. Aguarde a renovação."},429);
+   return answer({error:"Não consegui interpretar os alimentos. Confira a fala e tente novamente."},502);
+ }
+ let output:any;
+ try{output=await response.json()}catch{return answer({error:"A análise retornou dados inválidos."},502)}
+ let json:any;
+ try{json=JSON.parse(output?.choices?.[0]?.message?.content||"")}catch{return answer({error:"Não foi possível interpretar a resposta da análise."},502)}
+ const utterance=normalizeTerm(transcript);
+ const tokens=new Set(utterance.split(" ").filter(token=>token.length>=3));
+ const allowed=new Set(["g","ml","kg","l","lata","garrafa","copo","unidade","porcao",""]);
+ const items=[];
+ for(const it of Array.isArray(json?.items)?json.items.slice(0,12):[]){
+   const name=String(it?.name||"").trim().slice(0,90);
+   const quantity=Number(it?.quantity);
+   const unit=normalizeTerm(String(it?.unit||"")).replace("porcao","porcao");
+   const evidence=String(it?.evidence||"").trim().slice(0,120);
+   const nameTokens=normalizeTerm(name).split(" ").filter(token=>token.length>=3);
+   const evidenceTokens=normalizeTerm(evidence).split(" ").filter(token=>token.length>=3);
+   if(!nameTokens.length||!nameTokens.some(t=>tokens.has(t)||tokens.has(t+"s"))||!evidenceTokens.some(t=>tokens.has(t)))continue;
+   if(!allowed.has(unit)||!Number.isFinite(quantity)||quantity<0||quantity>5000)continue;
+   items.push({term:name,qty:quantity||null,unit,original:evidence||name});
+ }
+ return answer({items});
+}
 function acceptUser(id:string) {
  const now=Date.now(),old=limit.get(id);
  const next=old && now-old.starts<600000?{count:old.count+1,starts:old.starts}:{count:1,starts:now};
@@ -38,6 +103,10 @@ Deno.serve(async (request:Request)=>{
  if(contentType.includes("application/json")){
    const payload=await request.json().catch(()=>({}));
    if(payload?.check===true)return answer({ready:available});
+   if(typeof payload?.parse==="string"){
+     if(!available)return answer({error:"A interpretação gratuita precisa da chave GROQ_API_KEY."},503);
+     return await parseFoodSpeech(payload.parse,apiKey,user.id);
+   }
    return answer({error:"Formato inválido."},400);
  }
  if(!available)return answer({error:"O plano gratuito de transcrição ainda não está configurado. Crie uma chave Groq Free e cadastre GROQ_API_KEY nos segredos do Supabase.",code:"NOT_CONFIGURED"},503);
