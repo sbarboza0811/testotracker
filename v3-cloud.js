@@ -143,7 +143,7 @@ async function checkTranscription(){
  if(!navigator.onLine)throw Error('A transcrição precisa de internet.');
  const {data,error}=await sb.functions.invoke('testotrack-transcribe',{body:{check:true}});
  if(error)throw await speechError(error,'Serviço de voz indisponível. Tente novamente.');
- if(!data?.ready)throw new Error('O serviço de voz ainda não está configurado: falta cadastrar OPENAI_API_KEY no Supabase.');
+ if(!data?.ready)throw new Error('A voz gratuita ainda precisa de uma chave Groq Free. Cadastre GROQ_API_KEY nos segredos do Supabase.');
  return true;
 }
 async function transcribeAudio(audio){
