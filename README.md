@@ -18,12 +18,13 @@ Os dados nutricionais iniciais são **estimativas por 100 g**, para fins de plan
 
 ## Registro alimentar simplificado
 
-- **Diário → Falar agora:** o microfone fica no topo da tela, sem abrir listas longas. No Android, o botão de voz abre diretamente o teclado do celular; use o microfone do teclado Samsung ou Gboard para ditar. O reconhecimento automático do navegador permanece como alternativa e exibe erros específicos quando falha.
+- **Diário → Falar agora:** grava o áudio diretamente no aplicativo via MediaRecorder. Toque em **Parar e transcrever** para enviar a gravação ao Supabase; a transcrição usa OpenAI e retorna os alimentos para revisão antes de salvar. Não usa o microfone do teclado.
 - **Diário → Digitar:** descreva a refeição inteira em linguagem natural.
 - **Confira sua refeição:** o app preseleciona alimentos quando a identificação é inequívoca, calcula porções e macros e pede confirmação apenas em casos ambíguos.
 - **Alimento não encontrado:** busque pelo nome e marca ou cadastre manualmente sem perder o restante da refeição.
 - **Salvar refeição:** todos os alimentos são gravados juntos, com validação antes de alterar o diário.
-- A transcrição usa a API de reconhecimento do navegador quando disponível; não garante suporte em todos os modelos e navegadores. Não existe ainda uma transcrição de áudio própria no servidor: para independência do navegador será necessário configurar uma API de transcrição, com autenticação e custo por uso.
+- A gravação depende de permissão de microfone, conexão à internet e login no Supabase. O áudio é enviado à API de transcrição e não é salvo no catálogo ou no histórico. Há limite de aproximadamente um minuto/4 MB por gravação.
+- **Configuração obrigatória:** cadastrar uma chave de API OpenAI (com cobrança de uso separada do ChatGPT) no Supabase Dashboard → Edge Functions → Secrets, com nome exato `OPENAI_API_KEY`. A chave é lida somente no servidor; **nunca** deve ser adicionada ao GitHub ou compartilhada pelo chat. Sem ela, o app informa que a transcrição está indisponível antes de iniciar a gravação.
 - As tabelas nutricionais externas devem ser conferidas contra o rótulo do produto.
 
 ## Dados e migração
