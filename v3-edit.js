@@ -65,7 +65,8 @@ function taskOpen(id){
 async function cloudAction(action){
  if(action==='cloud-enable'){await C.enable();U.toast('Dados enviados. Sincronização automática ativa.')}
  if(action==='cloud-download'){T.exportJson();await C.download();U.toast('Dados da nuvem carregados.')}
- if(action==='cloud-overwrite'){T.exportJson();await C.overwriteCloud();U.toast('Nuvem atualizada.')}
+ if(action==='cloud-backup'){await C.backupRemote();U.toast('Backup da nuvem baixado.')}
+ if(action==='cloud-overwrite'){T.exportJson();try{await C.backupRemote()}catch(e){if(!/ainda não tem dados/i.test(e.message))throw e}await C.overwriteCloud();U.toast('Nuvem atualizada.')}
  if(action==='cloud-logout'){await C.logout();U.toast('Sessão encerrada. Dados locais mantidos.')}
  U.render()
 }
