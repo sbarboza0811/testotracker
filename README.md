@@ -18,7 +18,7 @@ Os dados nutricionais iniciais são **estimativas por 100 g**, para fins de plan
 
 ## Registro alimentar simplificado
 
-- **Diário → Falar agora:** o microfone fica no topo da tela, sem abrir listas longas. A captura exibe a transcrição parcial e indica erros do navegador. Quando o serviço de fala falhar, use **Abrir teclado para ditar** para falar pelo teclado Samsung ou Gboard.
+- **Diário → Falar agora:** o microfone fica no topo da tela, sem abrir listas longas. No Android, o botão de voz abre diretamente o teclado do celular; use o microfone do teclado Samsung ou Gboard para ditar. O reconhecimento automático do navegador permanece como alternativa e exibe erros específicos quando falha.
 - **Diário → Digitar:** descreva a refeição inteira em linguagem natural.
 - **Confira sua refeição:** o app preseleciona alimentos quando a identificação é inequívoca, calcula porções e macros e pede confirmação apenas em casos ambíguos.
 - **Alimento não encontrado:** busque pelo nome e marca ou cadastre manualmente sem perder o restante da refeição.
