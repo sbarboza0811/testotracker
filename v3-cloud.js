@@ -130,7 +130,38 @@ async function searchFoods(query){
  if(data?.error)throw Error(String(data.error));
  return Array.isArray(data?.products)?data.products:[];
 }
+
+async function speechError(error, fallback){
+ if(error?.context?.json){
+  try{const data=await error.context.json();if(data?.error)return new Error(String(data.error));}catch(e){if(e instanceof Error&&e.message&&!/json|unexpected/i.test(e.message))return e;}
+ }
+ return new Error(fallback||error?.message||"Não foi possível transcrever o áudio.");
+}
+async function checkTranscription(){
+ if(!sb)await init();
+ if(!sb||!user)throw Error('Entre na sua conta em Ajustes para usar o microfone do TestoTrack.');
+ if(!navigator.onLine)throw Error('A transcrição precisa de internet.');
+ const {data,error}=await sb.functions.invoke('testotrack-transcribe',{body:{check:true}});
+ if(error)throw await speechError(error,'Serviço de voz indisponível. Tente novamente.');
+ if(!data?.ready)throw new Error('O serviço de voz ainda não está configurado: falta cadastrar OPENAI_API_KEY no Supabase.');
+ return true;
+}
+async function transcribeAudio(audio){
+ if(!sb)await init();
+ if(!sb||!user)throw Error('Entre na sua conta em Ajustes para transcrever o áudio.');
+ if(!navigator.onLine)throw Error('Conecte-se à internet para transcrever o áudio.');
+ if(!(audio instanceof Blob)||audio.size<800||audio.size>4*1024*1024)throw Error('Gravação vazia ou maior que 4 MB.');
+ const form=new FormData();
+ const type=(audio.type||'audio/webm').split(';')[0];
+ const ext=type==='audio/mp4'?'mp4':type==='audio/wav'?'wav':'webm';
+ form.append('audio',audio,'refeicao.'+ext);
+ const {data,error}=await sb.functions.invoke('testotrack-transcribe',{body:form});
+ if(error)throw await speechError(error,'Falha na transcrição. Tente gravar novamente.');
+ if(!data?.text||typeof data.text!=='string')throw new Error('Não consegui identificar palavras na gravação.');
+ return data.text.trim();
+}
+
 window.addEventListener('tt:change',schedule);
 window.addEventListener('online',()=>{if(user){if(blocked)status('Resolver dados','warn');else if(isEnabled())schedule();else status('Conectado','ok')}});
-window.TTCloud={init,login,logout,state,user:authUser,searchFoods,enable,push,download,overwriteCloud,backupRemote,connect,importLegacyCloud};
+window.TTCloud={init,login,logout,state,user:authUser,searchFoods,checkTranscription,transcribeAudio,enable,push,download,overwriteCloud,backupRemote,connect,importLegacyCloud};
 })();
