@@ -60,13 +60,13 @@ function mealPreset(key='emagrecer'){return SLOTS.map((m,i)=>({id:m[0],name:m[1]
 function routinePreset(split='ABC'){return Object.fromEntries(Object.entries(EXERCISES).map(([letter,ex])=>[letter,ex.map((e,i)=>({id:letter+'-'+i,name:e[0],sets:e[1],reps:e[2],rest:e[3]}))]))}
 function emptyDay(){return {foods:[],water:[],supplements:{},sleep:null,measures:{},workout:null,cardio:[],tasks:{},notes:'',energy:null,libido:null}}
 function fresh(){
- return {version:3,config:{goals:{...MEAL_TEMPLATES.emagrecer.goals,water:2500,sleep:8},diet:'emagrecer',split:'ABC',planStart:today(),trainingDays:[1,2,4,5],routine:'treino',times:{wake:'07:00',bed:'22:30'},measureDay:0,reminders:false},
- foods:structuredClone(FOODS),mealPlans:mealPreset('emagrecer'),workoutPlans:routinePreset(),supplements:structuredClone(SUPPLEMENT_BASE),days:{},exams:[],legacyImported:false};
+ return {version:3,config:{goals:{...MEAL_TEMPLATES.emagrecer.goals,water:2500,sleep:8},diet:'emagrecer',split:'ABC',planStart:today(),trainingDays:[1,2,4,5],routine:'treino',times:{wake:'07:00',workout:'12:00',bed:'22:30'},measureDay:0,reminders:false},
+ foods:structuredClone(FOODS),mealPlans:mealPreset('emagrecer'),workoutPlans:routinePreset(),supplements:structuredClone(SUPPLEMENT_BASE),savedDiets:[],days:{},exams:[],legacyImported:false};
 }
 function normalize(obj){
  const d=fresh();if(!obj||typeof obj!=='object')return d;
  if(obj.config&&typeof obj.config==='object')d.config={...d.config,...obj.config,goals:{...d.config.goals,...obj.config.goals},times:{...d.config.times,...obj.config.times}};
- for(const name of ['foods','mealPlans','supplements','exams'])if(Array.isArray(obj[name]))d[name]=obj[name];
+ for(const name of ['foods','mealPlans','supplements','exams','savedDiets'])if(Array.isArray(obj[name]))d[name]=obj[name];
  if(obj.workoutPlans&&typeof obj.workoutPlans==='object')d.workoutPlans=obj.workoutPlans;
  if(obj.days&&typeof obj.days==='object'&&!Array.isArray(obj.days))d.days=obj.days;
  d.legacyImported=!!obj.legacyImported;return d;
@@ -98,7 +98,7 @@ function setMeasure(s,field,value){day(s).measures[field]=value===''?null:n(valu
 function setSleep(s,bed,wake,hours,quality,awakenings){day(s).sleep={bed,wake,hours:n(hours),quality:n(quality),awakenings:n(awakenings)};save()}
 function slots(){return state.mealPlans.map(x=>x.id)}
 function workoutLetters(){return state.config.split.split('')}
-function isTraining(s){const d=parse(s).getDay();return state.config.trainingDays.includes(d)&&state.config.routine!=='viagem'}
+function isTraining(s){const d=parse(s).getDay(),mode=dayRead(s).routine||state.config.routine;return state.config.trainingDays.includes(d)&&mode==='treino'}
 function workoutLetter(s){
  const letters=workoutLetters();let date0=state.config.planStart||today();
  if(s<date0)date0=s;
@@ -130,16 +130,26 @@ function taskStatus(s,task){const d=dayRead(s);if(d.tasks?.[task.id])return d.ta
 function schedule(s){
  const tasks=[];
  const push=(id,time,label,type,ref)=>tasks.push({id,time,label,type,ref});
- push('water','07:00','Primeira água do dia','water');
+ push('water',state.config.times.wake||'07:00','Primeira água do dia','water');
  for(const meal of state.mealPlans)push('meal-'+meal.id,meal.time,meal.name,'meal',meal.id);
- if(isTraining(s))push('workout','12:00','Treino '+workoutLetter(s),'workout',workoutLetter(s));
- for(const sup of state.supplements.filter(x=>x.enabled))push('supp-'+sup.id,sup.time,sup.name+' · '+sup.dose,'supplement',sup.id);
+ if(isTraining(s))push('workout',state.config.times.workout||'12:00','Treino '+workoutLetter(s),'workout',workoutLetter(s));
+ for(const sup of state.supplements.filter(x=>x.enabled&&(!x.days||x.days==='all'||isTraining(s))))push('supp-'+sup.id,sup.time,sup.name+' · '+sup.dose,'supplement',sup.id);
  push('sleep',state.config.times.bed||'22:30','Preparar para dormir','sleep');
  if(parse(s).getDay()===n(state.config.measureDay))push('measure','07:30','Atualizar medidas corporais','measure');
  return tasks.sort((a,b)=>a.time.localeCompare(b.time));
 }
 function taskSet(s,id,status){day(s).tasks[id]=status;save()}
 function applyDiet(key){if(!MEAL_TEMPLATES[key])return;state.config.diet=key;const keep={water:state.config.goals.water,sleep:state.config.goals.sleep};state.config.goals={...MEAL_TEMPLATES[key].goals,...keep};state.mealPlans=mealPreset(key);save()}
+function saveDiet(name){
+ if(!name||!name.trim())throw Error('Informe um nome para o modelo.');
+ const saved={id:id(),name:name.trim().slice(0,70),goals:structuredClone(state.config.goals),meals:structuredClone(state.mealPlans)};
+ state.savedDiets.push(saved);save();return saved;
+}
+function applySavedDiet(key){
+ const saved=state.savedDiets.find(x=>x.id===key);if(!saved)throw Error('Modelo não encontrado.');
+ const keep={water:state.config.goals.water,sleep:state.config.goals.sleep};
+ state.config.diet=saved.id;state.config.goals={...saved.goals,...keep};state.mealPlans=structuredClone(saved.meals);save();
+}
 function applySplit(key){if(!['AB','ABC','ABCD'].includes(key))return;state.config.split=key;state.config.planStart=today();save()}
 function exportJson(){const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const href=URL.createObjectURL(blob);const a=document.createElement('a');a.href=href;a.download='testotrack-v3-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(href),500)}
 function importJson(obj){if(obj?.version!==3||!obj.days||!obj.config||!obj.mealPlans||!obj.workoutPlans)throw Error('Este não é um backup do TestoTrack 3.0');state=normalize(obj);save()}
@@ -164,5 +174,5 @@ function importLegacy(raw){
 }
 function current(){return state}
 function setState(s){state=normalize(s);save()}
-window.TT={KEY,LEGACY_KEY,$,today,date,parse,addDay,fmt,n,id,esc,money,FOODS,SLOTS,MEAL_TEMPLATES,SUPPLEMENT_BASE,EXERCISES,fresh,normalize,get state(){return state},get dirty(){return dirty},day,dayRead,save,setClean,setState,replaceFromCloud,foodById,calc,sum,getMacros,foodsForSlot,plannedMacros,addFood,registerPlan,removeFood,water,waterTotal,waterUndo,setSupplement,setMeasure,setSleep,slots,workoutLetters,isTraining,workoutLetter,workoutFor,lastSet,workoutStart,workoutSet,workoutFinish,cardioAdd,taskStatus,schedule,taskSet,applyDiet,applySplit,exportJson,importJson,importLegacy,legacyAvailable};
+window.TT={KEY,LEGACY_KEY,$,today,date,parse,addDay,fmt,n,id,esc,money,FOODS,SLOTS,MEAL_TEMPLATES,SUPPLEMENT_BASE,EXERCISES,fresh,normalize,get state(){return state},get dirty(){return dirty},day,dayRead,save,setClean,setState,replaceFromCloud,foodById,calc,sum,getMacros,foodsForSlot,plannedMacros,addFood,registerPlan,removeFood,water,waterTotal,waterUndo,setSupplement,setMeasure,setSleep,slots,workoutLetters,isTraining,workoutLetter,workoutFor,lastSet,workoutStart,workoutSet,workoutFinish,cardioAdd,taskStatus,schedule,taskSet,applyDiet,saveDiet,applySavedDiet,applySplit,exportJson,importJson,importLegacy,legacyAvailable};
 })();
