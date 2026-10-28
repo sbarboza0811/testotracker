@@ -16,6 +16,16 @@ Aplicativo: https://sbarboza0811.github.io/testotracker/
 
 Os dados nutricionais iniciais são **estimativas por 100 g**, para fins de planejamento. Verifique rótulos e tabelas confiáveis; modelos não substituem orientação nutricional, médica ou física.
 
+## Registro alimentar simplificado
+
+- **Diário → Falar agora:** o microfone fica no topo da tela, sem abrir listas longas.
+- **Diário → Digitar:** descreva a refeição inteira em linguagem natural.
+- **Confira sua refeição:** o app preseleciona alimentos quando a identificação é inequívoca, calcula porções e macros e pede confirmação apenas em casos ambíguos.
+- **Alimento não encontrado:** busque pelo nome e marca ou cadastre manualmente sem perder o restante da refeição.
+- **Salvar refeição:** todos os alimentos são gravados juntos, com validação antes de alterar o diário.
+- A transcrição usa a API de reconhecimento do navegador quando disponível; não garante suporte em todos os modelos e navegadores.
+- As tabelas nutricionais externas devem ser conferidas contra o rótulo do produto.
+
 ## Dados e migração
 - V3 grava localmente no navegador com a chave `testotrack-v3-local-v1`.
 - A versão anterior está preservada em [legacy.html](legacy.html), com a chave original `testotrack-data-v1` intacta.
