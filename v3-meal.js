@@ -28,25 +28,61 @@ function numericalSpeech(s){
   return total>0&&total<=5000?String(total):whole;
  });
 }
-function parse(transcript){
+const COMMON_FOOD_WORDS=new Set("arroz feijao frango carne patinho bife ovo omelete pao banana mamao pera maca laranja abacaxi melancia morango uva abacate aveia granola iogurte leite queijo manteiga requeijao presunto macarrao batata batata-doce mandioca mandioquinha peixe salmao tilapia atum sardinha camarao tomate alface cenoura pepino brocolis abobrinha couve beterraba repolho lentilha grao-de-bico ervilha amendoim castanha nozes azeite oleo chocolate bolo biscoito bolacha tapioca cuscuz pizza lasanha hamburguer sanduiche suco cafe cha refrigerante agua monster toddynho whey creatina albumina arroz-integral feijao-carioca feijao-preto".split(" "));
+const NOISE=/\b(?:ahn|ah|eh|hã|hum|tipo|assim|entao|entendi|falei|repeti|falando|queria|acho|sei|qual|aquele|aquela|isso|isso|voce|vocês|ta|tá|né|pra|para|sobre|quantidade|comida|alimento)\b/gi;
+function likelyFood(name,foods){
+ const t=norm(name);
+ if(!t||t.length<3||t.split(' ').length>5)return false;
+ if(COMMON_FOOD_WORDS.has(t))return true;
+ if(t.split(' ').some(x=>COMMON_FOOD_WORDS.has(x)))return true;
+ return local(name,foods).length>0;
+}
+function parse(transcript,foods=[]){
  if(typeof transcript!=='string'||transcript.trim().length<3||transcript.length>550)throw Error('Descreva uma refeição de até 550 caracteres.');
- const source=numericalSpeech(transcript.replace(/\btrês\b/gi,'tres')).replace(/\b(?:e|mais)\s+(?=(?:(?:comi|tomei|bebi|consumi|coloquei|adicionei)\s+)?(?:\d+(?:[.,]\d+)?|um|uma|dois|duas|três|tres|quatro|cinco|meio|meia)\b)/gi,', ')
-   .replace(/\s+(?:e|mais)\s+(?=(?:\d+(?:[.,]\d+)?|um|uma|dois|duas)\b)/gi,', ');
- const parts=source.split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);
- if(parts.length>12)throw Error('Registre no máximo 12 alimentos por vez.');
- return parts.map(raw=>{
-   const phrase=clean(raw);
-   const match=phrase.match(/^(\d+(?:[.,]\d+)?|um|uma|dois|duas|três|tres|quatro|cinco|meio|meia)\s*(quilo(?:grama)?s?|kg|gramas?|g|mililitros?|ml|litros?|latas?|garrafas?|copos?|unidades?|porções?|l)?(?=\s|$)\s*(?:de|do|da|dos|das)?\s*(.*)$/i);
-   let qty=null,unit='',name=phrase;
-   if(match){
-      qty=wordNums[norm(match[1])]??Number(match[1].replace(',','.'));
-      name=clean(match[3]);const u=norm(match[2]||'');
-      unit=/^(kg|quilo)/.test(u)?'kg':/^g$|^grama/.test(u)?'g':/^(ml|mililitro)/.test(u)?'ml':/^l$|^litro/.test(u)?'l':/^(lata|garrafa|copo|unidade|porc)/.test(u)?u.split(' ')[0]:'';
-   }
-   name=name.replace(/\s+(?:de|da|do)\s+\d+(?:[.,]\d+)?\s*(?:ml|g)\s*$/i,'').trim();
-   if(!name||name.length>95)throw Error('Não foi possível interpretar "'+raw.slice(0,65)+'".');
-   return {term:name,qty,unit,original:raw};
- });
+ const spoken=numericalSpeech(transcript.replace(/\btrês\b/gi,'tres'))
+  .replace(/(\d),(\d)/g,'$1.$2')
+  .replace(/\s+(?:e|mais)\s+(?=(?:(?:comi|tomei|bebi)\s+)?\d+(?:\.\d+)?\b)/gi,', ');
+ const pieces=spoken.split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);
+ if(pieces.length>30)throw Error('A fala está muito longa. Tente uma refeição de cada vez.');
+ const results=[];let correction=false;
+ const quantity=/^(\d+(?:\.\d+)?)\s*(kg|quilos?|quilogramas?|gramas?|g|mililitros?|ml|litros?|latas?|garrafas?|copos?|unidades?|por[cç][oõ]es?|l)?(?=\s|$)\s*(?:de|da|do|dos|das)?\s*(.*)$/i;
+ const trailing=/^(.*?)\s+(\d+(?:\.\d+)?)\s*(kg|gramas?|g|mililitros?|ml|litros?|latas?|garrafas?|copos?|unidades?)$/i;
+ const unitOf=value=>{const u=norm(value||'');
+  return /^(kg|quilo)/.test(u)?'kg':/^g$|^grama/.test(u)?'g':/^(ml|mililitro)/.test(u)?'ml':/^l$|^litro/.test(u)?'l':/^lata/.test(u)?'lata':/^garrafa/.test(u)?'garrafa':/^copo/.test(u)?'copo':/^unidade/.test(u)?'unidade':/^porc/.test(u)?'porcao':'';
+ };
+ for(const original of pieces){
+  let part=original.replace(/^(?:e|mais)\s+/i,'').trim();
+  if(/^(?:n[aã]o|quer dizer|na verdade|corrigindo|ali[aá]s)\s*[,.:!]*$/i.test(part)){correction=true;continue}
+  if(/^(?:n[aã]o|quer dizer|na verdade|corrigindo|ali[aá]s)\b/i.test(part)){correction=true;part=part.replace(/^(?:n[aã]o|quer dizer|na verdade|corrigindo|ali[aá]s)\b[\s,:]*/i,'');}
+  part=clean(part.replace(NOISE,' '));
+  let match=part.match(quantity),term=part,qty=null,unit='';
+  if(match){
+   qty=Number(match[1]);unit=unitOf(match[2]);term=clean(match[3]);
+  }else{
+   match=part.match(trailing);
+   if(match){term=clean(match[1]);qty=Number(match[2]);unit=unitOf(match[3]);}
+  }
+  // Repeated names caused by hesitations ("arroz, arroz" or "arroz arroz").
+  const tokens=term.split(/\s+/);const collapsed=[];
+  for(const token of tokens){if(!collapsed.length||norm(collapsed[collapsed.length-1])!==norm(token))collapsed.push(token)}
+  term=clean(collapsed.join(' '));
+  if(!term&&correction&&results.length&&qty!==null){term=results[results.length-1].term;}
+  if(!likelyFood(term,foods)){if(qty!==null)correction=false;continue;}
+  if(qty===null){if(correction&&results.length){results[results.length-1].term=term;}correction=false;continue;}
+  if(!Number.isFinite(qty)||qty<=0||qty>5000){correction=false;continue;}
+  const idx=results.findIndex(x=>norm(x.term)===norm(term));
+  if(correction){
+   if(idx>=0){results[idx]={term,qty,unit,original};}
+   else if(results.length){results[results.length-1]={term,qty,unit,original};}
+   else results.push({term,qty,unit,original});
+  }else if(idx>=0&&results[idx].unit===unit){
+   results[idx].qty+=qty;
+   results[idx].original+=', '+original;
+  }else results.push({term,qty,unit,original});
+  correction=false;
+  if(results.length>12)throw Error('Registre até 12 alimentos por vez.');
+ }
+ return results;
 }
 function local(term,foods){
  const q=norm(term);
