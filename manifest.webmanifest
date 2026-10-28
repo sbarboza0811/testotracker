@@ -1,15 +1,15 @@
 {
   "id": "./",
-  "name": "TestoTrack — Protocolo natural",
+  "name": "TestoTrack 3.0 — Minha rotina",
   "short_name": "TestoTrack",
-  "description": "Acompanhamento de hábitos, treinos, sono, medidas e exames",
+  "description": "Cronograma, refeições e macros, treinos, suplementos, hidratação, sono e medidas",
   "lang": "pt-BR",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#090f1b",
-  "theme_color": "#0c1320",
+  "background_color": "#0b1220",
+  "theme_color": "#0b1220",
   "icons": [
     {
       "src": "./icons/icon.svg",
