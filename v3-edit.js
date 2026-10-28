@@ -96,6 +96,7 @@ function taskComplete(taskId){
   U.toast(inserted?'250 ml registrados · atividade concluída.':'Essa quantidade já foi registrada agora.');
   return
  }
+ if(task.type==='sleep'){T.taskSet(d,task.id,'done');U.toast('Rotina noturna marcada como concluída. O sono pode ser registrado ao acordar.');return}
  if(task.type==='supplement'){
   T.setSupplement(d,task.ref,true);
   U.toast('Suplemento marcado como tomado.');
@@ -124,6 +125,7 @@ document.addEventListener('click',async ev=>{
  if(a==='evolution'){U.go('evolucao');return}
  if(a==='task'){taskOpen(b.dataset.task);return}
  if(a==='task-complete'){taskComplete(b.dataset.task);return}
+ if(a==='task-reset'){T.taskSet(d,b.dataset.task,'pending');U.toast('Atividade reaberta.');return}
  if(a==='skip'){const task=b.dataset.task;T.taskSet(d,task,T.dayRead(d).tasks?.[task]==='skipped'?'pending':'skipped');return}
  if(a==='water'){const inserted=T.water(d,Number(b.dataset.ml));if(inserted)U.close();U.toast(inserted?'Água registrada!':'Esta mesma quantidade já foi registrada há poucos segundos.');return}
  if(a==='undo-water'){if(T.dayRead(d).water.length)T.waterUndo(d);return}
