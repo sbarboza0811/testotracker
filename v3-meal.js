@@ -30,7 +30,7 @@ function numericalSpeech(s){
 }
 function parse(transcript){
  if(typeof transcript!=='string'||transcript.trim().length<3||transcript.length>550)throw Error('Descreva uma refeição de até 550 caracteres.');
- const source=numericalSpeech(transcript).replace(/\b(?:e|mais)\s+(?=(?:(?:comi|tomei|bebi|consumi|coloquei|adicionei)\s+)?(?:\d+(?:[.,]\d+)?|um|uma|dois|duas|três|tres|quatro|cinco|meio|meia)\b)/gi,', ')
+ const source=numericalSpeech(transcript.replace(/\btrês\b/gi,'tres')).replace(/\b(?:e|mais)\s+(?=(?:(?:comi|tomei|bebi|consumi|coloquei|adicionei)\s+)?(?:\d+(?:[.,]\d+)?|um|uma|dois|duas|três|tres|quatro|cinco|meio|meia)\b)/gi,', ')
    .replace(/\s+(?:e|mais)\s+(?=(?:\d+(?:[.,]\d+)?|um|uma|dois|duas)\b)/gi,', ');
  const parts=source.split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);
  if(parts.length>12)throw Error('Registre no máximo 12 alimentos por vez.');
