@@ -109,7 +109,7 @@ function render(){
  if(status.connected){badge.textContent=status.blocked?'Conflito':status.enabled?(status.busy?'Enviando…':'Nuvem ativa'):'Conectado';badge.className='sync-badge '+(status.blocked?'warn':status.enabled?'ok':'')}
  else{badge.textContent=status.available?'Local':'Local offline';badge.className='sync-badge'}
 }
-window.TTUI={get date(){return selected},get tab(){return tab},get trainLetter(){return trainLetter},set trainLetter(v){trainLetter=v},go,render,toast,error,modal,close,MEASURES,button};
+window.TTUI={get date(){return selected},set date(v){selected=v},get tab(){return tab},get trainLetter(){return trainLetter},set trainLetter(v){trainLetter=v},go,render,toast,error,modal,close,MEASURES,button};
 T.toast=toast;
 document.querySelectorAll('[data-go]').forEach(el=>el.addEventListener('click',()=>go(el.dataset.go)));
 T.$('fab').addEventListener('click',()=>modal('Adicionar registro','<div class="stack">'+[['Refeição','add-food'],['Água','water-form'],['Sono','sleep-form'],['Medidas','measure-form'],['Suplementos','models'],['Cardio','cardio-form'],['Exame','exam-form']].map(x=>button(x[0],x[1],'full secondary')).join('')+'</div>'));
