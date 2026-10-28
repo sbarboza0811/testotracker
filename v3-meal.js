@@ -145,7 +145,7 @@ function review(){
    (food?(food.brand?esc(food.brand)+' · ':'')+fmt(food.kcal,1)+' kcal/100 '+esc(food.unit||'g'):'Ainda precisa identificar o alimento')+'</small></div>'+
    action('✕','meal-drop','small outline','data-index="'+i+'"')+'</div>'+
    choices+issue+
-   (!r.options.length?'<div class="actions">'+action('Buscar outro nome','meal-retry','small secondary','data-index="'+i+'"')+action('Cadastro manual','new-food','small outline')+'</div>':'')+
+   (!r.options.length?'<div class="actions">'+action('Buscar outro nome','meal-retry','small secondary','data-index="'+i+'"')+action('Cadastro manual','meal-custom','small outline','data-index="'+i+'"')+'</div>':'')+
    '<div class="review-food-stats"><div class="field"><label>Quantidade ('+esc(food?.unit||'g/ml')+')</label><input type="number" inputmode="decimal" min="1" max="5000" step="1" data-meal-quantity="'+i+'" value="'+(r.amount||'')+'" placeholder="Quantidade"></div>'+
    '<div class="review-energy"><strong>'+fmt(values.kcal)+' kcal</strong><small>P '+fmt(values.p,1)+' · C '+fmt(values.c,1)+' · G '+fmt(values.f,1)+'</small></div></div>'+
    (r.note?'<p class="review-note">'+esc(r.note)+'</p>':'')+
@@ -182,6 +182,21 @@ async function analyze(description,slot){
  if(seq!==requestId||!document.getElementById('meal-loading'))return;
  draft={slot,rows,description};review();
 }
+
+function customForm(i){
+ const row=draft?.rows[i];if(!row)throw Error('Alimento não encontrado na refeição.');
+ const qty=M.amount(row.parsed,{unit:'g'}).value||100;
+ U.modal('Cadastrar alimento sem sair da refeição',
+ '<p class="muted small">Se não houver resultado na busca, informe os valores nutricionais do rótulo ou de uma fonte confiável. Este alimento entrará no catálogo ao salvar a refeição.</p>'+
+ '<form data-form="meal-custom"><input type="hidden" name="index" value="'+i+'">'+
+ '<div class="field"><label>Nome do alimento</label><input name="name" maxlength="100" required value="'+esc(row.parsed.term)+'"></div>'+
+ '<div class="formgrid"><div class="field"><label>Unidade</label><select name="unit"><option value="g">Gramas (g)</option><option value="ml">Mililitros (ml)</option></select></div>'+
+ '<div class="field"><label>Quantidade consumida</label><input type="number" name="amount" min="1" max="5000" step="1" required value="'+qty+'"></div></div>'+
+ '<p class="muted small" style="margin:7px 0 12px">Informações por 100 g ou por 100 ml:</p>'+
+ '<div class="formgrid">'+[['kcal','Calorias (kcal)'],['p','Proteína (g)'],['c','Carboidratos (g)'],['f','Gorduras (g)'],['fiber','Fibras (g)']].map(([key,label])=>
+ '<div class="field"><label>'+label+'</label><input name="'+key+'" type="number" min="0" max="5000" step=".1" required placeholder="Valor do rótulo"></div>').join('')+'</div>'+
+ '<button class="btn full" type="submit">Adicionar à prévia</button></form>');
+}
 async function retry(i){
  if(!draft?.rows[i])return;
  const row=draft.rows[i],name=prompt('Busque pelo nome exato e marca do produto:',row.parsed.term);
@@ -205,6 +220,7 @@ document.addEventListener('click',event=>{
   if(a==='meal-back'){open(draft?.slot,false,draft?.description||inputText);return}
   if(a==='meal-drop'&&draft){draft.rows.splice(Number(btn.dataset.index),1);review();return}
   if(a==='meal-retry'){retry(Number(btn.dataset.index)).catch(U.error);return}
+  if(a==='meal-custom'){customForm(Number(btn.dataset.index));return}
  }catch(err){U.error(err);}
 });
 document.addEventListener('change',event=>{
@@ -219,10 +235,25 @@ document.addEventListener('change',event=>{
 });
 document.addEventListener('submit',async event=>{
  const form=event.target,kind=form.dataset.form;
- if(!['meal-text','meal-save'].includes(kind))return;
+ if(!['meal-text','meal-save','meal-custom'].includes(kind))return;
  event.preventDefault();
  try{
-  if(kind==='meal-text'){
+  if(kind==='meal-custom'){
+   const fd=new FormData(form),i=Number(fd.get('index')),r=draft?.rows[i];
+   if(!r)throw Error('Alimento não encontrado.');
+   const name=String(fd.get('name')||'').trim();
+   const unit=String(fd.get('unit')||'g'),amount=Number(fd.get('amount'));
+   if(!name||name.length>100||!['g','ml'].includes(unit)||!(amount>0&&amount<=5000))throw Error('Confira o nome e a quantidade.');
+   const food={id:'manual:'+T.id(),name,unit,source:'Manual'};
+   for(const k of ['kcal','p','c','f','fiber']){
+    const raw=String(fd.get(k)||'');
+    const value=Number(raw);
+    if(!raw.trim()||!Number.isFinite(value)||value<0||value>5000)throw Error('Confira os valores do rótulo.');
+    food[k]=value;
+   }
+   r.options=[food];r.selected=0;r.amount=amount;r.problem='';r.note='Valores informados manualmente. Confira o rótulo.';
+   review();
+  }else if(kind==='meal-text'){
    const values=new FormData(form);
    await analyze(String(values.get('description')||''),String(values.get('slot')||''));
   }else{
