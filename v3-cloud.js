@@ -146,6 +146,16 @@ async function checkTranscription(){
  if(!data?.ready)throw new Error('A voz gratuita ainda precisa de uma chave Groq Free. Cadastre GROQ_API_KEY nos segredos do Supabase.');
  return true;
 }
+async function parseMeal(transcript){
+ if(!sb)await init();
+ if(!sb||!user)throw Error('Faça login em Ajustes para identificar os alimentos com precisão.');
+ if(!navigator.onLine)throw Error('A análise inteligente precisa de internet.');
+ if(typeof transcript!=='string'||transcript.trim().length<3||transcript.length>550)throw Error('A transcrição deve ter entre 3 e 550 caracteres.');
+ const {data,error}=await sb.functions.invoke('testotrack-transcribe',{body:{parse:transcript.trim()}});
+ if(error)throw await speechError(error,'Não consegui interpretar os alimentos agora.');
+ if(!Array.isArray(data?.items))throw Error('A resposta da análise de alimentos foi inválida.');
+ return data.items.filter(x=>x&&typeof x.term==='string'&&x.term.length<90).slice(0,12);
+}
 async function transcribeAudio(audio){
  if(!sb)await init();
  if(!sb||!user)throw Error('Entre na sua conta em Ajustes para transcrever o áudio.');
@@ -163,5 +173,5 @@ async function transcribeAudio(audio){
 
 window.addEventListener('tt:change',schedule);
 window.addEventListener('online',()=>{if(user){if(blocked)status('Resolver dados','warn');else if(isEnabled())schedule();else status('Conectado','ok')}});
-window.TTCloud={init,login,logout,state,user:authUser,searchFoods,checkTranscription,transcribeAudio,enable,push,download,overwriteCloud,backupRemote,connect,importLegacyCloud};
+window.TTCloud={init,login,logout,state,user:authUser,searchFoods,checkTranscription,transcribeAudio,parseMeal,enable,push,download,overwriteCloud,backupRemote,connect,importLegacyCloud};
 })();
