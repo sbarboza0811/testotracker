@@ -1,0 +1,122 @@
+(function(){
+'use strict';
+const T=window.TT,C=window.TTCloud;
+let tab='hoje',selected=T.today(),trainLetter='',toastTimer=null;
+const esc=T.esc,num=T.money;
+function toast(message){const box=T.$('toast');box.textContent=message;box.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>box.classList.remove('show'),3200)}
+function error(err){console.error(err);toast(err?.message||'Não foi possível salvar.')}
+function modal(title,html){T.$('modal-title').textContent=title;T.$('modal-body').innerHTML=html;T.$('modal').classList.remove('hidden');T.$('modal').querySelector('input,select,button')?.focus()}
+function close(){T.$('modal').classList.add('hidden')}
+function go(name){tab=name;close();render();window.scrollTo(0,0)}
+function button(label,action,cls,attrs){return '<button type="button" class="btn '+(cls||'secondary')+'" data-action="'+action+'" '+(attrs||'')+'>'+esc(label)+'</button>'}
+function panel(title,body,tools){return '<section class="panel"><div class="label-row"><h2>'+esc(title)+'</h2>'+(tools||'')+'</div>'+body+'</section>'}
+function pct(a,b){return '<div class="progress"><span style="width:'+Math.max(0,Math.min(100,b?100*a/b:0))+'%"></span></div>'}
+function stat(label,value,sub,emoji,a,b){return '<div class="panel stat"><div class="topstat"><span class="icon">'+emoji+'</span><span class="label">'+esc(label)+'</span></div><div><div class="num">'+esc(value)+'</div><div class="sub">'+esc(sub)+'</div></div>'+pct(a,b)+'</div>'}
+function heading(kicker,title,description){return '<div class="page-head"><div class="eyebrow">'+esc(kicker)+'</div><h1>'+esc(title)+'</h1><div class="subline">'+esc(description)+'</div><div class="date-line"><button data-action="prev">‹</button><input type="date" id="selected-date" value="'+selected+'"><button data-action="next">›</button><span class="small muted">'+esc(T.fmt(selected))+'</span></div></div>'}
+function taskIcon(type){return {water:'💧',meal:'🍽️',workout:'🏋️',supplement:'💊',sleep:'🌙',measure:'📏'}[type]||'✓'}
+function pageToday(){
+ const macros=T.getMacros(selected),goals=T.state.config.goals,day=T.dayRead(selected),water=T.waterTotal(selected),tasks=T.schedule(selected);
+ const done=tasks.filter(x=>T.taskStatus(selected,x)==='done').length,upcoming=tasks.find(x=>T.taskStatus(selected,x)==='pending');
+ let html=heading('ROTINA DO DIA','Meu dia','Seu cronograma, seus registros e suas metas.');
+ html+='<div class="grid2">'+stat('Alimentação',num(macros.kcal)+' kcal','de '+num(goals.calories)+' kcal','🍽️',macros.kcal,goals.calories)+stat('Água',num(water/1000,2)+' L','de '+num(goals.water/1000,2)+' L','💧',water,goals.water)+stat('Musculação',day.workout?.finished?'Feito':T.isTraining(selected)?'Treino '+T.workoutLetter(selected):'Descanso','Plano '+T.state.config.split,'🏋️',day.workout?.finished?1:0,1)+stat('Sono',day.sleep?num(day.sleep.hours,1)+' h':'—','Meta '+goals.sleep+' h','🌙',day.sleep?.hours||0,goals.sleep)+'</div>';
+ html+='<section class="panel soft"><div class="right"><div><span class="eyebrow">PRÓXIMA ATIVIDADE</span><h2 style="margin-top:7px">'+esc(upcoming?upcoming.time+' · '+upcoming.label:'Tudo concluído!')+'</h2></div><span class="pill">'+done+'/'+tasks.length+'</span></div><div style="margin:13px 0">'+pct(done,tasks.length)+'</div>'+(upcoming?button('Abrir atividade','task','', 'data-task="'+esc(upcoming.id)+'"'):button('Ver evolução','evolution'))+'</section>';
+ let rows=tasks.map(x=>{
+ const status=T.taskStatus(selected,x);return '<div class="listrow '+(status==='done'?'done':'')+'"><div class="stamp">'+esc(x.time)+'</div><div class="roundicon">'+taskIcon(x.type)+'</div><div class="content"><b>'+esc(x.label)+'</b><small>'+(status==='done'?'Concluído':status==='skipped'?'Ignorado':'Pendente')+'</small></div>'+button('Abrir','task','small secondary','data-task="'+esc(x.id)+'"')+button(status==='skipped'?'↶':'—','skip','small outline','data-task="'+esc(x.id)+'"')+'</div>'
+ }).join('');
+ html+=panel('Cronograma diário',rows,button('Editar','models','small secondary'));
+ html+=panel('Adicionar rapidamente','<div class="actions">'+button('+ 250 ml','water','small secondary','data-ml="250"')+button('+ 500 ml','water','small secondary','data-ml="500"')+button('+ Refeição','add-food','small')+button('+ Medida','measure-form','small secondary')+'</div>');
+ if(T.legacyAvailable()&&!T.state.legacyImported)html+='<div class="tip">Encontramos seu histórico da versão anterior neste celular. '+button('Importar sem apagar o antigo','migrate','small secondary')+'</div>';
+ return html
+}
+function pageDiary(){
+ const macros=T.getMacros(selected),goals=T.state.config.goals,water=T.waterTotal(selected),day=T.dayRead(selected);
+ let html=heading('ALIMENTAÇÃO E SAÚDE','Meu diário','Macros, refeições, água, suplementos e sono.');
+ html+='<div class="grid3">'+stat('Calorias',num(macros.kcal),'meta '+num(goals.calories),'🔥',macros.kcal,goals.calories)+stat('Proteína',num(macros.p)+'g','meta '+num(goals.protein)+'g','🥚',macros.p,goals.protein)+stat('Hidratação',num(water/1000,2)+'L','meta '+num(goals.water/1000,2)+'L','💧',water,goals.water)+'</div>';
+ html+=panel('Macronutrientes','<div class="grid3"><div><b>'+num(macros.p)+' g</b><small class="sup-label">Proteína</small>'+pct(macros.p,goals.protein)+'</div><div><b>'+num(macros.c)+' g</b><small class="sup-label">Carboidratos</small>'+pct(macros.c,goals.carbs)+'</div><div><b>'+num(macros.f)+' g</b><small class="sup-label">Gorduras</small>'+pct(macros.f,goals.fat)+'</div></div><p class="muted small" style="margin-top:10px">Fibras: '+num(macros.fiber,1)+' g · Valores nutricionais aproximados conforme alimento e preparo.</p>');
+ let meals=T.state.mealPlans.map(meal=>{
+ const entries=T.foodsForSlot(selected,meal.id),planned=T.plannedMacros(meal.id),actual=T.sum(entries);
+ return '<div class="listrow"><div class="stamp">'+esc(meal.time)+'</div><div class="content"><b>'+esc(meal.name)+'</b><small>Planejado: '+num(planned.kcal)+' kcal · '+num(planned.p)+' g proteína</small><small>'+esc(meal.items.map(item=>(T.foodById(item.foodId)?.name||'Alimento')+' '+item.grams+'g').join(', '))+'</small>'+(entries.length?'<small style="color:var(--mint)">Registrado: '+num(actual.kcal)+' kcal</small>':'')+'</div><div class="actions">'+(entries.length?button('Itens','meal-detail','small secondary','data-slot="'+meal.id+'"'):button('Registrar','register-meal','small','data-slot="'+meal.id+'"'))+button('+','add-food','small outline','data-slot="'+meal.id+'"')+'</div></div>'
+ }).join('');
+ html+=panel('Refeições',meals+'<div class="actions" style="margin-top:12px">'+button('Adicionar alimento','add-food','small')+button('Editar dieta','models','small secondary')+'</div>');
+ html+=panel('Água','<div class="line"><div><div class="kpi">'+num(water)+' ml</div><small>Meta '+num(goals.water)+' ml</small></div>'+button('Desfazer','undo-water','small outline')+'</div><div style="margin:12px 0">'+pct(water,goals.water)+'</div><div class="actions">'+[200,250,300,500].map(x=>button('+'+x+' ml','water','small secondary','data-ml="'+x+'"')).join('')+button('Outro','water-form','small secondary')+'</div>');
+ const supplements=T.state.supplements.filter(x=>x.enabled);
+ html+=panel('Suplementos',supplements.length?supplements.map(s=>'<div class="listrow"><div class="stamp">'+esc(s.time)+'</div><div class="content"><b>'+esc(s.name)+'</b><small>'+esc(s.dose)+'</small></div><input type="checkbox" class="check" data-supplement="'+esc(s.id)+'" '+(day.supplements?.[s.id]?'checked':'')+' aria-label="Tomei '+esc(s.name)+'"></div>').join(''):'<p class="muted small">Ative os suplementos que usa na configuração dos modelos.</p>',button('Configurar','models','small secondary'));
+ html+=panel('Sono',day.sleep?'<div class="grid3"><div class="kpi">'+num(day.sleep.hours,1)+' h<small class="sup-label">Duração</small></div><div class="kpi">'+num(day.sleep.quality)+'/5<small class="sup-label">Qualidade</small></div><div class="kpi">'+num(day.sleep.awakenings)+'<small class="sup-label">Despertares</small></div></div><p class="muted small" style="margin-top:9px">'+esc(day.sleep.bed||'')+' → '+esc(day.sleep.wake||'')+'</p>':'<p class="muted small">Sem registro de sono nesta data.</p>',button('Registrar / editar','sleep-form','small'));
+ return html;
+}
+function exerciseCard(ex,workout,day){
+ const records=workout?.sets?.filter(x=>x.exerciseId===ex.id)||[],last=T.lastSet(ex.id,selected);
+ let rows='';
+ for(let i=1;i<=ex.sets;i++){
+ const rec=records.find(x=>x.setNo===i);
+ rows+='<form data-form="set" data-exercise="'+esc(ex.id)+'" data-index="'+i+'" class="listrow"><div class="stamp">S'+i+'</div><div class="field" style="flex:1;margin:0"><label>Carga kg</label><input type="number" step="0.5" min="0" max="500" name="weight" value="'+esc(rec?.weight??last?.weight??'')+'" required '+(workout?.finished?'disabled':'')+'></div><div class="field" style="flex:1;margin:0"><label>Reps</label><input type="number" min="1" max="100" name="reps" value="'+esc(rec?.reps??last?.reps??'')+'" required '+(workout?.finished?'disabled':'')+'></div><button type="submit" class="btn small '+(rec?.done?'secondary':'')+'" '+(workout?.finished?'disabled':'')+'>'+(rec?.done?'✓':'Salvar')+'</button></form>';
+ }
+ return '<section class="panel"><div class="right"><div><h3>'+esc(ex.name)+'</h3><small>'+ex.sets+' séries · '+esc(ex.reps)+' rep. · '+ex.rest+' s descanso</small></div><span class="pill">'+records.filter(x=>x.done).length+'/'+ex.sets+'</span></div>'+(last?'<p class="muted small" style="margin-top:7px">Última carga: '+num(last.weight,1)+' kg × '+last.reps+' rep.</p>':'')+rows+'</section>';
+}
+function pageTrain(){
+ const day=T.dayRead(selected),workout=day.workout,letter=workout?.letter||trainLetter||T.workoutLetter(selected);
+ let html=heading('TREINO GUIADO','Musculação','Plano '+T.state.config.split+' · Séries, cargas e descanso.');
+ html+='<section class="panel"><div class="right"><h2>Treino '+esc(letter)+'</h2><span class="pill">'+(T.isTraining(selected)?'Programado':'Dia livre')+'</span></div><div class="chipbar" style="margin-top:12px">'+T.workoutLetters().map(x=>'<button class="chip '+(letter===x?'active':'')+'" data-action="choose-workout" data-letter="'+x+'" '+(workout?'disabled':'')+'>Treino '+x+'</button>').join('')+'</div><div class="actions">'+(!workout?button('Iniciar treino','start-workout','', 'data-letter="'+letter+'"'):workout.finished?'<span class="pill good">✓ Concluído</span>':button('Finalizar treino','finish-workout',''))+button('Editar ficha','edit-workout','secondary')+button('+ Cardio','cardio-form','secondary')+'</div></section>';
+ html+='<div id="exercise-cards">'+(T.state.workoutPlans[letter]||[]).map(ex=>exerciseCard(ex,workout,day)).join('')+'</div>';
+ const cardio=day.cardio||[];
+ html+=panel('Cardio',cardio.length?cardio.map(x=>'<div class="listrow"><div class="content"><b>'+esc(x.type)+'</b><small>'+num(x.minutes)+' min · '+num(x.distance,1)+' km</small></div></div>').join(''):'<p class="muted small">Nenhuma atividade cardiovascular registrada.</p>',button('+ Adicionar','cardio-form','small secondary'));
+ return html;
+}
+const MEASURES=[['weight','Peso','kg'],['waist','Cintura','cm'],['chest','Tórax','cm'],['armR','Braço direito','cm'],['armL','Braço esquerdo','cm'],['forearmR','Antebraço direito','cm'],['forearmL','Antebraço esquerdo','cm'],['hip','Quadril','cm'],['thighR','Coxa direita','cm'],['thighL','Coxa esquerda','cm']];
+function measureLast(field){
+ const dates=Object.keys(T.state.days).filter(x=>x<=selected).sort().reverse();
+ for(const date of dates){const value=T.state.days[date]?.measures?.[field];if(value!==undefined&&value!==null&&value!=='')return value}
+ return null
+}
+function weightGraph(){
+ const values=Object.entries(T.state.days).filter(([date,d])=>date<=selected&&d.measures?.weight!=null).sort((a,b)=>a[0].localeCompare(b[0])).slice(-9).map(([date,d])=>({date,weight:Number(d.measures.weight)}));
+ if(values.length<2)return '<div class="empty">Registre peso em duas datas para visualizar a tendência.</div>';
+ const min=Math.min(...values.map(x=>x.weight)),max=Math.max(...values.map(x=>x.weight)),range=max-min||1;
+ return '<div class="bargraph" role="img" aria-label="Gráfico de evolução do peso">'+values.map(x=>'<div class="barcol"><span class="micro">'+num(x.weight,1)+'</span><div class="bar" style="height:'+(25+(x.weight-min)/range*70)+'%"></div><small>'+x.date.slice(5)+'</small></div>').join('')+'</div>';
+}
+function pageEvolution(){
+ const days=Array.from({length:7},(_,i)=>T.addDay(selected,i-6)),logged=days.filter(x=>T.dayRead(x).foods.length);
+ let html=heading('RELATÓRIOS','Evolução','Seu progresso ao longo do tempo.');
+ html+=panel('Medidas corporais','<div class="measuregrid">'+MEASURES.map(x=>'<div class="measurebox"><span>'+esc(x[1])+'</span><strong>'+((measureLast(x[0])===null)?'—':num(measureLast(x[0]),1)+' '+x[2])+'</strong></div>').join('')+'</div>',button('+ Atualizar','measure-form','small'));
+ html+=panel('Tendência do peso',weightGraph());
+ html+=panel('Últimos 7 dias','<div class="grid3"><div><div class="kpi">'+logged.length+'</div><small>Dias com refeições registradas</small></div><div><div class="kpi">'+days.filter(x=>T.dayRead(x).workout?.finished).length+'</div><small>Treinos concluídos</small></div><div><div class="kpi">'+num(days.reduce((a,x)=>a+T.waterTotal(x),0)/7/1000,1)+'L</div><small>Água/dia registrada*</small></div></div><p class="muted micro" style="margin-top:10px">* Dias sem registro não devem ser interpretados como consumo zero.</p>');
+ html+=panel('Exames laboratoriais','<p class="muted small">Não estimamos testosterona a partir de hábitos. Registre resultados laboratoriais para acompanhamento.</p>'+[...T.state.exams].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8).map(x=>'<div class="listrow"><div class="content"><b>'+esc(x.date)+' · '+num(x.value,1)+' ng/dL</b><small>'+esc(x.notes||'')+'</small></div></div>').join(''),button('+ Exame','exam-form','small secondary'));
+ html+='<div class="tip">O protocolo de 12 semanas e a interface anterior continuam disponíveis em <a href="./legacy.html">Versão 2.1</a>.</div>';
+ return html
+}
+function pageModels(){
+ const c=T.state.config;
+ let html='<div class="page-head"><div class="eyebrow">PERSONALIZAR</div><h1>Modelos de rotina</h1><div class="subline">Aplique modelos prontos ou adapte suas metas sem apagar registros anteriores.</div></div>';
+ html+=panel('Dietas prontas',Object.entries(T.MEAL_TEMPLATES).map(([key,v])=>'<div class="listrow"><div class="content"><b>'+({emagrecer:'Emagrecimento',manter:'Manutenção',ganhar:'Hipertrofia'}[key])+'</b><small>'+num(v.goals.calories)+' kcal · P '+v.goals.protein+' g · C '+v.goals.carbs+' g · G '+v.goals.fat+' g</small></div>'+button(key===c.diet?'Aplicado':'Aplicar','apply-diet','small '+(key===c.diet?'secondary':''),'data-key="'+key+'"')+'</div>').join('')+'<div class="actions" style="margin-top:12px">'+button('Editar refeições e horários','edit-meals','small secondary')+button('Metas e preferências','settings','small secondary')+'</div>');
+ html+=panel('Modelos de musculação',['AB','ABC','ABCD'].map(x=>'<div class="listrow"><div class="content"><b>Divisão '+x+'</b><small>Exercícios, séries e repetições personalizáveis</small></div>'+button(x===c.split?'Aplicado':'Aplicar','apply-split','small '+(x===c.split?'secondary':''),'data-key="'+x+'"')+'</div>').join('')+'<div class="actions" style="margin-top:12px">'+button('Editar exercícios','edit-workout','small secondary')+button('Dias da semana','settings','small secondary')+'</div>');
+ html+=panel('Suplementos opcionais','<p class="muted small">Ative somente o que você já utiliza. Horário e quantidade são editáveis; nenhuma dose é prescrição.</p>'+T.state.supplements.map(s=>'<div class="listrow"><div class="content"><b>'+esc(s.name)+'</b><small>'+esc(s.dose)+' · '+esc(s.time)+'</small><small>'+esc(s.notes||'')+'</small></div><label class="small"><input class="check" type="checkbox" data-enable-supplement="'+esc(s.id)+'" '+(s.enabled?'checked':'')+' aria-label="Ativar '+esc(s.name)+'"></label>'+button('Editar','edit-supplement','small secondary','data-sid="'+esc(s.id)+'"')+'</div>').join('')+button('+ Personalizado','new-supplement','small secondary'));
+ html+=panel('Modelos de dia','<div class="actions">'+['treino','descanso','viagem'].map(k=>button(({treino:'Dia normal/treino',descanso:'Dia de descanso',viagem:'Viagem'}[k]),'apply-routine','small '+(c.routine===k?'':'secondary'),'data-key="'+k+'"')).join('')+'</div><p class="muted small" style="margin-top:11px">Os modelos de rotina ajustam o cronograma; as atividades registradas não serão apagadas.</p>');
+ return html;
+}
+function pageSettings(){
+ const c=T.state.config,g=c.goals,cloud=C.state();
+ let html='<div class="page-head"><div class="eyebrow">CONFIGURAÇÕES</div><h1>Ajustes</h1><div class="subline">Metas, horários, conta e segurança dos dados.</div></div>';
+ html+=panel('Metas e planejamento','<form data-form="settings"><div class="formgrid">'+[['calories','Calorias kcal'],['protein','Proteína g'],['carbs','Carboidratos g'],['fat','Gorduras g'],['water','Água ml'],['sleep','Sono h']].map(([key,label])=>'<div class="field"><label>'+label+'</label><input type="number" min="0" step="'+(key==='sleep'?'0.5':'1')+'" name="'+key+'" value="'+g[key]+'" required></div>').join('')+'<div class="field"><label>Início da sequência de treinos</label><input type="date" name="planStart" value="'+esc(c.planStart)+'"></div><div class="field"><label>Medidas — dia semanal (0=domingo)</label><select name="measureDay">'+['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'].map((d,i)=>'<option value="'+i+'" '+(c.measureDay==i?'selected':'')+'>'+d+'</option>').join('')+'</select></div></div><div class="divider-title">Dias de musculação</div><div class="actions">'+['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map((d,i)=>'<label class="pill"><input type="checkbox" name="train'+i+'" '+(c.trainingDays.includes(i)?'checked':'')+'>'+d+'</label>').join('')+'</div><div class="divider-title">Horários</div><div class="formgrid"><div class="field"><label>Primeira água</label><input type="time" name="wake" value="'+esc(c.times.wake)+'"></div><div class="field"><label>Preparar para dormir</label><input type="time" name="bed" value="'+esc(c.times.bed)+'"></div></div><button class="btn" style="margin-top:15px" type="submit">Salvar configurações</button></form>');
+ html+=panel('Minha nuvem',cloud.available?(cloud.connected?'<div class="tip">Conectado: '+esc(cloud.email)+'</div><p class="small muted" style="margin:12px 0">Status: '+(cloud.blocked?'Conflito entre aparelhos':cloud.enabled?'Sincronização automática ativa':'Sincronização ainda não ativada')+'. Os registros locais sempre são salvos primeiro.</p><div class="actions">'+button('Ativar / enviar','cloud-enable','small')+button('Baixar nuvem','cloud-download','small secondary')+button('Substituir nuvem','cloud-overwrite','small outline')+button('Sair da conta','cloud-logout','small secondary')+'</div>'+(cloud.error?'<p class="warning" style="margin-top:12px">'+esc(cloud.error)+'</p>':''):'<form data-form="login"><div class="field"><label>E-mail</label><input type="email" name="email" required autocomplete="email"></div><div class="field"><label>Senha</label><input type="password" name="password" minlength="6" required autocomplete="current-password"></div><div class="actions"><button class="btn" name="method" value="signin">Entrar</button><button class="btn secondary" name="method" value="signup">Criar conta</button></div></form>'):'<p class="warning">Serviço de autenticação temporariamente indisponível. Os registros locais continuam funcionando.</p>');
+ html+=panel('Backup e migração','<p class="muted small">Faça cópias antes de trocar de aparelho ou substituir versões.</p><div class="actions" style="margin-top:12px">'+button('Exportar backup JSON','export','small')+button('Importar backup','import','small secondary')+button('Importar versão 2.1','migrate','small secondary')+'</div><input id="backup-file" type="file" accept=".json,application/json" class="hidden"><div class="hr"></div><a href="./legacy.html">Abrir o TestoTrack anterior (v2.1)</a><p class="muted micro" style="margin-top:8px">A migração é opcional e não elimina o histórico da versão anterior.</p>');
+ return html;
+}
+function render(){
+ const pages={hoje:pageToday,diario:pageDiary,treinar:pageTrain,evolucao:pageEvolution,modelos:pageModels,ajustes:pageSettings};
+ T.$('app').innerHTML=(pages[tab]||pageToday)();
+ document.querySelectorAll('[data-go]').forEach(x=>x.classList.toggle('active',x.dataset.go===tab));
+ const status=C.state();const badge=T.$('sync-badge');
+ if(status.connected){badge.textContent=status.blocked?'Conflito':status.enabled?(status.busy?'Enviando…':'Nuvem ativa'):'Conectado';badge.className='sync-badge '+(status.blocked?'warn':status.enabled?'ok':'')}
+ else{badge.textContent=status.available?'Local':'Local offline';badge.className='sync-badge'}
+}
+window.TTUI={get date(){return selected},get tab(){return tab},get trainLetter(){return trainLetter},set trainLetter(v){trainLetter=v},go,render,toast,error,modal,close,MEASURES,button};
+T.toast=toast;
+document.querySelectorAll('[data-go]').forEach(el=>el.addEventListener('click',()=>go(el.dataset.go)));
+T.$('fab').addEventListener('click',()=>modal('Adicionar registro','<div class="stack">'+[['Refeição','add-food'],['Água','water-form'],['Sono','sleep-form'],['Medidas','measure-form'],['Suplementos','models'],['Cardio','cardio-form'],['Exame','exam-form']].map(x=>button(x[0],x[1],'full secondary')).join('')+'</div>'));
+window.addEventListener('tt:change',render);
+window.addEventListener('tt:loaded',render);
+window.addEventListener('tt:cloud',()=>{if(tab==='ajustes')render()});
+render();
+C.init().catch(error);
+if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+})();
