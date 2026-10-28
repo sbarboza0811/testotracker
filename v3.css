@@ -86,11 +86,10 @@
 @media(prefers-reduced-motion:reduce){.capture-spinner,.listening-dot{animation:none}}
 
 
-/* Alternative when the browser speech service fails: native keyboard dictation. */
-.capture-alternative{margin:10px 0 13px;padding:12px 14px;border-radius:13px;border:1px solid #3e594a;background:#20382d;color:#e4f2e4}
-.capture-alternative strong{display:block;font-size:13px;margin-bottom:4px}
-.capture-alternative p{font-size:12px;line-height:1.5;color:#c8ddc9;margin-bottom:9px}
-.capture-alternative .btn{width:100%;min-height:44px;background:#354f41;color:#effbea;border:1px solid #658b6b}
-.capture-alternative.voice-failed{border-color:#d7a25b;background:#423322}
-.capture-alternative.voice-failed .btn{background:#5a4831;border-color:#d6ab6e}
+
+/* Built-in audio recording (no keyboard dictation) */
+.btn.voice-capture[hidden]{display:none!important}
+.btn.voice-capture[data-action="voice-record-stop"]{background:#c34350;color:#fff;border-color:#d76c77}
+.capture-state[data-status="recording"]{color:#ffb3b8;font-weight:800}
+.capture-state[data-status="error"]{color:#ffd089;font-weight:650}
 .capture-state{line-height:1.55;min-height:47px;overflow-wrap:anywhere}
