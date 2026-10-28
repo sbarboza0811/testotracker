@@ -1,21 +1,44 @@
-# TestoTrack
+# TestoTrack 3.0
 
-PWA de acompanhamento pessoal de hábitos, sono, treino, alimentação e evolução de um protocolo de 12 semanas.
+PWA pessoal para acompanhar alimentação, treino, cronograma, sono, hidratação, suplementos e evolução.
 
-## Uso
+Aplicativo: https://sbarboza0811.github.io/testotracker/
 
-Abra `index.html` em um navegador para prévia local. Para instalar no Android e usar offline, publique este repositório via GitHub Pages (HTTPS).
+## Funcionalidades
+- **Hoje:** cronograma diário, tarefas, metas, hidratação rápida, marcadores de conclusão/ignorado.
+- **Diário:** refeição planejada ou livre por gramas, macros e fibras, água, suplementos e sono.
+- **Treinar:** fichas AB, ABC e ABCD editáveis, séries com carga/repetições, histórico, descanso e cardio.
+- **Evolução:** medidas corporais, tendência de peso, indicadores semanais e registro de exames.
+- **Modelos:** dietas de referência para objetivos diferentes; salvar e aplicar dieta personalizada; suplementos opcionais; modos de dia com treino, descanso e viagem.
+- **Ajustes:** metas, horários, dias de treino, backup JSON, autenticação e nuvem.
 
-### GitHub Pages
+Os dados nutricionais iniciais são **estimativas por 100 g**, para fins de planejamento. Verifique rótulos e tabelas confiáveis; modelos não substituem orientação nutricional, médica ou física.
 
-No GitHub, abra **Settings → Pages → Build and deployment → Source: Deploy from a branch**; selecione **main** e **/(root)** e salve. Depois acesse https://sbarboza0811.github.io/testotracker/ . O site pode levar alguns minutos para ficar disponível após a primeira publicação.
+## Dados e migração
+- V3 grava localmente no navegador com a chave `testotrack-v3-local-v1`.
+- A versão anterior está preservada em [legacy.html](legacy.html), com a chave original `testotrack-data-v1` intacta.
+- A migração v2 → v3 é **opcional** e não remove nem edita os dados v2, locais ou da tabela Supabase `user_snapshots`.
+- Para importar do aparelho: Ajustes → Importar versão 2.1.
+- Para importar da nuvem antiga: conecte sua conta e escolha Importar dados da versão 2.1 na área de migração.
+- Exporte backup JSON antes de trocar de aparelho, importar dados ou resolver conflitos.
 
-No Chrome para Android, abra o site e escolha **Instalar app** no menu do navegador.
+## Sincronização com Supabase
+- Supabase Auth por e-mail e senha.
+- Dados privados ficam na tabela `testotrack_v3`, com Row Level Security e política de posse por usuário.
+- A sincronização **não é ativada automaticamente**: entre na conta e escolha **Ativar/enviar** uma vez.
+- Após ativar, modificações são salvas imediatamente no aparelho e enviadas quando houver internet.
+- A sincronização usa revisão condicional para impedir que dois aparelhos sobrescrevam silenciosamente a mesma versão.
+- Caso haja conflito, faça backup e escolha qual conjunto de dados manter, explicitamente. Não existe mesclagem automática de registros conflitantes.
+- Os arquivos do aplicativo são públicos no GitHub, mas **nenhum dado pessoal, senha ou chave secreta** é gravado no repositório.
+- A chave Supabase no navegador é publishable, protegida pelas políticas RLS do banco.
 
-## Privacidade
+## Offline e lembretes
+- O shell do aplicativo e os registros locais funcionam offline após uma primeira abertura online. Login e sincronização precisam de internet.
+- Os lembretes opcionais só são disparados **enquanto o aplicativo estiver aberto**. Notificações push em segundo plano ainda não foram implementadas.
+- Recursos como leitura de código de barras, Health Connect e modelo corporal 3D ficam para versões futuras.
 
-Os dados inseridos no aplicativo ficam no armazenamento local do navegador deste dispositivo. **Não são enviados ao GitHub nem sincronizados entre aparelhos.** Use o botão de exportar backup para evitar perda de dados. Não inclua informações pessoais ou resultados médicos no código deste repositório público.
+## Segurança e saúde
+O aplicativo é um diário e uma ferramenta de planejamento. Não diagnostica deficiência hormonal, não recomenda doses individuais de suplementos nem substitui avaliação profissional.
 
-## Aviso
-
-Ferramenta educativa para registro de hábitos e resultados. Não substitui avaliação médica, não diagnostica deficiência hormonal nem garante aumento da testosterona.
+## Restauração
+A branch `backup-testotrack-v2-before-v3` preserva o código anterior à migração. A interface antiga também está em `legacy.html`.
