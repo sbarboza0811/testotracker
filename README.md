@@ -6,7 +6,7 @@ Aplicativo: https://sbarboza0811.github.io/testotracker/
 
 ## Funcionalidades
 - **Hoje:** cronograma diário com quantidades por tarefa (alimentos em gramas, água em ml, séries, suplementos e meta de sono), marcação visível de concluído/ignorado e registro direto da atividade.
-- **Diário:** refeição planejada ou livre por gramas, macros e fibras, água, suplementos e sono.
+- **Diário:** refeição planejada ou livre por gramas, macros e fibras, água, suplementos e sono. A busca externa identifica produtos industrializados pelo Open Food Facts (login no Supabase obrigatório), permite ditar o nome em navegadores compatíveis e confirma o rótulo antes de adicionar automaticamente ao catálogo pessoal. O registro completo de múltiplos alimentos por uma única fala ainda não está disponível.
 - **Treinar:** fichas AB, ABC e ABCD editáveis, séries com carga/repetições, histórico, descanso e cardio.
 - **Evolução:** medidas corporais, tendência de peso, indicadores semanais e registro de exames.
 - **Modelos:** todas as dietas no mesmo painel **Minhas dietas**, incluindo opções por objetivo e **três cardápios adicionais de 2.000, 2.250 e 2.500 kcal com patinho, ovos, sementes de abóbora e castanhas**; prévia por refeição, gramas e macros antes de aplicar; modelos personalizados e suplementos opcionais.
@@ -37,7 +37,7 @@ Os dados nutricionais iniciais são **estimativas por 100 g**, para fins de plan
 ## Offline e lembretes
 - O shell do aplicativo e os registros locais funcionam offline após uma primeira abertura online. Login e sincronização precisam de internet.
 - Os lembretes opcionais só são disparados **enquanto o aplicativo estiver aberto**. Notificações push em segundo plano ainda não foram implementadas.
-- Recursos como leitura de código de barras, Health Connect e modelo corporal 3D ficam para versões futuras.
+- Recursos como leitura de código de barras, reconhecimento inteligente de refeições inteiras em áudio, Health Connect e modelo corporal 3D ficam para versões futuras.
 
 ## Segurança e saúde
 O aplicativo é um diário e uma ferramenta de planejamento. Não diagnostica deficiência hormonal, não recomenda doses individuais de suplementos nem substitui avaliação profissional.
