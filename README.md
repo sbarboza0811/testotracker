@@ -9,7 +9,7 @@ Aplicativo: https://sbarboza0811.github.io/testotracker/
 - **Diário:** refeição planejada ou livre por gramas, macros e fibras, água, suplementos e sono.
 - **Treinar:** fichas AB, ABC e ABCD editáveis, séries com carga/repetições, histórico, descanso e cardio.
 - **Evolução:** medidas corporais, tendência de peso, indicadores semanais e registro de exames.
-- **Modelos:** dietas de referência para objetivos diferentes; salvar e aplicar dieta personalizada; suplementos opcionais; modos de dia com treino, descanso e viagem.
+- **Modelos:** dietas de referência para objetivos diferentes, **três cardápios adicionais de 2.000, 2.250 e 2.500 kcal com patinho, ovos, sementes de abóbora e castanhas**, com prévia por refeição, gramas e macros antes de aplicar; salvar e aplicar dieta personalizada; suplementos opcionais; modos de dia com treino, descanso e viagem.
 - **Ajustes:** metas, horários, dias de treino, backup JSON, autenticação e nuvem.
 
 Os dados nutricionais iniciais são **estimativas por 100 g**, para fins de planejamento. Verifique rótulos e tabelas confiáveis; modelos não substituem orientação nutricional, médica ou física.
