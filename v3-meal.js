@@ -97,19 +97,20 @@ function mealChoices(selected){
 }
 function open(slot,autoMic=false,text=''){
  requestId++;draft=null;inputSlot=slot||slotForNow();inputText=text;
+ const android=/Android/i.test(window.navigator?.userAgent||'');
  U.modal('Registrar alimentação',
  '<div class="capture-intro"><span class="capture-round">🎙</span><h3>O que você comeu?</h3><p>Fale tudo de uma vez. Você confere antes de salvar.</p></div>'+
  '<form data-form="meal-text"><div class="field capture-select"><label>Em qual refeição?</label><select name="slot">'+mealChoices(inputSlot)+'</select></div>'+
- '<div class="capture-action">'+action('🎙 Reconhecer minha voz','voice-meal','voice-capture')+'</div>'+
+ '<div class="capture-action">'+(android?action('⌨ Ditar pelo teclado do celular','voice-keyboard','voice-capture'):action('🎙 Reconhecer minha voz','voice-meal','voice-capture'))+'</div>'+
  '<div class="capture-state" id="capture-state" role="status" aria-live="polite">Toque no botão acima e fale naturalmente.</div>'+
  '<div class="capture-alternative"><strong>Se o reconhecimento não funcionar:</strong><p>Use o ditado do teclado do celular, que costuma ser mais compatível com Android.</p>'+
- action('⌨ Abrir teclado para ditar','voice-keyboard','small secondary')+'</div>'+
+ (android?action('🎙 Tentar reconhecimento automático','voice-meal','small secondary'):action('⌨ Abrir teclado para ditar','voice-keyboard','small secondary'))+'</div>'+
  '<div class="capture-example">Ex.: “200 gramas de patinho, 150 gramas de arroz e um Monster”</div>'+
  '<details class="capture-type" '+(autoMic?'':'open')+'><summary>Texto da refeição (você pode corrigir)</summary>'+
  '<div class="field"><label>O que consumi</label><textarea name="description" rows="3" maxlength="550" enterkeyhint="done" placeholder="Dite pelo microfone do teclado ou digite aqui" required>'+esc(text)+'</textarea></div>'+
  '<button type="submit" class="btn full">Analisar alimentos</button></details></form>'+
  '<p class="micro muted" style="margin-top:12px">A voz depende das permissões e do navegador. Seus registros não são alterados até você confirmar.</p>');
- if(autoMic)listen();
+ if(autoMic)(android?keyboardVoice():listen());
 }
 function keyboardVoice(){
  try{recognition?.abort()}catch{}
