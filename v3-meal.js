@@ -81,44 +81,98 @@ function mealChoices(selected){
 function open(slot,autoMic=false,text=''){
  requestId++;draft=null;inputSlot=slot||slotForNow();inputText=text;
  U.modal('Registrar alimentação',
- '<div class="capture-intro"><span class="capture-round">🎙</span><h3>O que você comeu?</h3><p>Fale tudo de uma vez. Vou separar os alimentos e calcular as quantidades.</p></div>'+
+ '<div class="capture-intro"><span class="capture-round">🎙</span><h3>O que você comeu?</h3><p>Fale tudo de uma vez. Você confere antes de salvar.</p></div>'+
  '<form data-form="meal-text"><div class="field capture-select"><label>Em qual refeição?</label><select name="slot">'+mealChoices(inputSlot)+'</select></div>'+
- '<div class="capture-action">'+action('🎙 Começar a falar','voice-meal','voice-capture')+'</div>'+
- '<div class="capture-state" id="capture-state" role="status" aria-live="polite">Toque no microfone e fale naturalmente.</div>'+
- '<div class="capture-example">Exemplo: “200 g de patinho, 150 g de arroz e 1 lata de Monster”</div>'+
- '<details class="capture-type" '+(autoMic?'':'open')+'><summary>Prefiro digitar ou corrigir o texto</summary>'+
- '<div class="field"><label>Minha refeição</label><textarea name="description" rows="3" maxlength="550" placeholder="Digite todos os alimentos e as quantidades" required>'+esc(text)+'</textarea></div>'+
- '<button type="submit" class="btn full">Continuar para conferir</button></details></form>'+
- '<p class="micro muted" style="margin-top:12px">Você sempre confirma antes de registrar. O microfone depende do navegador.</p>');
+ '<div class="capture-action">'+action('🎙 Reconhecer minha voz','voice-meal','voice-capture')+'</div>'+
+ '<div class="capture-state" id="capture-state" role="status" aria-live="polite">Toque no botão acima e fale naturalmente.</div>'+
+ '<div class="capture-alternative"><strong>Se o reconhecimento não funcionar:</strong><p>Use o ditado do teclado do celular, que costuma ser mais compatível com Android.</p>'+
+ action('⌨ Abrir teclado para ditar','voice-keyboard','small secondary')+'</div>'+
+ '<div class="capture-example">Ex.: “200 gramas de patinho, 150 gramas de arroz e um Monster”</div>'+
+ '<details class="capture-type" '+(autoMic?'':'open')+'><summary>Texto da refeição (você pode corrigir)</summary>'+
+ '<div class="field"><label>O que consumi</label><textarea name="description" rows="3" maxlength="550" enterkeyhint="done" placeholder="Dite pelo microfone do teclado ou digite aqui" required>'+esc(text)+'</textarea></div>'+
+ '<button type="submit" class="btn full">Analisar alimentos</button></details></form>'+
+ '<p class="micro muted" style="margin-top:12px">A voz depende das permissões e do navegador. Seus registros não são alterados até você confirmar.</p>');
  if(autoMic)listen();
+}
+function keyboardVoice(){
+ try{recognition?.abort()}catch{}
+ const details=document.querySelector('.capture-type'),form=document.querySelector('form[data-form="meal-text"]');
+ if(details)details.open=true;
+ const field=form?.elements?.description;
+ if(field){field.focus();field.setSelectionRange?.(field.value.length,field.value.length);}
+ const state=document.getElementById('capture-state');
+ if(state)state.textContent='O teclado foi aberto. Toque no microfone do teclado Samsung/Gboard, dite a refeição e pressione “Analisar alimentos”.';
 }
 function listen(){
  const Speech=window.SpeechRecognition||window.webkitSpeechRecognition;
  const status=document.getElementById('capture-state');
- if(!Speech){
-  if(status)status.textContent='O reconhecimento de voz não está disponível neste navegador. Abra “Prefiro digitar” e use o microfone do teclado, se houver.';
-  document.querySelector('.capture-type')?.setAttribute('open','');
-  U.toast('Use o microfone do teclado ou digite a refeição.');
-  return;
- }
+ if(!Speech){if(status)status.textContent='Este navegador não oferece o reconhecimento automático. Use o botão do teclado logo abaixo.';keyboardVoice();return;}
  try{recognition?.abort()}catch{}
- const rec=new Speech();recognition=rec;rec.lang='pt-BR';rec.interimResults=false;rec.maxAlternatives=1;rec.continuous=false;
- rec.onstart=()=>{const el=document.getElementById('capture-state');if(el)el.innerHTML='<span class="listening-dot"></span> Ouvindo… fale sua refeição inteira.';};
- rec.onresult=ev=>{
-  const value=String(ev.results?.[0]?.[0]?.transcript||'').trim();
-  const form=document.querySelector('form[data-form="meal-text"]');
-  if(!form||!value)return;
-  form.elements.description.value=value;
-  inputText=value;inputSlot=form.elements.slot.value;
-  form.requestSubmit();
- };
- rec.onerror=ev=>{
+ let submitted=false,recognized='',error='',heard=false;
+ const rec=new Speech();recognition=rec;
+ rec.lang='pt-BR';rec.interimResults=true;rec.maxAlternatives=1;rec.continuous=false;
+ rec.onstart=()=>{
   const el=document.getElementById('capture-state');
-  if(el)el.textContent='Não consegui reconhecer ('+(ev.error||'erro')+'). Tente novamente ou digite.';
-  document.querySelector('.capture-type')?.setAttribute('open','');
+  if(el)el.innerHTML='<span class="listening-dot"></span> Microfone ativo. Pode falar sua refeição.';
  };
- rec.onend=()=>{recognition=null;};
- try{rec.start()}catch(e){if(status)status.textContent='Microfone indisponível. Use o teclado.';document.querySelector('.capture-type')?.setAttribute('open','');}
+ rec.onaudiostart=()=>{heard=true;};
+ rec.onresult=event=>{
+  let transcript='';
+  for(let i=0;i<event.results.length;i++) transcript+=String(event.results[i]?.[0]?.transcript||'')+' ';
+  transcript=transcript.trim();
+  if(!transcript)return;
+  recognized=transcript;
+  const form=document.querySelector('form[data-form="meal-text"]');
+  if(!form)return;
+  form.elements.description.value=transcript;
+  inputText=transcript;inputSlot=form.elements.slot.value;
+  const el=document.getElementById('capture-state');
+  if(el)el.textContent='Entendi: “'+transcript.slice(0,140)+'”';
+  const latest=event.results[event.results.length-1];
+  if(latest?.isFinal){
+   // Final results are already available; submit before the browser ends recognition.
+   submitSpeech();
+  }
+ };
+ function submitSpeech(){
+  if(submitted||!recognized.trim())return;
+  const form=document.querySelector('form[data-form="meal-text"]');
+  if(!form)return;
+  submitted=true;
+  try{rec.stop()}catch{}
+  form.requestSubmit();
+ }
+ rec.onerror=event=>{
+  error=event.error||'unknown';
+  const el=document.getElementById('capture-state');
+  const messages={
+   'not-allowed':'O acesso ao microfone foi negado. Autorize o microfone nas permissões do navegador.',
+   'service-not-allowed':'O serviço de reconhecimento de voz está bloqueado neste navegador.',
+   'audio-capture':'O navegador não conseguiu acessar o microfone. Verifique a permissão e se outro app está usando o áudio.',
+   'no-speech':'Não foi possível detectar fala. Tente falar mais perto do microfone.',
+   'network':'O serviço de reconhecimento do navegador está indisponível ou sem conexão.',
+   'language-not-supported':'O idioma português não está disponível no reconhecimento deste navegador.',
+   'aborted':'A gravação foi interrompida.'
+  };
+  if(el)el.textContent=messages[error]||'Não foi possível reconhecer a fala ('+error+').';
+  document.querySelector('.capture-type')?.setAttribute('open','');
+  const alternative=document.querySelector('.capture-alternative');
+  if(alternative)alternative.classList.add('voice-failed');
+ };
+ rec.onend=()=>{
+  if(recognition===rec)recognition=null;
+  if(!submitted&&recognized.trim()){submitSpeech();return;}
+  if(!recognized&&!error){
+   const el=document.getElementById('capture-state');
+   if(el)el.textContent=heard?'A gravação terminou sem transcrição. Use o microfone do teclado abaixo.':'O reconhecimento terminou antes de captar a fala. Use o microfone do teclado abaixo.';
+  }
+ };
+ try{rec.start()}catch(e){
+  error='start';
+  if(status)status.textContent='Não consegui iniciar o reconhecimento automático. Use o microfone do teclado abaixo.';
+  const alternative=document.querySelector('.capture-alternative');
+  if(alternative)alternative.classList.add('voice-failed');
+ }
 }
 function pick(row){return row.options[row.selected]||null;}
 function choosePreferred(row){
@@ -217,6 +271,7 @@ document.addEventListener('click',event=>{
   if(a==='meal-speak'){open(btn.dataset.slot,true);return}
   if(a==='meal-text'){open(btn.dataset.slot,false);return}
   if(a==='voice-meal'){listen();return}
+  if(a==='voice-keyboard'){keyboardVoice();return}
   if(a==='meal-back'){open(draft?.slot,false,draft?.description||inputText);return}
   if(a==='meal-drop'&&draft){draft.rows.splice(Number(btn.dataset.index),1);review();return}
   if(a==='meal-retry'){retry(Number(btn.dataset.index)).catch(U.error);return}
