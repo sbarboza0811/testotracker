@@ -103,7 +103,7 @@ function captureStatus(message,kind=''){
 function captureButtons(recording){
  const start=document.querySelector('[data-action="voice-record-start"]'),stop=document.querySelector('[data-action="voice-record-stop"]');
  if(start)start.hidden=!!recording;
- if(stop)stop.hidden=!recording;
+ if(stop){stop.hidden=!recording;stop.disabled=false;}
 }
 function releaseMicrophone(){
  if(audioTimer){clearTimeout(audioTimer);audioTimer=null;}
@@ -280,8 +280,10 @@ async function retry(i){
  }catch(err){row.problem=err?.message||'Falha na pesquisa.';review();}
 }
 window.TTMealOpen=(mode='speak',slot)=>open(slot,mode==='speak');
+window.addEventListener('pagehide',cancelAudio);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelAudio()});
 document.addEventListener('click',event=>{
- const btn=event.target.closest('button[data-action]');if(!btn)return;
+ const btn=event.target.closest('button[data-action], [data-action="close"]');if(!btn)return;
  const a=btn.dataset.action;
  try{
   if(a==='close'){cancelAudio();return}
