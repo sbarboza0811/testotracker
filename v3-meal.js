@@ -62,122 +62,175 @@ function amount(item,food){
 window.TTMeal={parse,local,amount,norm};
 })();
 
+
 (function(){
 'use strict';
 const T=window.TT,U=window.TTUI,C=window.TTCloud,M=window.TTMeal;
 if(!T||!U||!M)return;
-let draft=null,requestId=0,recognition=null;
+let draft=null,requestId=0,recognition=null,inputSlot='',inputText='';
 const esc=T.esc,fmt=T.money;
-const action=(label,name,extra='')=>U.button(label,name,'small secondary',extra);
-function optionHtml(food){return esc(food.name+(food.brand?' · '+food.brand:'')+(food.packageQuantity?' · '+food.packageQuantity:''));}
-function start(slot){
- draft=null;requestId++;
- const meals=T.state.mealPlans,chosen=slot||meals[0]?.id;
- U.modal('Registrar refeição por voz ou texto',
- '<p class="muted small">Diga tudo o que comeu e quanto consumiu. Você confere os resultados antes de salvar.</p>'+
- '<form data-form="meal-text"><div class="field"><label>Refeição</label><select name="slot">'+meals.map(x=>'<option value="'+esc(x.id)+'" '+(x.id===chosen?'selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></div>'+
- '<div class="field"><label>O que você consumiu?</label><textarea name="description" rows="4" maxlength="550" required placeholder="Comi 200 g de patinho, 150 g de arroz e tomei um Monster"></textarea></div>'+
- '<div class="actions"><button type="submit" class="btn">Analisar refeição</button>'+action('🎤 Falar refeição','voice-meal')+'</div></form>'+
- '<p class="muted micro" style="margin-top:12px">O ditado depende do navegador e requer permissão para o microfone. Nenhum alimento é salvo automaticamente.</p>');
+const action=(label,name,variant='small secondary',attrs='')=>U.button(label,name,variant,attrs);
+function slotForNow(){
+ const hour=new Date().getHours();
+ const chosen=hour<11?'cafe':hour<15?'almoco':hour<19?'lanche':'jantar';
+ return T.state.mealPlans.some(x=>x.id===chosen)?chosen:T.state.mealPlans[0]?.id;
 }
-function dictate(){
+function mealChoices(selected){
+ return T.state.mealPlans.map(x=>'<option value="'+esc(x.id)+'" '+(x.id===selected?'selected':'')+'>'+esc(x.name)+'</option>').join('');
+}
+function open(slot,autoMic=false,text=''){
+ requestId++;draft=null;inputSlot=slot||slotForNow();inputText=text;
+ U.modal('Registrar alimentação',
+ '<div class="capture-intro"><span class="capture-round">🎙</span><h3>O que você comeu?</h3><p>Fale tudo de uma vez. Vou separar os alimentos e calcular as quantidades.</p></div>'+
+ '<form data-form="meal-text"><div class="field capture-select"><label>Em qual refeição?</label><select name="slot">'+mealChoices(inputSlot)+'</select></div>'+
+ '<div class="capture-action">'+action('🎙 Começar a falar','voice-meal','voice-capture')+'</div>'+
+ '<div class="capture-state" id="capture-state" role="status" aria-live="polite">Toque no microfone e fale naturalmente.</div>'+
+ '<div class="capture-example">Exemplo: “200 g de patinho, 150 g de arroz e 1 lata de Monster”</div>'+
+ '<details class="capture-type" '+(autoMic?'':'open')+'><summary>Prefiro digitar ou corrigir o texto</summary>'+
+ '<div class="field"><label>Minha refeição</label><textarea name="description" rows="3" maxlength="550" placeholder="Digite todos os alimentos e as quantidades" required>'+esc(text)+'</textarea></div>'+
+ '<button type="submit" class="btn full">Continuar para conferir</button></details></form>'+
+ '<p class="micro muted" style="margin-top:12px">Você sempre confirma antes de registrar. O microfone depende do navegador.</p>');
+ if(autoMic)listen();
+}
+function listen(){
  const Speech=window.SpeechRecognition||window.webkitSpeechRecognition;
- if(!Speech)throw Error('Reconhecimento de voz não disponível neste navegador. Use o texto.');
- recognition=new Speech();recognition.lang='pt-BR';recognition.interimResults=false;recognition.maxAlternatives=1;
- recognition.onresult=event=>{
-  const phrase=String(event.results?.[0]?.[0]?.transcript||'').trim();
-  const f=document.querySelector('form[data-form="meal-text"]');
-  if(f&&phrase){f.elements.description.value=phrase;f.requestSubmit();}
+ const status=document.getElementById('capture-state');
+ if(!Speech){
+  if(status)status.textContent='O reconhecimento de voz não está disponível neste navegador. Abra “Prefiro digitar” e use o microfone do teclado, se houver.';
+  document.querySelector('.capture-type')?.setAttribute('open','');
+  U.toast('Use o microfone do teclado ou digite a refeição.');
+  return;
+ }
+ try{recognition?.abort()}catch{}
+ const rec=new Speech();recognition=rec;rec.lang='pt-BR';rec.interimResults=false;rec.maxAlternatives=1;rec.continuous=false;
+ rec.onstart=()=>{const el=document.getElementById('capture-state');if(el)el.innerHTML='<span class="listening-dot"></span> Ouvindo… fale sua refeição inteira.';};
+ rec.onresult=ev=>{
+  const value=String(ev.results?.[0]?.[0]?.transcript||'').trim();
+  const form=document.querySelector('form[data-form="meal-text"]');
+  if(!form||!value)return;
+  form.elements.description.value=value;
+  inputText=value;inputSlot=form.elements.slot.value;
+  form.requestSubmit();
  };
- recognition.onerror=ev=>U.toast('Não consegui reconhecer a voz ('+(ev.error||'erro')+'). Digite a refeição.');
- recognition.start();U.toast('Fale sua refeição.');
+ rec.onerror=ev=>{
+  const el=document.getElementById('capture-state');
+  if(el)el.textContent='Não consegui reconhecer ('+(ev.error||'erro')+'). Tente novamente ou digite.';
+  document.querySelector('.capture-type')?.setAttribute('open','');
+ };
+ rec.onend=()=>{recognition=null;};
+ try{rec.start()}catch(e){if(status)status.textContent='Microfone indisponível. Use o teclado.';document.querySelector('.capture-type')?.setAttribute('open','');}
 }
-function chosen(row){return row.options[row.selected]||null;}
-function refresh(){
+function pick(row){return row.options[row.selected]||null;}
+function choosePreferred(row){
+ const options=row.options,q=M.norm(row.parsed.term);
+ if(!options.length){row.selected=-1;return}
+ if(options.length===1){row.selected=0;return}
+ const exact=options.map((x,i)=>({i,name:M.norm(x.name)})).filter(x=>x.name===q);
+ row.selected=exact.length===1?exact[0].i:-1;
+}
+function recalc(row){
+ const portion=M.amount(row.parsed,pick(row));row.amount=portion.value;row.note=portion.note;
+}
+function review(){
  if(!draft)return;
- const meals=T.state.mealPlans;
- const lines=draft.rows.map((r,i)=>{
-  const food=chosen(r),calc=T.calc(food,r.amount||0);
-  const opts=r.options.map((f,j)=>'<option value="'+j+'" '+(j===r.selected?'selected':'')+'>'+optionHtml(f)+'</option>').join('');
-  return '<div class="listrow" style="align-items:flex-start"><div class="content" style="min-width:0">'+
-   '<div class="right"><b>'+esc(r.parsed.original)+'</b>'+action('Excluir','meal-drop','data-index="'+i+'"')+'</div>'+
-   '<div class="field"><label>Produto identificado</label>'+(r.options.length?
-     '<select data-meal-select="'+i+'"><option value="-1" '+(r.selected<0?'selected':'')+'>Escolha a opção correta</option>'+opts+'</select>':
-     '<p class="warning small">Não encontrado. Exclua este item e registre-o manualmente.</p>')+'</div>'+
-   (r.problem?'<p class="warning small">'+esc(r.problem)+'</p>':'')+
-   '<div class="formgrid"><div class="field"><label>Quantidade em '+esc(food?.unit||'g ou ml')+'</label><input type="number" min="1" max="5000" step="1" data-meal-quantity="'+i+'" value="'+(r.amount||'')+'" placeholder="Informe a quantidade"></div>'+
-   '<div class="field"><label>Energia</label><div class="kpi">'+fmt(calc.kcal)+' kcal</div></div></div>'+
-   (r.note?'<small class="warning">'+esc(r.note)+'</small>':'')+
-   (food?'<small>P '+fmt(calc.p,1)+' g · C '+fmt(calc.c,1)+' g · G '+fmt(calc.f,1)+' g</small>':'')+
-   '</div></div>';
+ const ready=draft.rows.length>0&&draft.rows.every(r=>pick(r)&&Number(r.amount)>0&&Number(r.amount)<=5000);
+ const total=T.sum(draft.rows.map(r=>T.calc(pick(r),r.amount||0)));
+ const awaiting=draft.rows.filter(r=>!pick(r)||!(r.amount>0)).length;
+ const rows=draft.rows.map((r,i)=>{
+  const food=pick(r),values=T.calc(food,r.amount||0);
+  const choices=r.options.length>1?'<div class="field"><label>'+(food?'Trocar produto ou versão':'Selecione o produto correto')+'</label><select data-meal-select="'+i+'"><option value="-1" '+(r.selected<0?'selected':'')+'>Escolher produto…</option>'+
+    r.options.map((f,j)=>'<option value="'+j+'" '+(j===r.selected?'selected':'')+'>'+esc(f.name+(f.brand?' · '+f.brand:'')+(f.packageQuantity?' · '+f.packageQuantity:''))+'</option>').join('')+'</select></div>':'';
+  const issue=r.problem?'<p class="micro" style="color:var(--warn)">'+esc(r.problem)+'</p>':'';
+  return '<article class="review-food"><div class="review-food-top"><div class="review-food-number">'+(i+1)+'</div><div class="review-food-name"><strong>'+esc(food?.name||r.parsed.term)+'</strong><small>'+
+   (food?(food.brand?esc(food.brand)+' · ':'')+fmt(food.kcal,1)+' kcal/100 '+esc(food.unit||'g'):'Ainda precisa identificar o alimento')+'</small></div>'+
+   action('✕','meal-drop','small outline','data-index="'+i+'"')+'</div>'+
+   choices+issue+
+   (!r.options.length?'<div class="actions">'+action('Buscar outro nome','meal-retry','small secondary','data-index="'+i+'"')+action('Cadastro manual','new-food','small outline')+'</div>':'')+
+   '<div class="review-food-stats"><div class="field"><label>Quantidade ('+esc(food?.unit||'g/ml')+')</label><input type="number" inputmode="decimal" min="1" max="5000" step="1" data-meal-quantity="'+i+'" value="'+(r.amount||'')+'" placeholder="Quantidade"></div>'+
+   '<div class="review-energy"><strong>'+fmt(values.kcal)+' kcal</strong><small>P '+fmt(values.p,1)+' · C '+fmt(values.c,1)+' · G '+fmt(values.f,1)+'</small></div></div>'+
+   (r.note?'<p class="review-note">'+esc(r.note)+'</p>':'')+
+   '</article>';
  }).join('');
- const total=T.sum(draft.rows.map(r=>T.calc(chosen(r),r.amount||0)));
- const ready=draft.rows.length&&draft.rows.every(r=>chosen(r)&&Number(r.amount)>0&&Number(r.amount)<=5000);
- U.modal('Conferir refeição',
- '<p class="muted small">Confira as quantidades e os produtos. Valores nutricionais externos podem conter erros.</p>'+
- '<div class="field"><label>Refeição</label><select data-meal-slot>'+meals.map(x=>'<option value="'+esc(x.id)+'" '+(x.id===draft.slot?'selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></div>'+
- lines+
- '<section class="panel soft"><b>Total estimado: '+fmt(total.kcal)+' kcal</b><p class="muted small">Proteínas '+fmt(total.p,1)+' g · Carboidratos '+fmt(total.c,1)+' g · Gorduras '+fmt(total.f,1)+' g</p></section>'+
- '<form data-form="meal-save" style="margin-top:12px"><button type="submit" class="btn full" '+(ready?'':'disabled')+'>Salvar '+draft.rows.length+' alimentos de uma vez</button></form>'+
- (!ready?'<p class="warning small" style="margin-top:9px">Selecione todos os produtos e informe as quantidades antes de salvar.</p>':'')+
- '<div style="margin-top:12px">'+action('Recomeçar','meal-reset')+'</div>');
+ U.modal('Confira sua refeição',
+ '<div class="review-head"><div><span class="eyebrow">PASSO FINAL</span><h3>'+draft.rows.length+' alimento(s) identificado(s)</h3><small class="muted">Só falta conferir antes de salvar.</small></div><span class="pill '+(ready?'good':'bad')+'">'+(ready?'Tudo pronto':awaiting+' para revisar')+'</span></div>'+
+ '<div class="field"><label>Refeição</label><select data-meal-slot>'+mealChoices(draft.slot)+'</select></div>'+
+ rows+
+ '<div class="review-total"><div><small>CALORIAS DA REFEIÇÃO</small><h2>'+fmt(total.kcal)+' kcal</h2><span>P '+fmt(total.p,1)+'g · C '+fmt(total.c,1)+'g · G '+fmt(total.f,1)+'g</span></div></div>'+
+ '<form data-form="meal-save"><button type="submit" class="btn full review-save" '+(ready?'':'disabled')+'>✓ Salvar refeição</button></form>'+
+ (!ready?'<p class="muted small" style="margin-top:9px">Corrija os produtos e quantidades destacados para liberar o salvamento.</p>':'')+
+ '<div class="review-footer">'+action('← Corrigir o que falei','meal-back','small secondary')+'</div>');
 }
-async function analyze(text,slot){
- const parsed=M.parse(text),seq=++requestId;
- document.getElementById('modal-body').innerHTML='<p id="meal-loading">Identificando '+parsed.length+' alimentos…</p>';
+async function analyze(description,slot){
+ const parsed=M.parse(description),seq=++requestId;
+ inputText=description;inputSlot=slot;
+ const body=document.getElementById('modal-body');
+ if(body)body.innerHTML='<div class="capture-wait" id="meal-loading"><span class="capture-spinner"></span><h3>Entendendo sua refeição…</h3><p>'+parsed.length+' alimento(s) identificados. Consultando o catálogo quando necessário.</p></div>';
  const rows=parsed.map(item=>{
-  const options=M.local(item.term,T.state.foods);
-  const selected=options.length===1?0:-1,portion=M.amount(item,options[selected]);
-  return {parsed:item,options,selected,amount:portion.value,note:portion.note,problem:''};
+   const options=M.local(item.term,T.state.foods);
+   const row={parsed:item,options,selected:-1,amount:0,note:'',problem:''};
+   choosePreferred(row);recalc(row);return row;
  });
- const unresolved=rows.filter(row=>!row.options.length);
- await Promise.all(unresolved.slice(0,5).map(async row=>{
+ const missing=rows.filter(r=>!r.options.length);
+ await Promise.all(missing.slice(0,5).map(async row=>{
   try{
    const found=await C.searchFoods(row.parsed.term);
-   if(found.length){row.options=found.slice(0,10);row.selected=found.length===1?0:-1;
-    const portion=M.amount(row.parsed,chosen(row));row.amount=portion.value;row.note=portion.note;}
-   else row.problem='A busca online não encontrou o alimento com nutrientes suficientes.';
-  }catch(err){row.problem=err?.message||'Pesquisa externa indisponível.';}
+   if(found.length){row.options=found.slice(0,10);choosePreferred(row);recalc(row);}
+   else row.problem='Não encontrei a informação nutricional. Pesquise por nome ou marca.';
+  }catch(err){row.problem=err?.message||'Consulta externa indisponível.';}
  }));
- unresolved.slice(5).forEach(r=>r.problem='Limite de cinco buscas por refeição. Registre os demais separadamente.');
+ missing.slice(5).forEach(r=>r.problem='Limite de cinco buscas externas por refeição.');
  if(seq!==requestId||!document.getElementById('meal-loading'))return;
- draft={slot,rows};refresh();
+ draft={slot,rows,description};review();
 }
-document.addEventListener('click',ev=>{
- const b=ev.target.closest('button[data-action]');if(!b)return;
- const a=b.dataset.action;
+async function retry(i){
+ if(!draft?.rows[i])return;
+ const row=draft.rows[i],name=prompt('Busque pelo nome exato e marca do produto:',row.parsed.term);
+ if(!name?.trim())return;
+ const seq=++requestId;U.toast('Buscando alimento…');
  try{
-  if(a==='meal-text'){start(b.dataset.slot);return;}
-  if(a==='voice-meal'){dictate();return;}
-  if(a==='meal-reset'){start(draft?.slot);return;}
-  if(a==='meal-drop'&&draft){draft.rows.splice(Number(b.dataset.index),1);refresh();return;}
+  const found=await C.searchFoods(name.trim());
+  if(seq!==requestId)return;
+  row.options=found.slice(0,10);row.problem=found.length?'':'Não encontrei o produto. Você pode excluir este item e cadastrar manualmente.';
+  choosePreferred(row);recalc(row);review();
+ }catch(err){row.problem=err?.message||'Falha na pesquisa.';review();}
+}
+window.TTMealOpen=(mode='speak',slot)=>open(slot,mode==='speak');
+document.addEventListener('click',event=>{
+ const btn=event.target.closest('button[data-action]');if(!btn)return;
+ const a=btn.dataset.action;
+ try{
+  if(a==='meal-speak'){open(btn.dataset.slot,true);return}
+  if(a==='meal-text'){open(btn.dataset.slot,false);return}
+  if(a==='voice-meal'){listen();return}
+  if(a==='meal-back'){open(draft?.slot,false,draft?.description||inputText);return}
+  if(a==='meal-drop'&&draft){draft.rows.splice(Number(btn.dataset.index),1);review();return}
+  if(a==='meal-retry'){retry(Number(btn.dataset.index)).catch(U.error);return}
  }catch(err){U.error(err);}
 });
-document.addEventListener('change',ev=>{
- const t=ev.target;if(!draft)return;
- if(t.matches('[data-meal-select]')){
-  const row=draft.rows[Number(t.dataset.mealSelect)];
-  if(!row)return;row.selected=Number(t.value);
-  const portion=M.amount(row.parsed,chosen(row));
-  row.amount=portion.value;row.note=portion.note;refresh();
- }else if(t.matches('[data-meal-quantity]')){
-  const row=draft.rows[Number(t.dataset.mealQuantity)];
-  if(!row)return;row.amount=Number(t.value);row.note='';refresh();
- }else if(t.matches('[data-meal-slot]'))draft.slot=t.value;
+document.addEventListener('change',event=>{
+ const el=event.target;if(!draft)return;
+ if(el.matches('[data-meal-select]')){
+  const row=draft.rows[Number(el.dataset.mealSelect)];
+  if(!row)return;row.selected=Number(el.value);recalc(row);review();
+ }else if(el.matches('[data-meal-quantity]')){
+  const row=draft.rows[Number(el.dataset.mealQuantity)];
+  if(!row)return;row.amount=Number(el.value);row.note='';review();
+ }else if(el.matches('[data-meal-slot]'))draft.slot=el.value;
 });
-document.addEventListener('submit',async ev=>{
- const f=ev.target,kind=f.dataset.form;
- if(kind!=='meal-text'&&kind!=='meal-save')return;
- ev.preventDefault();
+document.addEventListener('submit',async event=>{
+ const form=event.target,kind=form.dataset.form;
+ if(!['meal-text','meal-save'].includes(kind))return;
+ event.preventDefault();
  try{
   if(kind==='meal-text'){
-   const fd=new FormData(f);
-   await analyze(String(fd.get('description')||''),String(fd.get('slot')||''));
+   const values=new FormData(form);
+   await analyze(String(values.get('description')||''),String(values.get('slot')||''));
   }else{
-   if(!draft?.rows.length)throw Error('Nenhum alimento selecionado.');
-   const rows=draft.rows.map(r=>({food:chosen(r),amount:r.amount}));
-   const saved=T.addMealBatch(U.date,draft.slot,rows);
-   draft=null;requestId++;U.close();U.toast(saved.length+' alimentos registrados com sucesso!');
+   if(!draft?.rows.length)throw Error('Inclua ao menos um alimento.');
+   const items=draft.rows.map(r=>({food:pick(r),amount:r.amount}));
+   const registered=T.addMealBatch(U.date,draft.slot,items);
+   draft=null;requestId++;U.close();U.toast('✓ '+registered.length+' alimentos salvos na refeição!');
+   U.go('diario');
   }
  }catch(err){U.error(err);}
 });
