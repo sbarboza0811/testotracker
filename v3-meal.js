@@ -19,7 +19,7 @@ function parse(transcript){
  if(parts.length>12)throw Error('Registre no máximo 12 alimentos por vez.');
  return parts.map(raw=>{
    const phrase=clean(raw);
-   const match=phrase.match(/^(\d+(?:[.,]\d+)?|um|uma|dois|duas|três|tres|quatro|cinco|meio|meia)\s*(quilo(?:grama)?s?|kg|gramas?|g|mililitros?|ml|litros?|latas?|garrafas?|copos?|unidades?|porções?|l)?\s*(?:de|do|da|dos|das)?\s*(.*)$/i);
+   const match=phrase.match(/^(\d+(?:[.,]\d+)?|um|uma|dois|duas|três|tres|quatro|cinco|meio|meia)\s*(quilo(?:grama)?s?|kg|gramas?|g|mililitros?|ml|litros?|latas?|garrafas?|copos?|unidades?|porções?|l)?(?=\s|$)\s*(?:de|do|da|dos|das)?\s*(.*)$/i);
    let qty=null,unit='',name=phrase;
    if(match){
       qty=wordNums[norm(match[1])]??Number(match[1].replace(',','.'));
