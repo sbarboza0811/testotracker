@@ -103,7 +103,18 @@ function plannedMacros(slot){const plan=state.mealPlans.find(x=>x.id===slot);ret
 function addFood(s,slot,foodId,grams){const f=foodById(foodId);if(!f)throw Error('Alimento não encontrado');day(s).foods.push({id:id(),slot,foodId,name:f.name,grams:n(grams),...calc(f,grams),at:new Date().toISOString()});save()}
 function registerPlan(s,slot){const plan=state.mealPlans.find(x=>x.id===slot);if(!plan)throw Error('Refeição não encontrada');if(foodsForSlot(s,slot).length)throw Error('Essa refeição já tem registros.');for(const it of plan.items){const f=foodById(it.foodId);if(f)day(s).foods.push({id:id(),slot,foodId:it.foodId,name:f.name,grams:n(it.grams),...calc(f,it.grams),at:new Date().toISOString()})}save()}
 function removeFood(s,eid){day(s).foods=day(s).foods.filter(x=>x.id!==eid);save()}
-function water(s,ml){day(s).water.push({id:id(),ml:n(ml),at:new Date().toISOString()});save()}
+function water(s,ml){
+ const amount=Number(ml);
+ if(!Number.isFinite(amount)||amount<1||amount>5000)throw Error('Informe uma quantidade de água entre 1 e 5.000 ml.');
+ const entries=day(s).water;
+ const now=Date.now();
+ // Prevent accidental duplicate submissions of the same amount. Water consumed later may be recorded normally.
+ const repeated=entries.some(x=>Number(x.ml)===amount&&Number.isFinite(Date.parse(x.at))&&now-Date.parse(x.at)>=0&&now-Date.parse(x.at)<45000);
+ if(repeated)return false;
+ entries.push({id:id(),ml:amount,at:new Date(now).toISOString()});
+ save();return true;
+}
+function waterRemove(s,entryId){const d=day(s);const before=d.water.length;d.water=d.water.filter(x=>x.id!==entryId);if(d.water.length!==before){save();return true}return false}
 function waterTotal(s){return dayRead(s).water.reduce((a,b)=>a+n(b.ml),0)}
 function waterUndo(s){day(s).water.pop();save()}
 function setSupplement(s,sid,value){day(s).supplements[sid]=!!value;save()}
@@ -152,6 +163,21 @@ function schedule(s){
  return tasks.sort((a,b)=>a.time.localeCompare(b.time));
 }
 function taskSet(s,id,status){day(s).tasks[id]=status;save()}
+function taskDetail(s,task){
+ const d=dayRead(s);
+ if(task.type==='water')return 'Por vez: 250 ml · Hoje: '+money(waterTotal(s))+' / '+money(state.config.goals.water)+' ml';
+ if(task.type==='meal'){
+  const plan=state.mealPlans.find(x=>x.id===task.ref);if(!plan)return 'Refeição planejada';
+  const actual=foodsForSlot(s,task.ref),tot=plannedMacros(task.ref);
+  const contents=plan.items.map(item=>(foodById(item.foodId)?.name||'Alimento')+' '+money(item.grams)+' g').join(' · ');
+  return (actual.length?'Registrado: '+money(sum(actual).kcal)+' kcal':'Planejado: '+money(tot.kcal)+' kcal · P '+money(tot.p)+' g')+' · '+contents;
+ }
+ if(task.type==='workout'){const ex=state.workoutPlans[task.ref]||[],sets=ex.reduce((a,x)=>a+n(x.sets),0);const completed=d.workout?.sets?.filter(x=>x.done).length||0;return ex.length+' exercícios · '+(d.workout?(completed+' / '+sets+' séries registradas'):(sets+' séries planejadas'))}
+ if(task.type==='supplement'){const sup=state.supplements.find(x=>x.id===task.ref);return sup?.dose||'Dose configurável'}
+ if(task.type==='sleep')return d.sleep?'Registrado: '+money(d.sleep.hours,1)+' h':'Meta: '+money(state.config.goals.sleep,1)+' h';
+ if(task.type==='measure')return 'Peso, cintura, braços e demais medidas em cm';
+ return '';
+}
 function applyDiet(key){if(!MEAL_TEMPLATES[key])return;state.config.diet=key;const keep={water:state.config.goals.water,sleep:state.config.goals.sleep};state.config.goals={...MEAL_TEMPLATES[key].goals,...keep};state.mealPlans=mealPreset(key);save()}
 function saveDiet(name){
  if(!name||!name.trim())throw Error('Informe um nome para o modelo.');
@@ -188,5 +214,5 @@ function importLegacy(raw){
 }
 function current(){return state}
 function setState(s){state=normalize(s);save()}
-window.TT={KEY,LEGACY_KEY,$,today,date,parse,addDay,fmt,n,id,esc,money,FOODS,SLOTS,MEAL_TEMPLATES,SUPPLEMENT_BASE,EXERCISES,fresh,normalize,get state(){return state},get dirty(){return dirty},day,dayRead,save,setClean,setState,replaceFromCloud,foodById,calc,sum,getMacros,foodsForSlot,plannedMacros,addFood,registerPlan,removeFood,water,waterTotal,waterUndo,setSupplement,setMeasure,setSleep,slots,workoutLetters,isTraining,workoutLetter,workoutFor,lastSet,workoutStart,workoutSet,workoutFinish,cardioAdd,taskStatus,schedule,taskSet,applyDiet,saveDiet,applySavedDiet,applySplit,exportJson,importJson,importLegacy,legacyAvailable};
+window.TT={KEY,LEGACY_KEY,$,today,date,parse,addDay,fmt,n,id,esc,money,FOODS,SLOTS,MEAL_TEMPLATES,SUPPLEMENT_BASE,EXERCISES,fresh,normalize,get state(){return state},get dirty(){return dirty},day,dayRead,save,setClean,setState,replaceFromCloud,foodById,calc,sum,getMacros,foodsForSlot,plannedMacros,addFood,registerPlan,removeFood,water,waterTotal,waterUndo,waterRemove,setSupplement,setMeasure,setSleep,slots,workoutLetters,isTraining,workoutLetter,workoutFor,lastSet,workoutStart,workoutSet,workoutFinish,cardioAdd,taskStatus,taskDetail,schedule,taskSet,applyDiet,saveDiet,applySavedDiet,applySplit,exportJson,importJson,importLegacy,legacyAvailable};
 })();
