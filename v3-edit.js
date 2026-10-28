@@ -98,8 +98,10 @@ document.addEventListener('click',async ev=>{
  if(a==='start-workout'){T.workoutStart(d);T.day(d).workout.letter=b.dataset.letter;T.save();U.toast('Treino iniciado!');return}
  if(a==='finish-workout'){if(confirm('Finalizar a sessão de treino?'))T.workoutFinish(d);return}
  if(a==='apply-diet'){if(confirm('Aplicar esta dieta como modelo daqui para frente? Os registros realizados serão mantidos.')){T.applyDiet(b.dataset.key);U.toast('Modelo de dieta aplicado.')}return}
- if(a==='apply-split'){if(confirm('Aplicar nova divisão de treinos? Seu histórico de séries será mantido.')){T.applySplit(b.dataset.key);U.toast('Modelo de treino aplicado.')}return}
- if(a==='apply-routine'){T.state.config.routine=b.dataset.key;T.save();U.toast('Modelo de rotina aplicado.');return}
+ if(a==='save-diet'){const name=prompt('Nome da dieta personalizada:', 'Minha dieta');if(name){T.saveDiet(name);U.toast('Modelo de dieta salvo.')}return}
+ if(a==='apply-saved-diet'){if(confirm('Aplicar este modelo de dieta? Registros anteriores serão mantidos.')){T.applySavedDiet(b.dataset.key);U.toast('Dieta personalizada aplicada.')}return}
+  if(a==='apply-split'){if(confirm('Aplicar nova divisão de treinos? Seu histórico de séries será mantido.')){T.applySplit(b.dataset.key);U.toast('Modelo de treino aplicado.')}return}
+ if(a==='apply-routine'){T.day(d).routine=b.dataset.key;T.save();U.toast('Modelo aplicado somente a esta data.');return}
  if(a==='edit-meals'){editMeals(b.dataset.slot);return}
  if(a==='edit-meal-item'){editMealItem(b.dataset.slot,Number(b.dataset.i));return}
  if(a==='add-meal-item'){editMealItem(b.dataset.slot,null);return}
@@ -109,7 +111,7 @@ document.addEventListener('click',async ev=>{
  if(a==='remove-exercise'){const list=T.state.workoutPlans[b.dataset.letter];if(confirm('Remover este exercício da ficha?')){list.splice(Number(b.dataset.index),1);T.save();editWorkout()}return}
  if(a==='edit-supplement'){supplementModal(b.dataset.sid);return}
  if(a==='new-supplement'){supplementModal('');return}
- if(a==='stop-rest'){window.TTRestEnd=0;U.toast('Descanso encerrado');return}
+ if(a==='stop-rest'){window.TTRestEnd=0;U.render();U.toast('Descanso encerrado');return}
  if(a==='export'){T.exportJson();return}
  if(a==='import'){document.getElementById('backup-file')?.click();return}
  if(a==='migrate'){const old=T.legacyAvailable();if(!old)throw Error('Nenhum histórico da versão anterior encontrado neste aparelho.');if(!confirm('Importar dados de sono, peso, cintura, energia e exames da versão 2.1? Seus dados originais permanecerão intactos.'))return;T.importLegacy(old);U.toast('Histórico importado.');return}
@@ -142,10 +144,10 @@ document.addEventListener('submit',async ev=>{
  else if(form.dataset.form==='supplement'){const id=v('id')||T.id();const it={id,name:v('name'),dose:v('dose'),time:v('time'),notes:v('notes'),enabled:fd.has('enabled')};const ix=T.state.supplements.findIndex(x=>x.id===id);if(ix<0)T.state.supplements.push(it);else T.state.supplements[ix]=it;T.save();U.close()}
  else if(form.dataset.form==='settings'){
  const c=T.state.config;for(const k of ['calories','protein','carbs','fat','water','sleep']){if(n(k)<=0)throw Error('Informe metas maiores que zero.');c.goals[k]=n(k)}
- c.planStart=v('planStart')||T.today();c.measureDay=n('measureDay');c.trainingDays=[0,1,2,3,4,5,6].filter(i=>fd.has('train'+i));c.times.wake=v('wake');c.times.bed=v('bed');T.save();U.toast('Configurações atualizadas.')
+ c.planStart=v('planStart')||T.today();c.measureDay=n('measureDay');c.trainingDays=[0,1,2,3,4,5,6].filter(i=>fd.has('train'+i));c.times.wake=v('wake');c.times.workout=v('workout');c.times.bed=v('bed');T.save();U.toast('Configurações atualizadas.')
  }
  else if(form.dataset.form==='set'){
- const exc=form.dataset.exercise,index=Number(form.dataset.index);T.workoutSet(d,exc,index,n('weight'),n('reps'));U.toast('Série registrada!');const letter=T.dayRead(d).workout?.letter||T.workoutLetter(d);const ex=T.state.workoutPlans[letter]?.find(x=>x.id===exc);window.TTRestEnd=Date.now()+(ex?.rest||90)*1000;
+ const exc=form.dataset.exercise,index=Number(form.dataset.index);T.workoutSet(d,exc,index,n('weight'),n('reps'));U.toast('Série registrada!');const letter=T.dayRead(d).workout?.letter||T.workoutLetter(d);const ex=T.state.workoutPlans[letter]?.find(x=>x.id===exc);window.TTRestEnd=Date.now()+(ex?.rest||90)*1000;U.render();
  }
  else if(form.dataset.form==='login'){const method=ev.submitter?.value||'signin';const result=await C.login(v('email'),v('password'),method==='signup');U.toast(result);U.render()}
  }catch(ex){err(ex)}
