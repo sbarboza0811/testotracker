@@ -162,6 +162,7 @@ function replaceFromCloud(obj){if(obj?.version!==3)throw Error('Formato de dados
 function legacyAvailable(){try{const d=JSON.parse(localStorage.getItem(LEGACY_KEY));return d&&typeof d==='object'&&d.days&&d.settings?d:null}catch{return null}}
 function importLegacy(raw){
  const x=raw||legacyAvailable();if(!x)throw Error('Nenhum histórico anterior encontrado');
+ if(!state.legacyImported&&/^\d{4}-\d{2}-\d{2}$/.test(x.settings?.startDate||''))state.config.protocolStart=x.settings.startDate;
  for(const [d,old] of Object.entries(x.days||{})){
    if(!/^\d{4}-\d{2}-\d{2}$/.test(d))continue;
    const record=day(d);
