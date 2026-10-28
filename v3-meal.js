@@ -235,7 +235,16 @@ function choosePreferred(row){
  row.selected=exact.length===1?exact[0].i:-1;
 }
 function recalc(row){
- const portion=M.amount(row.parsed,pick(row));row.amount=portion.value;row.note=portion.note;
+ const food=pick(row);
+ if(!food){
+   const qty=Number(row.parsed?.qty),unit=row.parsed?.unit||'';
+   row.amount=Number.isFinite(qty)&&qty>0?
+     (unit==='kg'||unit==='l'?qty*1000:(unit==='g'||unit==='ml'||(!unit&&qty>=10)?qty:0)):0;
+   row.note=row.amount?'Quantidade reconhecida pela fala. Selecione o alimento para confirmar a unidade.':'Escolha o alimento e confirme a quantidade.';
+   return;
+ }
+ const portion=M.amount(row.parsed,food);
+ row.amount=portion.value;row.note=portion.note;
 }
 function review(){
  if(!draft)return;
