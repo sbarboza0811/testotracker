@@ -32,6 +32,20 @@ function measureModal(){
 }
 function cardioModal(){U.modal('Registrar cardio','<form data-form="cardio"><div class="field"><label>Atividade</label><select name="type"><option>Caminhada</option><option>Esteira</option><option>Bicicleta</option><option>Corrida</option><option>Elíptico</option><option>Outro</option></select></div><div class="formgrid">'+field('Minutos','minutes',30,'number','min="1" max="600" required')+field('Distância (km, opcional)','distance',0,'number','min="0" max="500" step="0.1"')+'</div><button class="btn full" style="margin-top:12px">Salvar cardio</button></form>')}
 function examModal(){U.modal('Exame de testosterona total','<form data-form="exam">'+field('Data do exame','date',U.date,'date','required')+field('Resultado ng/dL','value','','number','min="1" max="3000" step="0.1" required')+field('Observações','notes','','text','maxlength="200"')+'<p class="muted small" style="margin:10px 0">Considere unidades e intervalos de referência do laboratório. Procure avaliação profissional para interpretar resultados.</p><button class="btn full">Salvar exame</button></form>')}
+
+function previewDiet(key){
+ const template=T.MEAL_TEMPLATES[key];if(!template)throw Error('Modelo não encontrado.');
+ const names={emagrecer:'Emagrecimento',manter:'Manutenção',ganhar:'Hipertrofia'};
+ const title=template.label||names[key]||key;
+ let totals=[];
+ const rows=template.meals.map((meal,i)=>{
+   const macros=T.sum(meal.map(([foodId,grams])=>T.calc(T.foodById(foodId),grams)));
+   totals.push(macros);
+   return '<div class="listrow"><div class="stamp">'+esc(T.SLOTS[i]?.[2]||'')+'</div><div class="content"><b>'+esc(T.SLOTS[i]?.[1]||'Refeição')+'</b><small>'+esc(meal.map(([foodId,grams])=>(T.foodById(foodId)?.name||foodId)+' · '+grams+' g').join(' | '))+'</small><small>'+num(macros.kcal)+' kcal · P '+num(macros.p)+' g · C '+num(macros.c)+' g · G '+num(macros.f)+' g</small></div></div>';
+ }).join('');
+ const all=T.sum(totals);
+ U.modal(title,'<p class="small muted">'+esc(template.description||'Cardápio de referência personalizável.')+'</p><div class="grid3" style="margin:14px 0"><div class="measurebox"><span>Calorias estimadas</span><strong>'+num(all.kcal)+' kcal</strong></div><div class="measurebox"><span>Proteína</span><strong>'+num(all.p)+' g</strong></div><div class="measurebox"><span>Carboidratos</span><strong>'+num(all.c)+' g</strong></div></div>'+rows+'<p class="muted small" style="margin:12px 0">Valores estimados por porção. Carnes e arroz considerados após o preparo. Confirme os rótulos do whey e dos alimentos.</p>'+btn('Aplicar este cardápio','apply-diet','full','data-key="'+esc(key)+'"'));
+}
 function editMeals(slot){
  const meal=T.state.mealPlans.find(x=>x.id===(slot||T.state.mealPlans[0].id));
  const rows=(meal?.items||[]).map((item,i)=>{
@@ -103,7 +117,8 @@ document.addEventListener('click',async ev=>{
  if(a==='choose-workout'){U.trainLetter=b.dataset.letter;U.render();return}
  if(a==='start-workout'){T.workoutStart(d);T.day(d).workout.letter=b.dataset.letter;T.save();U.toast('Treino iniciado!');return}
  if(a==='finish-workout'){if(confirm('Finalizar a sessão de treino?'))T.workoutFinish(d);return}
- if(a==='apply-diet'){if(confirm('Aplicar esta dieta como modelo daqui para frente? Os registros realizados serão mantidos.')){T.applyDiet(b.dataset.key);U.toast('Modelo de dieta aplicado.')}return}
+ if(a==='preview-diet'){previewDiet(b.dataset.key);return}
+ if(a==='apply-diet'){if(confirm('Substituir o cardápio planejado por este modelo? As refeições já registradas e as dietas salvas serão mantidas.')){T.applyDiet(b.dataset.key);U.close();U.go('diario');U.toast('Dieta aplicada. Você já pode editar os alimentos e as porções.')}return}
  if(a==='save-diet'){const name=prompt('Nome da dieta personalizada:', 'Minha dieta');if(name){T.saveDiet(name);U.toast('Modelo de dieta salvo.')}return}
  if(a==='apply-saved-diet'){if(confirm('Aplicar este modelo de dieta? Registros anteriores serão mantidos.')){T.applySavedDiet(b.dataset.key);U.toast('Dieta personalizada aplicada.')}return}
   if(a==='apply-split'){if(confirm('Aplicar nova divisão de treinos? Seu histórico de séries será mantido.')){T.applySplit(b.dataset.key);U.toast('Modelo de treino aplicado.')}return}
