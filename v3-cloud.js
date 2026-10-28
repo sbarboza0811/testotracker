@@ -96,6 +96,14 @@ async function download(){
  localStorage.setItem(ownerKey,user.id);localStorage.setItem(revKey(user.id),String(rev));localStorage.setItem(enabledKey(user.id),'yes');
  status('Sincronizado','ok');signal();
 }
+async function backupRemote(){
+ if(!user||!sb)throw Error('Faça login primeiro.');
+ const {data,error}=await sb.from('testotrack_v3').select('payload,revision').eq('user_id',user.id).maybeSingle();
+ if(error)throw error;if(!data?.payload)throw Error('A nuvem ainda não tem dados nesta conta.');
+ const blob=new Blob([JSON.stringify(data.payload,null,2)],{type:'application/json'});
+ const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='testotrack-nuvem-v3-'+T.today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),500);
+ return true;
+}
 async function overwriteCloud(){
  if(!user||!sb)throw Error('Faça login primeiro');
  if(!confirm('Substituir deliberadamente os dados da nuvem pelos dados deste aparelho? A versão atual da nuvem será perdida. Exporte um backup dela antes.'))return;
@@ -115,5 +123,5 @@ async function importLegacyCloud(){
 }
 window.addEventListener('tt:change',schedule);
 window.addEventListener('online',()=>{if(user){if(blocked)status('Resolver dados','warn');else if(isEnabled())schedule();else status('Conectado','ok')}});
-window.TTCloud={init,login,logout,state,user:authUser,enable,push,download,overwriteCloud,connect,importLegacyCloud};
+window.TTCloud={init,login,logout,state,user:authUser,enable,push,download,overwriteCloud,backupRemote,connect,importLegacyCloud};
 })();
