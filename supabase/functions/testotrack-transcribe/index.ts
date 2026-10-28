@@ -37,11 +37,11 @@ async function parseFoodSpeech(transcript:string, key:string, userId:string){
      method:"POST",
      headers:{"Authorization":"Bearer "+key,"Content-Type":"application/json"},
      body:JSON.stringify({
-       model:"openai/gpt-oss-20b",temperature:0,max_completion_tokens:900,
+       model:"openai/gpt-oss-20b",temperature:0,reasoning_effort:"low",max_completion_tokens:1800,
        messages:[{"role":"system","content":instructions},{"role":"user","content":transcript}],
        response_format:{type:"json_schema",json_schema:{name:"meal_speech",strict:true,schema:{
          type:"object",additionalProperties:false,required:["items"],properties:{
-           items:{type:"array",maxItems:12,items:{type:"object",additionalProperties:false,
+           items:{type:"array",items:{type:"object",additionalProperties:false,
              required:["name","quantity","unit","evidence"],properties:{
                name:{type:"string"},quantity:{type:"number"},unit:{type:"string"},evidence:{type:"string"}
              }
@@ -72,6 +72,16 @@ async function parseFoodSpeech(transcript:string, key:string, userId:string){
    const evidenceTokens=normalizeTerm(evidence).split(" ").filter(token=>token.length>=3);
    if(!nameTokens.length||!nameTokens.some(t=>tokens.has(t)||tokens.has(t+"s"))||!evidenceTokens.some(t=>tokens.has(t)))continue;
    if(!allowed.has(unit)||!Number.isFinite(quantity)||quantity<0||quantity>5000)continue;
+   const normName=normalizeTerm(name),normEvidence=normalizeTerm(evidence);
+   const previous=items.find((item:any)=>normalizeTerm(item.term)===normName && item.unit===unit);
+   if(previous){
+     if(!quantity || normalizeTerm(previous.original).includes(normEvidence))continue;
+     const isCorrection=/(?:\bnao\b|\bquer dizer\b|\bcorrigindo\b|\bna verdade\b|\balias\b)/.test(normEvidence);
+     if(isCorrection){previous.qty=quantity;previous.original=evidence;continue;}
+     const hasNewQuantity=/\d|\b(?:um|uma|dois|duas|tres|quatro|cinco|dez|vinte|trinta|cinquenta|cem|cento|duzentos|trezentos)\b/.test(normEvidence);
+     if(hasNewQuantity){previous.qty=(Number(previous.qty)||0)+quantity;previous.original+=", "+evidence;}
+     continue;
+   }
    items.push({term:name,qty:quantity||null,unit,original:evidence||name});
  }
  return answer({items});
