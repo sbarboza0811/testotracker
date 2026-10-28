@@ -22,6 +22,10 @@ function sleepModal(){
  const sleep=T.dayRead(U.date).sleep||{};
  U.modal('Registrar sono','<form data-form="sleep"><div class="formgrid">'+field('Dormi às','bed',sleep.bed||'23:00','time','required')+field('Acordei às','wake',sleep.wake||'07:00','time','required')+field('Duração (horas, opcional)','hours',sleep.hours??'','number','min="0" max="24" step=".1"')+field('Despertares','awakenings',sleep.awakenings??0,'number','min="0" max="30"')+'</div><div class="field"><label>Qualidade percebida</label><select name="quality">'+[1,2,3,4,5].map(i=>'<option value="'+i+'" '+(i===(sleep.quality||3)?'selected':'')+'>'+i+' / 5</option>').join('')+'</select></div><p class="muted small" style="margin:10px 0">O registro é associado ao dia em que você acordou. Duração é calculada se o campo ficar vazio.</p><button class="btn full">Salvar sono</button></form>');
 }
+function wellbeingModal(){
+ const day=T.dayRead(U.date);
+ U.modal('Meu bem-estar','<form data-form="wellbeing"><div class="formgrid"><div class="field"><label>Energia de 1 a 5</label><select name="energy"><option value="">Não registrar</option>'+[1,2,3,4,5].map(x=>'<option value="'+x+'" '+(day.energy===x?'selected':'')+'>'+x+'</option>').join('')+'</select></div><div class="field"><label>Libido de 1 a 5</label><select name="libido"><option value="">Não registrar</option>'+[1,2,3,4,5].map(x=>'<option value="'+x+'" '+(day.libido===x?'selected':'')+'>'+x+'</option>').join('')+'</select></div></div><div class="field"><label>Observações</label><textarea name="notes" maxlength="900" rows="3">'+esc(day.notes||'')+'</textarea></div><p class="muted small">Registros subjetivos para acompanhar hábitos; não servem para estimar hormônios.</p><button class="btn full" style="margin-top:12px">Salvar bem-estar</button></form>');
+}
 function measureModal(){
  const defs=U.MEASURES,day=T.dayRead(U.date);
  U.modal('Atualizar medidas','<form data-form="measure"><div class="measuregrid">'+defs.map(([key,label,unit])=>field(label+' ('+unit+')',key,day.measures?.[key]??'','number','min="0" max="400" step="0.1"')).join('')+'</div><p class="muted small" style="margin:12px 0">Campos vazios não alteram medidas já registradas. Meça em condições semelhantes para comparar.</p><button class="btn full">Salvar medidas</button></form>');
@@ -93,6 +97,7 @@ document.addEventListener('click',async ev=>{
  if(a==='water-form'){waterModal();return}
  if(a==='sleep-form'){sleepModal();return}
  if(a==='measure-form'){measureModal();return}
+ if(a==='wellbeing-form'){wellbeingModal();return}
  if(a==='cardio-form'){cardioModal();return}
  if(a==='exam-form'){examModal();return}
  if(a==='choose-workout'){U.trainLetter=b.dataset.letter;U.render();return}
@@ -143,6 +148,8 @@ document.addEventListener('submit',async ev=>{
  else if(form.dataset.form==='new-food'){const f={id:T.id(),name:v('name').trim(),kcal:n('kcal'),p:n('p'),c:n('c'),f:n('f'),fiber:n('fiber')};if(!f.name)throw Error('Nome obrigatório');T.state.foods.push(f);T.save();foodModal()}
  else if(form.dataset.form==='water'){T.water(d,n('ml'));U.close();U.toast('Água registrada.')}
  else if(form.dataset.form==='sleep'){let hours=n('hours');if(!v('hours')){const [bh,bm]=v('bed').split(':').map(Number),[wh,wm]=v('wake').split(':').map(Number);hours=((wh*60+wm-bh*60-bm+1440)%1440)/60}T.setSleep(d,v('bed'),v('wake'),hours,n('quality'),n('awakenings'));U.close();U.toast('Sono registrado.')}
+ else if(form.dataset.form==='wellbeing'){const day=T.day(d);day.energy=v('energy')?n('energy'):null;day.libido=v('libido')?n('libido'):null;day.notes=v('notes').slice(0,900);T.save();U.close();U.toast('Bem-estar salvo.')}
+ else if(form.dataset.form==='protocol'){T.state.config.protocolStart=v('protocolStart');T.save();U.toast('Data do protocolo atualizada.')}
  else if(form.dataset.form==='measure'){for(const [k] of U.MEASURES){if(v(k)!=='')T.day(d).measures[k]=n(k)}T.save();U.close();U.toast('Medidas salvas.')}
  else if(form.dataset.form==='cardio'){T.cardioAdd(d,n('minutes'),v('type'),n('distance'));U.close();U.toast('Cardio registrado.')}
  else if(form.dataset.form==='exam'){T.state.exams.push({id:T.id(),date:v('date'),value:n('value'),notes:v('notes')});T.save();U.close();U.toast('Exame registrado.')}
