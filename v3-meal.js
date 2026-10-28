@@ -11,9 +11,26 @@ function clean(s){
  return String(s||'').replace(stop,' ').replace(/^\s*(?:no|na)\s+(?:cafe(?:\s+da\s+manha)?|almoco|lanche|jantar)\s*/i,' ')
  .replace(/^\s*(?:de|do|da|dos|das|o|a)\s+/i,'').replace(/\s+/g,' ').replace(/^[\s.]+|[\s.]+$/g,'').trim();
 }
+const NUMBER_WORDS={
+ 'zero':0,'um':1,'uma':1,'dois':2,'duas':2,'tres':3,'quatro':4,'cinco':5,'seis':6,'sete':7,'oito':8,'nove':9,
+ 'dez':10,'onze':11,'doze':12,'treze':13,'quatorze':14,'catorze':14,'quinze':15,'dezesseis':16,'dezessete':17,'dezoito':18,'dezenove':19,
+ 'vinte':20,'trinta':30,'quarenta':40,'cinquenta':50,'sessenta':60,'setenta':70,'oitenta':80,'noventa':90,
+ 'cem':100,'cento':100,'duzentos':200,'duzentas':200,'trezentos':300,'trezentas':300,'quatrocentos':400,'quinhentos':500,'quinhentas':500,'seiscentos':600,'setecentos':700,'oitocentos':800,'novecentos':900,'mil':1000,'meio':0.5,'meia':0.5
+};
+const NUMBER_PATTERN=Object.keys(NUMBER_WORDS).sort((a,b)=>b.length-a.length).join('|');
+function numericalSpeech(s){
+ const expression=new RegExp('\\b('+NUMBER_PATTERN+')(?:\\s+e\\s+('+NUMBER_PATTERN+'))?(?:\\s+e\\s+('+NUMBER_PATTERN+'))?\\b','gi');
+ return s.replace(expression,(whole,...groups)=>{
+  const words=groups.slice(0,3).filter(Boolean).map(norm);
+  if(words.length>3||!words.length)return whole;
+  let total=0;
+  for(const word of words){const value=NUMBER_WORDS[word];if(value===undefined)return whole;total+=value;}
+  return total>0&&total<=5000?String(total):whole;
+ });
+}
 function parse(transcript){
  if(typeof transcript!=='string'||transcript.trim().length<3||transcript.length>550)throw Error('Descreva uma refeição de até 550 caracteres.');
- const source=transcript.replace(/\b(?:e|mais)\s+(?=(?:(?:comi|tomei|bebi|consumi|coloquei|adicionei)\s+)?(?:\d+(?:[.,]\d+)?|um|uma|dois|duas|três|tres|quatro|cinco|meio|meia)\b)/gi,', ')
+ const source=numericalSpeech(transcript).replace(/\b(?:e|mais)\s+(?=(?:(?:comi|tomei|bebi|consumi|coloquei|adicionei)\s+)?(?:\d+(?:[.,]\d+)?|um|uma|dois|duas|três|tres|quatro|cinco|meio|meia)\b)/gi,', ')
    .replace(/\s+(?:e|mais)\s+(?=(?:\d+(?:[.,]\d+)?|um|uma|dois|duas)\b)/gi,', ');
  const parts=source.split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);
  if(parts.length>12)throw Error('Registre no máximo 12 alimentos por vez.');
