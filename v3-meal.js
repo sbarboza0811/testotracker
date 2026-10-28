@@ -41,7 +41,7 @@ function parse(transcript,foods=[]){
  if(typeof transcript!=='string'||transcript.trim().length<3||transcript.length>550)throw Error('Descreva uma refeição de até 550 caracteres.');
  const spoken=numericalSpeech(transcript.replace(/\btrês\b/gi,'tres'))
   .replace(/(\d),(\d)/g,'$1.$2')
-  .replace(/\s+(?:e|mais)\s+(?=(?:(?:comi|tomei|bebi)\s+)?\d+(?:\.\d+)?\b)/gi,', ');
+  .replace(/\s+(?:e\s+mais|e|mais)\s+(?=(?:(?:comi|tomei|bebi)\s+)?\d+(?:\.\d+)?\b)/gi,', ');
  const pieces=spoken.split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);
  if(pieces.length>30)throw Error('A fala está muito longa. Tente uma refeição de cada vez.');
  const results=[];let correction=false;
