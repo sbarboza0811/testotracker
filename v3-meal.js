@@ -95,102 +95,100 @@ function slotForNow(){
 function mealChoices(selected){
  return T.state.mealPlans.map(x=>'<option value="'+esc(x.id)+'" '+(x.id===selected?'selected':'')+'>'+esc(x.name)+'</option>').join('');
 }
+let audioRecorder=null,micStream=null,audioParts=[],audioTimer=null,skipAudio=false,captureToken=0;
+function captureStatus(message,kind=''){
+ const el=document.getElementById('capture-state');
+ if(el){el.textContent=message;el.dataset.status=kind;}
+}
+function captureButtons(recording){
+ const start=document.querySelector('[data-action="voice-record-start"]'),stop=document.querySelector('[data-action="voice-record-stop"]');
+ if(start)start.hidden=!!recording;
+ if(stop)stop.hidden=!recording;
+}
+function releaseMicrophone(){
+ if(audioTimer){clearTimeout(audioTimer);audioTimer=null;}
+ if(micStream){micStream.getTracks().forEach(track=>track.stop());micStream=null;}
+ audioRecorder=null;
+ captureButtons(false);
+}
+function cancelAudio(){
+ captureToken++;skipAudio=true;
+ const recorder=audioRecorder;
+ if(recorder&&recorder.state!=='inactive'){try{recorder.stop()}catch{}}
+ releaseMicrophone();
+}
 function open(slot,autoMic=false,text=''){
+ cancelAudio();
  requestId++;draft=null;inputSlot=slot||slotForNow();inputText=text;
- const android=/Android/i.test(window.navigator?.userAgent||'');
- U.modal('Registrar alimentação',
- '<div class="capture-intro"><span class="capture-round">🎙</span><h3>O que você comeu?</h3><p>Fale tudo de uma vez. Você confere antes de salvar.</p></div>'+
- '<form data-form="meal-text"><div class="field capture-select"><label>Em qual refeição?</label><select name="slot">'+mealChoices(inputSlot)+'</select></div>'+
- '<div class="capture-action">'+(android?action('⌨ Ditar pelo teclado do celular','voice-keyboard','voice-capture'):action('🎙 Reconhecer minha voz','voice-meal','voice-capture'))+'</div>'+
- '<div class="capture-state" id="capture-state" role="status" aria-live="polite">Toque no botão acima e fale naturalmente.</div>'+
- '<div class="capture-alternative"><strong>Se o reconhecimento não funcionar:</strong><p>Use o ditado do teclado do celular, que costuma ser mais compatível com Android.</p>'+
- (android?action('🎙 Tentar reconhecimento automático','voice-meal','small secondary'):action('⌨ Abrir teclado para ditar','voice-keyboard','small secondary'))+'</div>'+
- '<div class="capture-example">Ex.: “200 gramas de patinho, 150 gramas de arroz e um Monster”</div>'+
- '<details class="capture-type" '+(autoMic?'':'open')+'><summary>Texto da refeição (você pode corrigir)</summary>'+
- '<div class="field"><label>O que consumi</label><textarea name="description" rows="3" maxlength="550" enterkeyhint="done" placeholder="Dite pelo microfone do teclado ou digite aqui" required>'+esc(text)+'</textarea></div>'+
+ U.modal('Registrar refeição por áudio',
+ '<div class="capture-intro"><span class="capture-round">🎙</span><h3>Grave sua refeição</h3><p>Fale os alimentos e as quantidades. O TestoTrack transcreve o áudio e mostra tudo antes de salvar.</p></div>'+
+ '<form data-form="meal-text"><div class="field capture-select"><label>Refeição</label><select name="slot">'+mealChoices(inputSlot)+'</select></div>'+
+ '<div class="capture-action">'+action('🎙 Gravar áudio','voice-record-start','voice-capture')+
+ action('■ Parar e transcrever','voice-record-stop','voice-capture','hidden')+'</div>'+
+ '<div class="capture-state" id="capture-state" role="status" aria-live="polite">Toque em Gravar áudio e permita o acesso ao microfone.</div>'+
+ '<div class="capture-example">Ex.: “Comi 200 gramas de patinho, 150 gramas de arroz e tomei um Monster”</div>'+
+ '<details class="capture-type" '+(autoMic?'':'open')+'><summary>Ou digitar a refeição, se preferir</summary>'+
+ '<div class="field"><label>O que consumi</label><textarea name="description" rows="3" maxlength="550" placeholder="Escreva os alimentos e quantidades" required>'+esc(text)+'</textarea></div>'+
  '<button type="submit" class="btn full">Analisar alimentos</button></details></form>'+
- '<p class="micro muted" style="margin-top:12px">A voz depende das permissões e do navegador. Seus registros não são alterados até você confirmar.</p>');
- if(autoMic)(android?keyboardVoice():listen());
+ '<p class="micro muted" style="margin-top:12px">O áudio será enviado para transcrição somente após você parar a gravação. A gravação não é armazenada no diário.</p>');
+ if(autoMic)startAudio().catch(error=>captureStatus(error.message||'Não foi possível gravar o áudio.','error'));
 }
-function keyboardVoice(){
- try{recognition?.abort()}catch{}
- const details=document.querySelector('.capture-type'),form=document.querySelector('form[data-form="meal-text"]');
- if(details)details.open=true;
- const field=form?.elements?.description;
- if(field){field.focus();field.setSelectionRange?.(field.value.length,field.value.length);}
- const state=document.getElementById('capture-state');
- if(state)state.textContent='O teclado foi aberto. Toque no microfone do teclado Samsung/Gboard, dite a refeição e pressione “Analisar alimentos”.';
+async function startAudio(){
+ if(audioRecorder&&audioRecorder.state==='recording')return;
+ const token=++captureToken;skipAudio=false;
+ if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){
+  throw new Error('Este navegador não permite gravar áudio diretamente. Abra o TestoTrack no Chrome atualizado.');
+ }
+ if(!C?.checkTranscription||!C?.transcribeAudio)throw new Error('O serviço de voz ainda não está disponível. Atualize o aplicativo.');
+ captureStatus('Conectando ao serviço de transcrição…');
+ await C.checkTranscription();
+ if(token!==captureToken)return;
+ captureStatus('Solicitando acesso ao microfone…');
+ let stream;
+ try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}})}
+ catch(error){throw new Error(error?.name==='NotAllowedError'?'Permissão do microfone negada. Autorize o microfone para este site nas configurações do navegador.':'Não consegui abrir o microfone. Verifique as permissões do navegador.');}
+ if(token!==captureToken){stream.getTracks().forEach(t=>t.stop());return;}
+ const supported=['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/wav'].find(t=>MediaRecorder.isTypeSupported(t));
+ if(!supported){stream.getTracks().forEach(t=>t.stop());throw new Error('Formato de gravação de áudio incompatível com este navegador.');}
+ micStream=stream;audioParts=[];
+ let recorder;
+ try{recorder=new MediaRecorder(stream,{mimeType:supported})}
+ catch(error){releaseMicrophone();throw new Error('Não foi possível iniciar a gravação neste navegador.');}
+ audioRecorder=recorder;
+ recorder.ondataavailable=event=>{if(event.data?.size>0)audioParts.push(event.data)};
+ recorder.onerror=()=>{skipAudio=true;captureStatus('Houve um erro durante a gravação. Tente novamente.','error');releaseMicrophone()};
+ recorder.onstop=async()=>{
+  const cancelled=skipAudio||captureToken!==token;
+  const parts=audioParts.slice();const mime=recorder.mimeType||supported;
+  releaseMicrophone();
+  if(cancelled)return;
+  const blob=new Blob(parts,{type:mime});
+  if(blob.size<800){captureStatus('O áudio ficou vazio. Grave outra vez.','error');return;}
+  if(blob.size>4*1024*1024){captureStatus('Gravação muito grande. Grave no máximo um minuto.','error');return;}
+  captureStatus('Transcrevendo seu áudio…');
+  try{
+   const transcript=await C.transcribeAudio(blob);
+   if(token!==captureToken)return;
+   const form=document.querySelector('form[data-form="meal-text"]');
+   if(!form)return;
+   form.elements.description.value=transcript;
+   inputText=transcript;inputSlot=form.elements.slot.value;
+   captureStatus('Entendi: “'+transcript.slice(0,150)+'”');
+   await analyze(transcript,inputSlot);
+  }catch(error){if(token===captureToken){captureStatus(error?.message||'Falha na transcrição. Tente outra vez.','error');document.querySelector('.capture-type')?.setAttribute('open','');}}
+ };
+ try{recorder.start(500)}
+ catch(error){releaseMicrophone();throw new Error('Não foi possível iniciar a gravação.');}
+ captureButtons(true);
+ captureStatus('● Gravando… fale sua refeição e toque em “Parar e transcrever”.','recording');
+ audioTimer=setTimeout(()=>{if(recorder.state==='recording')stopAudio();},60000);
 }
-function listen(){
- const Speech=window.SpeechRecognition||window.webkitSpeechRecognition;
- const status=document.getElementById('capture-state');
- if(!Speech){if(status)status.textContent='Este navegador não oferece o reconhecimento automático. Use o botão do teclado logo abaixo.';keyboardVoice();return;}
- try{recognition?.abort()}catch{}
- let submitted=false,recognized='',error='',heard=false;
- const rec=new Speech();recognition=rec;
- rec.lang='pt-BR';rec.interimResults=true;rec.maxAlternatives=1;rec.continuous=false;
- rec.onstart=()=>{
-  const el=document.getElementById('capture-state');
-  if(el)el.innerHTML='<span class="listening-dot"></span> Microfone ativo. Pode falar sua refeição.';
- };
- rec.onaudiostart=()=>{heard=true;};
- rec.onresult=event=>{
-  let transcript='';
-  for(let i=0;i<event.results.length;i++) transcript+=String(event.results[i]?.[0]?.transcript||'')+' ';
-  transcript=transcript.trim();
-  if(!transcript)return;
-  recognized=transcript;
-  const form=document.querySelector('form[data-form="meal-text"]');
-  if(!form)return;
-  form.elements.description.value=transcript;
-  inputText=transcript;inputSlot=form.elements.slot.value;
-  const el=document.getElementById('capture-state');
-  if(el)el.textContent='Entendi: “'+transcript.slice(0,140)+'”';
-  const latest=event.results[event.results.length-1];
-  if(latest?.isFinal){
-   // Final results are already available; submit before the browser ends recognition.
-   submitSpeech();
-  }
- };
- function submitSpeech(){
-  if(submitted||!recognized.trim())return;
-  const form=document.querySelector('form[data-form="meal-text"]');
-  if(!form)return;
-  submitted=true;
-  try{rec.stop()}catch{}
-  form.requestSubmit();
- }
- rec.onerror=event=>{
-  error=event.error||'unknown';
-  const el=document.getElementById('capture-state');
-  const messages={
-   'not-allowed':'O acesso ao microfone foi negado. Autorize o microfone nas permissões do navegador.',
-   'service-not-allowed':'O serviço de reconhecimento de voz está bloqueado neste navegador.',
-   'audio-capture':'O navegador não conseguiu acessar o microfone. Verifique a permissão e se outro app está usando o áudio.',
-   'no-speech':'Não foi possível detectar fala. Tente falar mais perto do microfone.',
-   'network':'O serviço de reconhecimento do navegador está indisponível ou sem conexão.',
-   'language-not-supported':'O idioma português não está disponível no reconhecimento deste navegador.',
-   'aborted':'A gravação foi interrompida.'
-  };
-  if(el)el.textContent=messages[error]||'Não foi possível reconhecer a fala ('+error+').';
-  document.querySelector('.capture-type')?.setAttribute('open','');
-  const alternative=document.querySelector('.capture-alternative');
-  if(alternative)alternative.classList.add('voice-failed');
- };
- rec.onend=()=>{
-  if(recognition===rec)recognition=null;
-  if(!submitted&&recognized.trim()){submitSpeech();return;}
-  if(!recognized&&!error){
-   const el=document.getElementById('capture-state');
-   if(el)el.textContent=heard?'A gravação terminou sem transcrição. Use o microfone do teclado abaixo.':'O reconhecimento terminou antes de captar a fala. Use o microfone do teclado abaixo.';
-  }
- };
- try{rec.start()}catch(e){
-  error='start';
-  if(status)status.textContent='Não consegui iniciar o reconhecimento automático. Use o microfone do teclado abaixo.';
-  const alternative=document.querySelector('.capture-alternative');
-  if(alternative)alternative.classList.add('voice-failed');
- }
+function stopAudio(){
+ if(!audioRecorder||audioRecorder.state!=='recording')return;
+ captureStatus('Processando gravação…');
+ const stop=document.querySelector('[data-action="voice-record-stop"]');
+ if(stop)stop.disabled=true;
+ try{audioRecorder.stop()}catch{releaseMicrophone();captureStatus('Não consegui finalizar a gravação. Tente novamente.','error');}
 }
 function pick(row){return row.options[row.selected]||null;}
 function choosePreferred(row){
@@ -286,10 +284,11 @@ document.addEventListener('click',event=>{
  const btn=event.target.closest('button[data-action]');if(!btn)return;
  const a=btn.dataset.action;
  try{
+  if(a==='close'){cancelAudio();return}
   if(a==='meal-speak'){open(btn.dataset.slot,true);return}
   if(a==='meal-text'){open(btn.dataset.slot,false);return}
-  if(a==='voice-meal'){listen();return}
-  if(a==='voice-keyboard'){keyboardVoice();return}
+  if(a==='voice-record-start'){startAudio().catch(error=>captureStatus(error.message||'Falha ao iniciar gravação.','error'));return}
+  if(a==='voice-record-stop'){stopAudio();return}
   if(a==='meal-back'){open(draft?.slot,false,draft?.description||inputText);return}
   if(a==='meal-drop'&&draft){draft.rows.splice(Number(btn.dataset.index),1);review();return}
   if(a==='meal-retry'){retry(Number(btn.dataset.index)).catch(U.error);return}
