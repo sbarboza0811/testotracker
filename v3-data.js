@@ -121,6 +121,38 @@ function addExternalFood(s,slot,product,amount){
  const record={id:id(),slot,foodId:food.id,name:food.name,grams:qty,unit:food.unit||'g',...calc(food,qty),at:new Date().toISOString()};
  day(s).foods.push(record);save();return record;
 }
+
+function addMealBatch(s,slot,items){
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(s))throw Error('Data inválida.');
+ if(!state.mealPlans.some(m=>m.id===slot))throw Error('Refeição não encontrada.');
+ if(!Array.isArray(items)||items.length<1||items.length>12)throw Error('Escolha entre 1 e 12 alimentos.');
+ const nextFoods=[],prepared=[],at=new Date().toISOString();
+ for(const entry of items){
+   const incoming=entry?.food;
+   const qty=Number(entry?.amount);
+   if(!incoming||typeof incoming!=='object'||!Number.isFinite(qty)||qty<=0||qty>5000)throw Error('Confira o alimento e a quantidade antes de salvar.');
+   let food=state.foods.find(f=>f.id===incoming.id)||nextFoods.find(f=>f.id===incoming.id);
+   if(!food){
+     const code=String(incoming.code||'');
+     if(!/^off:\d{8,14}$/.test(String(incoming.id||''))||incoming.id!=='off:'+code)throw Error('Um produto não foi identificado com segurança.');
+     const name=String(incoming.name||'').trim(),brand=String(incoming.brand||'').trim();
+     if(!name||name.length>100||brand.length>70)throw Error('Nome do produto inválido.');
+     food={id:incoming.id,name:name+(brand?' · '+brand:''),unit:incoming.unit==='ml'?'ml':'g',source:'Open Food Facts',barcode:code,packageQuantity:String(incoming.packageQuantity||'').slice(0,50)};
+     for(const k of ['kcal','p','c','f','fiber']){
+       const val=Number(incoming[k]);
+       if(!Number.isFinite(val)||val<0||val>100000)throw Error('Informações nutricionais inválidas.');
+       food[k]=val;
+     }
+     nextFoods.push(food);
+   }
+   prepared.push({id:id(),slot,foodId:food.id,name:food.name,grams:qty,unit:food.unit||'g',...calc(food,qty),at});
+ }
+ const target=day(s);
+ state.foods.push(...nextFoods);
+ target.foods.push(...prepared);
+ save();
+ return prepared;
+}
 function registerPlan(s,slot){const plan=state.mealPlans.find(x=>x.id===slot);if(!plan)throw Error('Refeição não encontrada');if(foodsForSlot(s,slot).length)throw Error('Essa refeição já tem registros.');for(const it of plan.items){const f=foodById(it.foodId);if(f)day(s).foods.push({id:id(),slot,foodId:it.foodId,name:f.name,grams:n(it.grams),...calc(f,it.grams),at:new Date().toISOString()})}save()}
 function removeFood(s,eid){day(s).foods=day(s).foods.filter(x=>x.id!==eid);save()}
 function water(s,ml){
@@ -234,5 +266,5 @@ function importLegacy(raw){
 }
 function current(){return state}
 function setState(s){state=normalize(s);save()}
-window.TT={KEY,LEGACY_KEY,$,today,date,parse,addDay,fmt,n,id,esc,money,FOODS,SLOTS,MEAL_TEMPLATES,SUPPLEMENT_BASE,EXERCISES,fresh,normalize,get state(){return state},get dirty(){return dirty},day,dayRead,save,setClean,setState,replaceFromCloud,foodById,calc,sum,getMacros,foodsForSlot,plannedMacros,addFood,addExternalFood,registerPlan,removeFood,water,waterTotal,waterUndo,waterRemove,setSupplement,setMeasure,setSleep,slots,workoutLetters,isTraining,workoutLetter,workoutFor,lastSet,workoutStart,workoutSet,workoutFinish,cardioAdd,taskStatus,taskDetail,schedule,taskSet,applyDiet,saveDiet,applySavedDiet,applySplit,exportJson,importJson,importLegacy,legacyAvailable};
+window.TT={KEY,LEGACY_KEY,$,today,date,parse,addDay,fmt,n,id,esc,money,FOODS,SLOTS,MEAL_TEMPLATES,SUPPLEMENT_BASE,EXERCISES,fresh,normalize,get state(){return state},get dirty(){return dirty},day,dayRead,save,setClean,setState,replaceFromCloud,foodById,calc,sum,getMacros,foodsForSlot,plannedMacros,addFood,addExternalFood,addMealBatch,registerPlan,removeFood,water,waterTotal,waterUndo,waterRemove,setSupplement,setMeasure,setSleep,slots,workoutLetters,isTraining,workoutLetter,workoutFor,lastSet,workoutStart,workoutSet,workoutFinish,cardioAdd,taskStatus,taskDetail,schedule,taskSet,applyDiet,saveDiet,applySavedDiet,applySplit,exportJson,importJson,importLegacy,legacyAvailable};
 })();
