@@ -20,9 +20,10 @@ Os dados nutricionais iniciais são **estimativas por 100 g**, para fins de plan
 
 - **Diário → Falar agora:** grava o áudio diretamente no aplicativo via MediaRecorder. Toque em **Parar e transcrever** para enviar a gravação ao Supabase; a transcrição usa Groq Whisper no plano Free e retorna os alimentos para revisão antes de salvar. Não usa o microfone do teclado.
 - **Diário → Digitar:** descreva a refeição inteira em linguagem natural.
-- **Confira sua refeição:** o app preseleciona alimentos quando a identificação é inequívoca, calcula porções e macros e pede confirmação apenas em casos ambíguos.
-- **Alimento não encontrado:** busque pelo nome e marca ou cadastre manualmente sem perder o restante da refeição.
-- **Salvar refeição:** todos os alimentos são gravados juntos, com validação antes de alterar o diário.
+- **Confira sua refeição:** o app escolhe automaticamente a versão mais provável do alimento, sem pedir que você selecione um resultado. Quantidades faladas são mantidas; quando faltar uma medida, uma porção usual é sugerida como estimativa.
+- **Alimento novo:** se não estiver no catálogo, o aplicativo tenta estimar a composição típica com o Groq Free e o cadastra automaticamente ao salvar. Valores calculados por IA aparecem como **estimativas**, não como valores exatos de rótulos.
+- **Sem identificação segura:** palavras que não são alimentos não são cadastradas. Itens desconhecidos sem dados minimamente plausíveis são ignorados e informados na prévia, sem interromper os outros.
+- **Salvar refeição:** uma única confirmação registra todos os alimentos e cadastra os novos juntos.
 - A gravação depende de permissão de microfone, conexão à internet e login no Supabase. O áudio é enviado à API de transcrição e não é salvo no catálogo ou no histórico. Há limite de aproximadamente um minuto/4 MB por gravação.
 - **Configuração obrigatória:** crie uma conta gratuita em https://console.groq.com/keys, sem mudar para o plano pago, gere uma chave de API e cadastre-a em Supabase Dashboard → Edge Functions → Secrets, com nome exato `GROQ_API_KEY`. A chave é lida somente no servidor; **nunca** a adicione ao GitHub nem a compartilhe no chat. O serviço não usa mais a API paga da OpenAI; no Groq Free, ao ultrapassar a cota, o pedido é recusado em vez de gerar cobrança. O áudio é enviado ao Groq para transcrição, sob os termos e políticas do serviço.
 - As tabelas nutricionais externas devem ser conferidas contra o rótulo do produto.
@@ -36,7 +37,7 @@ A transcrição (Whisper) passa por uma **análise estruturada gratuita no Groq 
 - **"100 g de arroz, não, 50 g de arroz"** → arroz (50 g)
 - **"100 g de telefone"** → não deve gerar alimento
 - Se a análise online falhar, o programa usa um extrator **conservador** que aceita apenas alimentos conhecidos com quantidades explícitas. Quando não há alimento confiável, pede para refazer a fala. O usuário sempre confirma antes de salvar.
-- Produtos externos somente aparecem quando seus nomes correspondem à fala; resultados não reconhecidos exigem conferência manual. Os valores nutricionais continuam estimativas.
+- Produtos externos só são aceitos se seus nomes corresponderem à fala; o aplicativo escolhe a versão mais provável automaticamente. Quando precisar criar um alimento novo, usa uma estimativa nutricional típica identificada como tal.
 
 ## Dados e migração
 - V3 grava localmente no navegador com a chave `testotrack-v3-local-v1`.
