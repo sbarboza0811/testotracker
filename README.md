@@ -18,12 +18,12 @@ Os dados nutricionais iniciais são **estimativas por 100 g**, para fins de plan
 
 ## Registro alimentar simplificado
 
-- **Diário → Falar agora:** o microfone fica no topo da tela, sem abrir listas longas.
+- **Diário → Falar agora:** o microfone fica no topo da tela, sem abrir listas longas. A captura exibe a transcrição parcial e indica erros do navegador. Quando o serviço de fala falhar, use **Abrir teclado para ditar** para falar pelo teclado Samsung ou Gboard.
 - **Diário → Digitar:** descreva a refeição inteira em linguagem natural.
 - **Confira sua refeição:** o app preseleciona alimentos quando a identificação é inequívoca, calcula porções e macros e pede confirmação apenas em casos ambíguos.
 - **Alimento não encontrado:** busque pelo nome e marca ou cadastre manualmente sem perder o restante da refeição.
 - **Salvar refeição:** todos os alimentos são gravados juntos, com validação antes de alterar o diário.
-- A transcrição usa a API de reconhecimento do navegador quando disponível; não garante suporte em todos os modelos e navegadores.
+- A transcrição usa a API de reconhecimento do navegador quando disponível; não garante suporte em todos os modelos e navegadores. Não existe ainda uma transcrição de áudio própria no servidor: para independência do navegador será necessário configurar uma API de transcrição, com autenticação e custo por uso.
 - As tabelas nutricionais externas devem ser conferidas contra o rótulo do produto.
 
 ## Dados e migração
