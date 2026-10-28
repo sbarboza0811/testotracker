@@ -104,7 +104,16 @@ async function overwriteCloud(){
  rev=Number(data?.revision||0);blocked=false;localStorage.setItem(enabledKey(user.id),'yes');
  await push(true)
 }
+async function importLegacyCloud(){
+ if(!sb||!user)throw Error('Faça login para importar seu histórico da nuvem.');
+ const {data,error}=await sb.from('user_snapshots').select('payload').eq('user_id',user.id).maybeSingle();
+ if(error)throw error;
+ if(!data?.payload)throw Error('Não encontrei um backup da versão 2.1 nesta conta.');
+ if(!confirm('Importar seu histórico antigo da nuvem para o TestoTrack 3.0? A versão 2.1 será preservada.'))return;
+ T.importLegacy(data.payload);
+ return true;
+}
 window.addEventListener('tt:change',schedule);
 window.addEventListener('online',()=>{if(user){if(blocked)status('Resolver dados','warn');else if(isEnabled())schedule();else status('Conectado','ok')}});
-window.TTCloud={init,login,logout,state,user:authUser,enable,push,download,overwriteCloud,connect};
+window.TTCloud={init,login,logout,state,user:authUser,enable,push,download,overwriteCloud,connect,importLegacyCloud};
 })();
