@@ -1,0 +1,21 @@
+{
+  "id": "./",
+  "name": "TestoTrack — Protocolo natural",
+  "short_name": "TestoTrack",
+  "description": "Acompanhamento de hábitos, treinos, sono, medidas e exames",
+  "lang": "pt-BR",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#090f1b",
+  "theme_color": "#0c1320",
+  "icons": [
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
