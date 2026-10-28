@@ -84,3 +84,13 @@
 .review-footer{text-align:center;margin-top:15px}
 @media(max-width:450px){.voice-hero{padding:18px 15px}.voice-hero h2{font-size:23px}.voice-hero-actions{grid-template-columns:1.15fr 1fr}.btn.voice-main,.btn.voice-alt{font-size:14px}.home-capture .actions{width:100%;justify-content:stretch}.home-capture .btn{flex:1}.diet-overview{gap:7px}.diet-overview .stat{padding:10px;min-height:105px}.diet-overview .num{font-size:18px}.diet-overview .label{font-size:11px}.review-food{padding:12px 10px}.dialog{padding:16px}}
 @media(prefers-reduced-motion:reduce){.capture-spinner,.listening-dot{animation:none}}
+
+
+/* Alternative when the browser speech service fails: native keyboard dictation. */
+.capture-alternative{margin:10px 0 13px;padding:12px 14px;border-radius:13px;border:1px solid #3e594a;background:#20382d;color:#e4f2e4}
+.capture-alternative strong{display:block;font-size:13px;margin-bottom:4px}
+.capture-alternative p{font-size:12px;line-height:1.5;color:#c8ddc9;margin-bottom:9px}
+.capture-alternative .btn{width:100%;min-height:44px;background:#354f41;color:#effbea;border:1px solid #658b6b}
+.capture-alternative.voice-failed{border-color:#d7a25b;background:#423322}
+.capture-alternative.voice-failed .btn{background:#5a4831;border-color:#d6ab6e}
+.capture-state{line-height:1.55;min-height:47px;overflow-wrap:anywhere}
