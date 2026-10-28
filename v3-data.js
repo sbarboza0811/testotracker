@@ -123,14 +123,14 @@ function workoutSet(s,exerciseId,setNo,weight,reps,done=true){
 }
 function workoutFinish(s){workoutStart(s);day(s).workout.finished=new Date().toISOString();save()}
 function cardioAdd(s,minutes,type,distance){day(s).cardio.push({id:id(),minutes:n(minutes),type,distance:n(distance),at:new Date().toISOString()});save()}
-function taskStatus(s,task){const d=dayRead(s);if(d.tasks?.[task.id])return d.tasks[task.id];
+function taskStatus(s,task){const d=dayRead(s);
  if(task.type==='meal'&&foodsForSlot(s,task.ref).length)return'done';
  if(task.type==='water'&&waterTotal(s)>0)return'done';
  if(task.type==='workout'&&d.workout?.finished)return'done';
  if(task.type==='sleep'&&d.sleep)return'done';
  if(task.type==='measure'&&Object.values(d.measures||{}).some(v=>v!==null&&v!==''))return'done';
  if(task.type==='supplement'&&d.supplements?.[task.ref])return'done';
- return'pending';
+ return d.tasks?.[task.id]||'pending';
 }
 function schedule(s){
  const tasks=[];
