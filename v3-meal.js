@@ -258,7 +258,8 @@ function review(){
    '</article>';
  }).join('');
  U.modal('Confira sua refeição',
- '<div class="review-head"><div><span class="eyebrow">PASSO FINAL</span><h3>'+draft.rows.length+' alimento(s) identificado(s)</h3><small class="muted">Só falta conferir antes de salvar.</small></div><span class="pill '+(ready?'good':'bad')+'">'+(ready?'Tudo pronto':awaiting+' para revisar')+'</span></div>'+
+ '<div class="review-head"><div><span class="eyebrow">PASSO FINAL</span><h3>'+draft.rows.length+' item(ns) para conferir</h3><small class="muted">Confira os alimentos e as quantidades antes de salvar.</small></div><span class="pill '+(ready?'good':'bad')+'">'+(ready?'Tudo pronto':awaiting+' para revisar')+'</span></div>'+
+ (draft.warning?'<p class="warning small">'+esc(draft.warning)+'</p>':'')+
  '<div class="field"><label>Refeição</label><select data-meal-slot>'+mealChoices(draft.slot)+'</select></div>'+
  rows+
  '<div class="review-total"><div><small>CALORIAS DA REFEIÇÃO</small><h2>'+fmt(total.kcal)+' kcal</h2><span>P '+fmt(total.p,1)+'g · C '+fmt(total.c,1)+'g · G '+fmt(total.f,1)+'g</span></div></div>'+
@@ -266,27 +267,53 @@ function review(){
  (!ready?'<p class="muted small" style="margin-top:9px">Corrija os produtos e quantidades destacados para liberar o salvamento.</p>':'')+
  '<div class="review-footer">'+action('← Corrigir o que falei','meal-back','small secondary')+'</div>');
 }
+function plausibleProducts(term,products){
+ const key=M.norm(term).split(' ').filter(word=>word.length>=3);
+ if(!key.length)return[];
+ return (Array.isArray(products)?products:[]).filter(p=>{
+  const text=M.norm((p?.name||'')+' '+(p?.brand||''));
+  return key.every(w=>text.split(' ').some(t=>t===w||t===w+'s'));
+ });
+}
 async function analyze(description,slot){
- const parsed=M.parse(description),seq=++requestId;
+ const seq=++requestId;
  inputText=description;inputSlot=slot;
  const body=document.getElementById('modal-body');
- if(body)body.innerHTML='<div class="capture-wait" id="meal-loading"><span class="capture-spinner"></span><h3>Entendendo sua refeição…</h3><p>'+parsed.length+' alimento(s) identificados. Consultando o catálogo quando necessário.</p></div>';
- const rows=parsed.map(item=>{
+ if(body)body.innerHTML='<div class="capture-wait" id="meal-loading"><span class="capture-spinner"></span><h3>Conferindo os alimentos e as quantidades…</h3><p>Ignorando repetições, interrupções e palavras que não são alimentos.</p></div>';
+ let parsed=[],warning='';
+ try{
+   if(!C?.parseMeal)throw Error('Análise inteligente indisponível.');
+   parsed=await C.parseMeal(description);
+ }catch(err){
+   parsed=M.parse(description,T.state.foods);
+   warning='Análise inteligente indisponível. Usei somente alimentos conhecidos com quantidades explícitas. Confira o resultado.';
+ }
+ if(seq!==requestId)return;
+ if(!Array.isArray(parsed)||!parsed.length){
+   U.modal('Nenhum alimento confiável identificado',
+    '<p class="muted small">Não encontrei alimentos e quantidades suficientes nesta fala. Palavras soltas e gaguejos são ignorados para evitar registros errados.</p>'+
+    '<p class="muted small" style="margin:12px 0">Tente: “100 gramas de arroz e 50 gramas de feijão”.</p>'+
+    action('← Falar ou corrigir novamente','meal-rewrite','full secondary'));
+   return;
+ }
+ const valid=parsed.filter(item=>item&&typeof item.term==='string'&&item.term.trim().length>=3).slice(0,12);
+ const rows=valid.map(item=>{
    const options=M.local(item.term,T.state.foods);
    const row={parsed:item,options,selected:-1,amount:0,note:'',problem:''};
    choosePreferred(row);recalc(row);return row;
  });
- const missing=rows.filter(r=>!r.options.length);
+ const missing=rows.filter(row=>!row.options.length);
  await Promise.all(missing.slice(0,5).map(async row=>{
-  try{
-   const found=await C.searchFoods(row.parsed.term);
-   if(found.length){row.options=found.slice(0,10);choosePreferred(row);recalc(row);}
-   else row.problem='Não encontrei a informação nutricional. Pesquise por nome ou marca.';
-  }catch(err){row.problem=err?.message||'Consulta externa indisponível.';}
+   try{
+     const found=plausibleProducts(row.parsed.term,await C.searchFoods(row.parsed.term));
+     if(found.length){
+       row.options=found.slice(0,10);choosePreferred(row);recalc(row);
+     }else row.problem='Não encontrei um alimento confiável no catálogo. Confirme manualmente ou remova este item.';
+   }catch(err){row.problem='Não foi possível confirmar no catálogo externo: '+(err?.message||'serviço indisponível');}
  }));
- missing.slice(5).forEach(r=>r.problem='Limite de cinco buscas externas por refeição.');
+ missing.slice(5).forEach(row=>row.problem='Limite de cinco buscas externas por refeição.');
  if(seq!==requestId||!document.getElementById('meal-loading'))return;
- draft={slot,rows,description};review();
+ draft={slot,rows,description,warning};review();
 }
 
 function customForm(i){
@@ -328,6 +355,7 @@ document.addEventListener('click',event=>{
   if(a==='voice-record-start'){startAudio().catch(error=>captureStatus(error.message||'Falha ao iniciar gravação.','error'));return}
   if(a==='voice-record-stop'){stopAudio();return}
   if(a==='meal-back'){open(draft?.slot,false,draft?.description||inputText);return}
+  if(a==='meal-rewrite'){open(inputSlot,false,inputText);return}
   if(a==='meal-drop'&&draft){draft.rows.splice(Number(btn.dataset.index),1);review();return}
   if(a==='meal-retry'){retry(Number(btn.dataset.index)).catch(U.error);return}
   if(a==='meal-custom'){customForm(Number(btn.dataset.index));return}
