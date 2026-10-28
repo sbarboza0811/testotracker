@@ -24,8 +24,8 @@ function pageToday(){
  const status=T.taskStatus(selected,x),finished=status==='done';
  const primary=finished?button('Ver / editar','task','small secondary','data-task="'+esc(x.id)+'"')
  :status==='skipped'?button('Reativar','skip','small secondary','data-task="'+esc(x.id)+'"')
- :(['water','meal','supplement'].includes(x.type)?button(x.type==='water'?'Registrar 250 ml':x.type==='meal'?'Registrar refeição':'Marcar como tomado','task-complete','small','data-task="'+esc(x.id)+'"'):button('Abrir registro','task','small','data-task="'+esc(x.id)+'"'));
- const secondary=finished?'':status==='skipped'?'':button('Ignorar','skip','small outline','data-task="'+esc(x.id)+'"');
+ :(['water','meal','supplement','sleep'].includes(x.type)?button(x.type==='water'?'Registrar 250 ml':x.type==='meal'?'Registrar refeição':x.type==='sleep'?'Concluir rotina noturna':'Marcar como tomado','task-complete','small','data-task="'+esc(x.id)+'"'):button('Abrir registro','task','small','data-task="'+esc(x.id)+'"'));
+ const secondary=finished?(x.type==='sleep'&&!T.dayRead(selected).sleep?button('Desmarcar','task-reset','small outline','data-task="'+esc(x.id)+'"'):''):status==='skipped'?'':button('Ignorar','skip','small outline','data-task="'+esc(x.id)+'"');
  return '<div class="listrow taskrow '+(finished?'done':'')+'"><div class="stamp">'+esc(x.time)+'</div><div class="roundicon">'+taskIcon(x.type)+'</div><div class="content"><b>'+esc(x.label)+'</b><small class="task-quantity">'+esc(T.taskDetail(selected,x))+'</small><span class="pill task-status '+(finished?'good':status==='skipped'?'bad':'')+'">'+(finished?'✓ Concluída':status==='skipped'?'Ignorada':'○ Pendente')+'</span></div><div class="task-actions">'+primary+secondary+'</div></div>'
  }).join('');
  html+=panel('Cronograma diário',rows,button('Editar','models','small secondary'));
