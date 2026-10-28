@@ -119,7 +119,7 @@ document.addEventListener('click',async ev=>{
 document.addEventListener('change',ev=>{
  const t=ev.target;
  try{
- if(t.id==='selected-date'&&/^\d{4}-\d{2}-\d{2}$/.test(t.value)){/* set via TTUI after rendering */Object.defineProperty(U,'date',{configurable:true,get:()=>t.value});U.render();return}
+ if(t.id==='selected-date'&&/^\d{4}-\d{2}-\d{2}$/.test(t.value)){U.date=t.value;U.render();return}
  if(t.matches('[data-supplement]')){T.setSupplement(U.date,t.dataset.supplement,t.checked);return}
  if(t.matches('[data-enable-supplement]')){const s=T.state.supplements.find(x=>x.id===t.dataset.enableSupplement);if(s){s.enabled=t.checked;T.save()}return}
  }catch(ex){err(ex)}
