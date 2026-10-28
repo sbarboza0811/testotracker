@@ -32,7 +32,7 @@ Deno.serve(async (request:Request)=>{
  const client=createClient(supabaseUrl,publishable,{auth:{persistSession:false,autoRefreshToken:false}});
  const {data:{user},error}=await client.auth.getUser(auth.slice(7));
  if(error||!user||user.is_anonymous)return answer({error:"Sessão inválida. Entre novamente na conta."},401);
- const apiKey=Deno.env.get("OPENAI_API_KEY");
+ const apiKey=Deno.env.get("GROQ_API_KEY");
  const available=!!apiKey;
  const contentType=request.headers.get("content-type")||"";
  if(contentType.includes("application/json")){
@@ -40,7 +40,7 @@ Deno.serve(async (request:Request)=>{
    if(payload?.check===true)return answer({ready:available});
    return answer({error:"Formato inválido."},400);
  }
- if(!available)return answer({error:"A transcrição ainda precisa da configuração da chave OPENAI_API_KEY no Supabase.",code:"NOT_CONFIGURED"},503);
+ if(!available)return answer({error:"O plano gratuito de transcrição ainda não está configurado. Crie uma chave Groq Free e cadastre GROQ_API_KEY nos segredos do Supabase.",code:"NOT_CONFIGURED"},503);
  if(!contentType.includes("multipart/form-data"))return answer({error:"Envie uma gravação de áudio."},400);
  const length=Number(request.headers.get("content-length")||0);
  if(length>MAX_BYTES+20000)return answer({error:"Áudio muito grande. Grave no máximo um minuto."},413);
@@ -55,19 +55,20 @@ Deno.serve(async (request:Request)=>{
  if(!acceptUser(user.id))return answer({error:"Muitas gravações seguidas. Aguarde alguns minutos."},429);
  const body=new FormData();
  body.append("file",new File([file],"refeicao."+ext,{type:mime}));
- body.append("model","gpt-transcribe");
+ body.append("model","whisper-large-v3");
+ body.append("language","pt");
  body.append("response_format","json");
  body.append("prompt","Transcreva fielmente a fala em português do Brasil sobre alimentos, marcas, quantidades e refeições. Preserve nomes e números.");
  let reply:Response;
  try{
-   reply=await fetch("https://api.openai.com/v1/audio/transcriptions",{
+   reply=await fetch("https://api.groq.com/openai/v1/audio/transcriptions",{
       method:"POST",headers:{"Authorization":"Bearer "+apiKey},body,
       signal:AbortSignal.timeout(45000)
    });
  }catch{return answer({error:"Não consegui conectar ao serviço de transcrição. Tente novamente."},502)}
  if(!reply.ok){
-   if(reply.status===429)return answer({error:"O serviço de transcrição atingiu o limite ou ficou sem créditos."},503);
-   if(reply.status===401||reply.status===403)return answer({error:"A chave do serviço de transcrição está inválida. Verifique a configuração no Supabase."},503);
+   if(reply.status===429)return answer({error:"Você atingiu o limite gratuito de transcrição. Aguarde a renovação da cota do Groq Free; nenhum pagamento será feito."},503);
+   if(reply.status===401||reply.status===403)return answer({error:"Chave gratuita GROQ_API_KEY inválida. Confira o segredo cadastrado no Supabase."},503);
    return answer({error:"O áudio não pôde ser transcrito. Tente novamente."},502);
  }
  let result:any;
