@@ -48,6 +48,10 @@ const EXERCISES={
  C:[['Agachamento',3,'8–12',120],['Leg press',3,'10–12',120],['Cadeira extensora',3,'12–15',75],['Mesa flexora',3,'10–15',75],['Panturrilha',3,'12–15',60],['Abdominal',3,'12–20',60]],
  D:[['Levantamento terra romeno',3,'8–12',120],['Afundo',3,'10–12',90],['Elevação lateral',3,'12–15',60],['Puxada alta',3,'8–12',90],['Abdominal',3,'12–20',60]]
 };
+const AB_EXERCISES={
+ A:[['Agachamento',3,'8–12',120],['Supino reto',3,'8–12',90],['Remada baixa',3,'8–12',90],['Cadeira extensora',3,'12–15',60],['Elevação lateral',3,'12–15',60],['Panturrilha',3,'12–15',60]],
+ B:[['Levantamento terra romeno',3,'8–12',120],['Puxada alta',3,'8–12',90],['Desenvolvimento',3,'8–12',90],['Mesa flexora',3,'10–15',75],['Rosca direta',3,'10–12',60],['Tríceps na polia',3,'10–12',60]]
+};
 const SUPPLEMENT_BASE=[
 {id:'creatina',name:'Creatina',dose:'3–5 g (referência geral)',time:'13:00',enabled:false,notes:'Desempenho muscular; não é tratamento para baixa testosterona.'},
 {id:'whey-s',name:'Whey protein',dose:'Porção conforme meta de proteína',time:'17:00',enabled:false,notes:'Complemento alimentar; conferir lactose e rótulo.'},
@@ -57,17 +61,18 @@ const SUPPLEMENT_BASE=[
 {id:'magnesio',name:'Magnésio',dose:'Conforme necessidade',time:'21:00',enabled:false,notes:'Não é um elevador comprovado de testosterona em pessoas sem deficiência.'}
 ];
 function mealPreset(key='emagrecer'){return SLOTS.map((m,i)=>({id:m[0],name:m[1],time:m[2],items:MEAL_TEMPLATES[key].meals[i].map(([foodId,grams])=>({foodId,grams}))}))}
-function routinePreset(split='ABC'){return Object.fromEntries(Object.entries(EXERCISES).map(([letter,ex])=>[letter,ex.map((e,i)=>({id:letter+'-'+i,name:e[0],sets:e[1],reps:e[2],rest:e[3]}))]))}
+function routinePreset(split='ABC'){const source=split==='AB'?AB_EXERCISES:EXERCISES;return Object.fromEntries(Object.entries(source).map(([letter,ex])=>[letter,ex.map((e,i)=>({id:letter+'-'+i,name:e[0],sets:e[1],reps:e[2],rest:e[3]}))]))}
 function emptyDay(){return {foods:[],water:[],supplements:{},sleep:null,measures:{},workout:null,cardio:[],tasks:{},notes:'',energy:null,libido:null}}
 function fresh(){
  return {version:3,config:{goals:{...MEAL_TEMPLATES.emagrecer.goals,water:2500,sleep:8},diet:'emagrecer',split:'ABC',planStart:today(),trainingDays:[1,2,4,5],routine:'treino',times:{wake:'07:00',workout:'12:00',bed:'22:30'},measureDay:0,reminders:false},
- foods:structuredClone(FOODS),mealPlans:mealPreset('emagrecer'),workoutPlans:routinePreset(),supplements:structuredClone(SUPPLEMENT_BASE),savedDiets:[],days:{},exams:[],legacyImported:false};
+ foods:structuredClone(FOODS),mealPlans:mealPreset('emagrecer'),workoutPlans:routinePreset(),splitPlans:{},supplements:structuredClone(SUPPLEMENT_BASE),savedDiets:[],days:{},exams:[],legacyImported:false};
 }
 function normalize(obj){
  const d=fresh();if(!obj||typeof obj!=='object')return d;
  if(obj.config&&typeof obj.config==='object')d.config={...d.config,...obj.config,goals:{...d.config.goals,...obj.config.goals},times:{...d.config.times,...obj.config.times}};
  for(const name of ['foods','mealPlans','supplements','exams','savedDiets'])if(Array.isArray(obj[name]))d[name]=obj[name];
  if(obj.workoutPlans&&typeof obj.workoutPlans==='object')d.workoutPlans=obj.workoutPlans;
+ if(obj.splitPlans&&typeof obj.splitPlans==='object')d.splitPlans=obj.splitPlans;
  if(obj.days&&typeof obj.days==='object'&&!Array.isArray(obj.days))d.days=obj.days;
  d.legacyImported=!!obj.legacyImported;return d;
 }
@@ -150,7 +155,7 @@ function applySavedDiet(key){
  const keep={water:state.config.goals.water,sleep:state.config.goals.sleep};
  state.config.diet=saved.id;state.config.goals={...saved.goals,...keep};state.mealPlans=structuredClone(saved.meals);save();
 }
-function applySplit(key){if(!['AB','ABC','ABCD'].includes(key))return;state.config.split=key;state.config.planStart=today();save()}
+function applySplit(key){if(!['AB','ABC','ABCD'].includes(key)||state.config.split===key)return;state.splitPlans[state.config.split]=structuredClone(state.workoutPlans);state.workoutPlans=structuredClone(state.splitPlans[key]||routinePreset(key));state.config.split=key;state.config.planStart=today();save()}
 function exportJson(){const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const href=URL.createObjectURL(blob);const a=document.createElement('a');a.href=href;a.download='testotrack-v3-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(href),500)}
 function importJson(obj){if(obj?.version!==3||!obj.days||!obj.config||!obj.mealPlans||!obj.workoutPlans)throw Error('Este não é um backup do TestoTrack 3.0');state=normalize(obj);save()}
 function replaceFromCloud(obj){if(obj?.version!==3)throw Error('Formato de dados inválido');state=normalize(obj);localStorage.setItem(KEY,JSON.stringify(state));setClean();window.dispatchEvent(new CustomEvent('tt:loaded'))}
