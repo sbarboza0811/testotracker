@@ -18,13 +18,13 @@ Os dados nutricionais iniciais são **estimativas por 100 g**, para fins de plan
 
 ## Registro alimentar simplificado
 
-- **Diário → Falar agora:** grava o áudio diretamente no aplicativo via MediaRecorder. Toque em **Parar e transcrever** para enviar a gravação ao Supabase; a transcrição usa OpenAI e retorna os alimentos para revisão antes de salvar. Não usa o microfone do teclado.
+- **Diário → Falar agora:** grava o áudio diretamente no aplicativo via MediaRecorder. Toque em **Parar e transcrever** para enviar a gravação ao Supabase; a transcrição usa Groq Whisper no plano Free e retorna os alimentos para revisão antes de salvar. Não usa o microfone do teclado.
 - **Diário → Digitar:** descreva a refeição inteira em linguagem natural.
 - **Confira sua refeição:** o app preseleciona alimentos quando a identificação é inequívoca, calcula porções e macros e pede confirmação apenas em casos ambíguos.
 - **Alimento não encontrado:** busque pelo nome e marca ou cadastre manualmente sem perder o restante da refeição.
 - **Salvar refeição:** todos os alimentos são gravados juntos, com validação antes de alterar o diário.
 - A gravação depende de permissão de microfone, conexão à internet e login no Supabase. O áudio é enviado à API de transcrição e não é salvo no catálogo ou no histórico. Há limite de aproximadamente um minuto/4 MB por gravação.
-- **Configuração obrigatória:** cadastrar uma chave de API OpenAI (com cobrança de uso separada do ChatGPT) no Supabase Dashboard → Edge Functions → Secrets, com nome exato `OPENAI_API_KEY`. A chave é lida somente no servidor; **nunca** deve ser adicionada ao GitHub ou compartilhada pelo chat. Sem ela, o app informa que a transcrição está indisponível antes de iniciar a gravação.
+- **Configuração obrigatória:** crie uma conta gratuita em https://console.groq.com/keys, sem mudar para o plano pago, gere uma chave de API e cadastre-a em Supabase Dashboard → Edge Functions → Secrets, com nome exato `GROQ_API_KEY`. A chave é lida somente no servidor; **nunca** a adicione ao GitHub nem a compartilhe no chat. O serviço não usa mais a API paga da OpenAI; no Groq Free, ao ultrapassar a cota, o pedido é recusado em vez de gerar cobrança. O áudio é enviado ao Groq para transcrição, sob os termos e políticas do serviço.
 - As tabelas nutricionais externas devem ser conferidas contra o rótulo do produto.
 
 ## Dados e migração
