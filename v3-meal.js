@@ -21,7 +21,7 @@ const NUMBER_PATTERN=Object.keys(NUMBER_WORDS).sort((a,b)=>b.length-a.length).jo
 function numericalSpeech(s){
  const expression=new RegExp('\\b('+NUMBER_PATTERN+')(?:\\s+e\\s+('+NUMBER_PATTERN+'))?(?:\\s+e\\s+('+NUMBER_PATTERN+'))?\\b','gi');
  return s.replace(expression,(whole,...groups)=>{
-  const words=groups.slice(0,3).filter(Boolean).map(norm);
+  const words=groups.slice(0,3).filter(Boolean).map(x=>String(x).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase());
   if(words.length>3||!words.length)return whole;
   let total=0;
   for(const word of words){const value=NUMBER_WORDS[word];if(value===undefined)return whole;total+=value;}
