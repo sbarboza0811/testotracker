@@ -21,11 +21,17 @@ const FOOD_BASE=[
 ['azeite','Azeite',884,0,0,100,0],['leite','Leite sem lactose desnatado',35,3.4,5.1,.1,0],
 ['whey','Whey isolado (exemplo)',380,83,5,3,0],['pera','Pera',57,.4,15.2,.1,3.1],
 ['queijo','Queijo sem lactose (exemplo)',285,21,2,21,0],['amendoim','Amendoim',567,25.8,16.1,49.2,8.5],
-['macarrao','Macarrão cozido',158,5.8,30.9,.9,1.8],['atum','Atum em água',116,26,0,.8,0]
+['macarrao','Macarrão cozido',158,5.8,30.9,.9,1.8],['atum','Atum em água',116,26,0,.8,0],
+['sementes-abobora','Sementes de abóbora torradas',559,30.2,10.7,49,6],
+['castanha-caju','Castanha-de-caju sem sal',553,18.2,30.2,43.8,3.3]
 ];
 const FOODS=FOOD_BASE.map(f=>({id:f[0],name:f[1],kcal:f[2],p:f[3],c:f[4],f:f[5],fiber:f[6]}));
 const SLOTS=[['cafe','Café da manhã','09:00'],['almoco','Almoço','13:00'],['lanche','Lanche','17:00'],['jantar','Jantar','21:00']];
 const MEAL_TEMPLATES={
+ 'testo-2000':{"label":"Carne, ovos e sementes · 2.000 kcal","description":"Modelo com patinho, ovos, sementes de abóbora e castanhas. Valores nutricionais aproximados.","goals":{"calories":2000,"protein":169,"carbs":187,"fat":66},"meals":[[["ovo",150],["pao",80],["mamao",150]],[["patinho",160],["arroz",150],["pepino",200],["azeite",10]],[["whey",30],["banana",140],["sementes-abobora",20]],[["frango",160],["arroz",150],["castanha-caju",20],["pepino",100]]]},
+ 'testo-2250':{"label":"Carne, ovos e sementes · 2.250 kcal","description":"Mesmos alimentos com mais arroz, para uma meta energética intermediária.","goals":{"calories":2250,"protein":174,"carbs":243,"fat":66},"meals":[[["ovo",150],["pao",80],["mamao",150]],[["patinho",160],["arroz",250],["pepino",200],["azeite",10]],[["whey",30],["banana",140],["sementes-abobora",20]],[["frango",160],["arroz",250],["castanha-caju",20],["pepino",100]]]},
+ 'testo-2500':{"label":"Carne, ovos e sementes · 2.500 kcal","description":"Inclui aveia no lanche para maior oferta energética.","goals":{"calories":2500,"protein":184,"carbs":283,"fat":70},"meals":[[["ovo",150],["pao",80],["mamao",150]],[["patinho",160],["arroz",250],["pepino",200],["azeite",10]],[["whey",30],["banana",140],["sementes-abobora",20],["aveia",60]],[["frango",160],["arroz",250],["castanha-caju",20],["pepino",100]]]},
+
  emagrecer:{goals:{calories:2100,protein:160,carbs:235,fat:58},meals:[
  [['ovo',120],['pao',80],['mamao',150]],
  [['arroz',180],['frango',170],['pepino',120],['azeite',10]],
@@ -71,6 +77,8 @@ function normalize(obj){
  const d=fresh();if(!obj||typeof obj!=='object')return d;
  if(obj.config&&typeof obj.config==='object')d.config={...d.config,...obj.config,goals:{...d.config.goals,...obj.config.goals},times:{...d.config.times,...obj.config.times}};
  for(const name of ['foods','mealPlans','supplements','exams','savedDiets'])if(Array.isArray(obj[name]))d[name]=obj[name];
+ // Make new built-in foods available to existing users without overwriting customized foods.
+ if(Array.isArray(d.foods)){const known=new Set(d.foods.map(food=>food.id));for(const food of FOODS)if(!known.has(food.id)){d.foods.push({...food});known.add(food.id)}}
  if(obj.workoutPlans&&typeof obj.workoutPlans==='object')d.workoutPlans=obj.workoutPlans;
  if(obj.splitPlans&&typeof obj.splitPlans==='object')d.splitPlans=obj.splitPlans;
  if(obj.days&&typeof obj.days==='object'&&!Array.isArray(obj.days))d.days=obj.days;
