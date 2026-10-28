@@ -2,20 +2,67 @@
 'use strict';
 const T=window.TT,U=window.TTUI,C=window.TTCloud,esc=T.esc,num=T.money;
 const btn=U.button;
+let externalResults=[],searchSerial=0;
 const field=(label,name,value,type,extra)=>'<div class="field"><label>'+esc(label)+'</label><input type="'+(type||'text')+'" name="'+name+'" value="'+esc(value??'')+'" '+(extra||'')+'></div>';
 function setDate(s){const i=document.getElementById('selected-date');if(i){i.value=s;i.dispatchEvent(new Event('change',{bubbles:true}))}}
 function err(x){U.error(x)}
 function foodModal(slot){
  const plans=T.state.mealPlans,items=T.state.foods;
  const chosen=slot||plans[0]?.id||'cafe';
- U.modal('Adicionar alimento','<form data-form="food"><div class="field"><label>Refeição</label><select name="slot">'+plans.map(x=>'<option value="'+esc(x.id)+'" '+(x.id===chosen?'selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></div><div class="field"><label>Alimento</label><select name="foodId">'+items.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+' · '+num(x.kcal)+' kcal/100g</option>').join('')+'</select></div>'+field('Quantidade em gramas','grams',100,'number','min="1" max="5000" step="1" required')+'<button type="submit" class="btn full">Adicionar ao diário</button></form><div class="hr"></div>'+btn('Cadastrar alimento próprio','new-food','small secondary'));
+ externalResults=[];searchSerial++;
+ U.modal('Adicionar alimento',
+ '<form data-form="food"><div class="field"><label>Refeição</label><select name="slot">'+plans.map(x=>'<option value="'+esc(x.id)+'" '+(x.id===chosen?'selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></div>'+
+ '<div class="field"><label>Alimento do meu catálogo</label><select name="foodId">'+items.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+' · '+num(x.kcal)+' kcal/100 '+esc(x.unit||'g')+'</option>').join('')+'</select></div>'+
+ field('Quantidade (g ou ml, conforme alimento)','grams',100,'number','min="1" max="5000" step="1" required')+
+ '<button type="submit" class="btn full">Adicionar ao diário</button></form>'+
+ '<div class="hr"></div><form data-form="food-search"><div class="field"><label>Buscar produto novo (nome ou marca)</label><input name="query" autocomplete="off" maxlength="80" placeholder="Ex.: Monster Energy 500 ml" required></div>'+
+ '<div class="actions"><button class="btn" type="submit">Buscar na internet</button><button class="btn secondary" type="button" data-action="voice-food-search">🎤 Ditar nome</button></div></form>'+
+ '<div id="external-food-results" aria-live="polite"><p class="muted small">A consulta usa Open Food Facts e requer login. Confira o rótulo antes de registrar.</p></div>'+
+ '<div class="hr"></div>'+btn('Cadastrar alimento manualmente','new-food','small secondary'));
+}
+async function searchExternalFoods(query){
+ const box=document.getElementById('external-food-results');if(!box)return;
+ const serial=++searchSerial;box.textContent='Buscando produtos...';
+ try{
+  const products=await C.searchFoods(query);
+  if(serial!==searchSerial||!box.isConnected)return;
+  externalResults=products;
+  if(!products.length){box.textContent='Não encontrei produtos com informações nutricionais completas. Tente uma marca ou nome mais específico.';return}
+  box.innerHTML='<p class="muted small">'+products.length+' resultado(s). Escolha a versão correta do produto.</p>'+
+    products.map((p,i)=>'<div class="listrow"><div class="content"><b>'+esc(p.name)+'</b><small>'+esc(p.brand||'Marca não informada')+' · '+esc(p.packageQuantity||'Embalagem não informada')+'</small><small>'+num(p.kcal,1)+' kcal/100 '+esc(p.unit)+' · P '+num(p.p,1)+' g · C '+num(p.c,1)+' g · G '+num(p.f,1)+' g</small></div>'+
+    btn('Selecionar','external-food-select','small secondary','data-index="'+i+'"')+'</div>').join('');
+ }catch(ex){if(serial===searchSerial&&box.isConnected)box.textContent=ex.message||'Erro na pesquisa.'}
+}
+function externalFoodModal(index){
+ const product=externalResults[index];if(!product)throw Error('Selecione um resultado válido.');
+ const plans=T.state.mealPlans,chosen=document.querySelector('form[data-form="food"] select[name="slot"]')?.value||plans[0]?.id||'cafe';
+ const match=String(product.packageQuantity||'').match(/(\d+(?:[.,]\d+)?)\s*(ml|g)\b/i);
+ const amount=match?Number(match[1].replace(',','.')):100;
+ U.modal('Confirmar produto',
+ '<p><b>'+esc(product.name)+'</b> · '+esc(product.brand||'')+'</p><p class="muted small">Fonte: Open Food Facts · '+esc(product.packageQuantity||'Sem tamanho informado')+' · '+num(product.kcal,1)+' kcal/100 '+esc(product.unit)+'</p>'+
+ '<form data-form="external-food">'+field('Índice do resultado','index',index,'hidden','required')+
+ '<div class="field"><label>Refeição</label><select name="slot">'+plans.map(x=>'<option value="'+esc(x.id)+'" '+(x.id===chosen?'selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></div>'+
+ field('Quantidade consumida ('+product.unit+')','amount',Math.min(5000,Math.max(1,amount)),'number','min="1" max="5000" step="1" required')+
+ '<p class="muted small">Confira a versão do produto, a porção e a tabela nutricional. Os dados podem estar incompletos ou desatualizados.</p>'+
+ '<button type="submit" class="btn full">Registrar e salvar no meu catálogo</button></form>');
+}
+function dictationFoodName(){
+ const Speech=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!Speech)throw Error('Ditado indisponível neste navegador. Use a busca por texto.');
+ const recognition=new Speech();recognition.lang='pt-BR';recognition.interimResults=false;recognition.maxAlternatives=1;
+ recognition.onresult=ev=>{const query=String(ev.results?.[0]?.[0]?.transcript||'').trim();
+ const form=document.querySelector('form[data-form="food-search"]');
+ if(form&&query){form.elements.query.value=query;form.requestSubmit();}
+ };
+ recognition.onerror=ev=>U.toast('Não consegui ouvir: '+(ev.error||'erro')+'. Digite o produto na busca.');
+ recognition.start();U.toast('Fale o nome do produto.');
 }
 function newFoodModal(){
  U.modal('Novo alimento (por 100 g)','<form data-form="new-food">'+field('Nome','name','','text','required maxlength="80"')+'<div class="formgrid">'+[['kcal','Calorias (kcal)'],['p','Proteínas (g)'],['c','Carboidratos (g)'],['f','Gorduras (g)'],['fiber','Fibras (g)']].map(([k,l])=>field(l,k,0,'number','min="0" max="9999" step="0.1" required')).join('')+'</div><p class="muted small" style="margin:12px 0">Informe os valores do rótulo ou de uma tabela nutricional confiável, sempre por 100 g.</p><button type="submit" class="btn full">Salvar alimento</button></form>')
 }
 function mealDetail(slot){
  const plan=T.state.mealPlans.find(x=>x.id===slot),list=T.foodsForSlot(U.date,slot);
- U.modal(plan?.name||'Refeição',list.length?list.map(x=>'<div class="listrow"><div class="content"><b>'+esc(x.name)+'</b><small>'+num(x.grams)+' g · '+num(x.kcal)+' kcal · P '+num(x.p,1)+' g</small></div>'+btn('Excluir','delete-food','small danger','data-entry="'+esc(x.id)+'"')+'</div>').join('')+btn('Adicionar mais um alimento','add-food','small secondary','data-slot="'+esc(slot)+'"'):'<p class="muted small">Ainda sem registros nesta refeição.</p>'+btn('Adicionar alimento','add-food','small secondary','data-slot="'+esc(slot)+'"'));
+ U.modal(plan?.name||'Refeição',list.length?list.map(x=>'<div class="listrow"><div class="content"><b>'+esc(x.name)+'</b><small>'+num(x.grams)+' '+esc(x.unit||'g')+' · '+num(x.kcal)+' kcal · P '+num(x.p,1)+' g</small></div>'+btn('Excluir','delete-food','small danger','data-entry="'+esc(x.id)+'"')+'</div>').join('')+btn('Adicionar mais um alimento','add-food','small secondary','data-slot="'+esc(slot)+'"'):'<p class="muted small">Ainda sem registros nesta refeição.</p>'+btn('Adicionar alimento','add-food','small secondary','data-slot="'+esc(slot)+'"'));
 }
 function waterModal(){U.modal('Adicionar água','<form data-form="water">'+field('Quantidade (ml)','ml',350,'number','min="1" max="5000" required')+'<button class="btn full">Registrar água</button></form>')}
 function sleepModal(){
@@ -132,6 +179,8 @@ document.addEventListener('click',async ev=>{
  if(a==='remove-water'){if(confirm('Excluir este registro de água?')){T.waterRemove(d,b.dataset.entry);U.toast('Registro de água excluído.')}return}
  if(a==='register-meal'){T.registerPlan(d,b.dataset.slot);U.toast('Refeição registrada com os itens planejados.');return}
  if(a==='add-food'){foodModal(b.dataset.slot);return}
+ if(a==='external-food-select'){externalFoodModal(Number(b.dataset.index));return}
+ if(a==='voice-food-search'){dictationFoodName();return}
  if(a==='new-food'){newFoodModal();return}
  if(a==='meal-detail'){mealDetail(b.dataset.slot);return}
  if(a==='delete-food'){T.removeFood(d,b.dataset.entry);U.close();U.toast('Item removido.');return}
@@ -187,6 +236,8 @@ document.addEventListener('submit',async ev=>{
  try{
  const d=U.date;
  if(form.dataset.form==='food'){T.addFood(d,v('slot'),v('foodId'),n('grams'));U.close();U.toast('Alimento registrado.')}
+ else if(form.dataset.form==='food-search'){await searchExternalFoods(v('query'))}
+ else if(form.dataset.form==='external-food'){const p=externalResults[n('index')];if(!p)throw Error('Produto não encontrado.');T.addExternalFood(d,v('slot'),p,n('amount'));U.close();U.toast('Produto registrado e salvo no catálogo.')}
  else if(form.dataset.form==='new-food'){const f={id:T.id(),name:v('name').trim(),kcal:n('kcal'),p:n('p'),c:n('c'),f:n('f'),fiber:n('fiber')};if(!f.name)throw Error('Nome obrigatório');T.state.foods.push(f);T.save();foodModal()}
  else if(form.dataset.form==='water'){const inserted=T.water(d,n('ml'));if(inserted)U.close();U.toast(inserted?'Água registrada.':'Esta mesma quantidade já foi registrada há poucos segundos.')}
  else if(form.dataset.form==='sleep'){let hours=n('hours');if(!v('hours')){const [bh,bm]=v('bed').split(':').map(Number),[wh,wm]=v('wake').split(':').map(Number);hours=((wh*60+wm-bh*60-bm+1440)%1440)/60}T.setSleep(d,v('bed'),v('wake'),hours,n('quality'),n('awakenings'));U.close();U.toast('Sono registrado.')}
