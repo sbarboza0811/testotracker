@@ -121,7 +121,16 @@ async function importLegacyCloud(){
  T.importLegacy(data.payload);
  return true;
 }
+async function searchFoods(query){
+ if(!sb)await init();
+ if(!sb||!user)throw Error('Faça login no Supabase em Ajustes para pesquisar alimentos na internet.');
+ if(!navigator.onLine)throw Error('Sem internet. Os alimentos já cadastrados continuam disponíveis.');
+ const {data,error}=await sb.functions.invoke('testotrack-food-search',{body:{query}});
+ if(error)throw Error('Pesquisa externa indisponível. Tente novamente em instantes.');
+ if(data?.error)throw Error(String(data.error));
+ return Array.isArray(data?.products)?data.products:[];
+}
 window.addEventListener('tt:change',schedule);
 window.addEventListener('online',()=>{if(user){if(blocked)status('Resolver dados','warn');else if(isEnabled())schedule();else status('Conectado','ok')}});
-window.TTCloud={init,login,logout,state,user:authUser,enable,push,download,overwriteCloud,backupRemote,connect,importLegacyCloud};
+window.TTCloud={init,login,logout,state,user:authUser,searchFoods,enable,push,download,overwriteCloud,backupRemote,connect,importLegacyCloud};
 })();
