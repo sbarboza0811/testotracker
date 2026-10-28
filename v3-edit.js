@@ -73,12 +73,35 @@ function supplementModal(sid){
 }
 function taskOpen(id){
  const task=T.schedule(U.date).find(x=>x.id===id);if(!task)return;
- if(task.type==='meal'){U.go('diario');return}
+ if(task.type==='meal'||task.type==='water'||task.type==='supplement'){U.go('diario');return}
  if(task.type==='workout'){U.go('treinar');return}
  if(task.type==='measure'){measureModal();return}
  if(task.type==='sleep'){sleepModal();return}
- if(task.type==='water'){waterModal();return}
- if(task.type==='supplement'){T.setSupplement(U.date,task.ref,!T.dayRead(U.date).supplements?.[task.ref]);U.toast('Suplemento atualizado.');return}
+}
+function taskComplete(taskId){
+ const d=U.date,task=T.schedule(d).find(x=>x.id===taskId);
+ if(!task)throw Error('Atividade não encontrada.');
+ if(T.taskStatus(d,task)==='done'){U.toast('Esta atividade já está concluída.');return}
+ if(task.type==='meal'){
+  const plan=T.state.mealPlans.find(x=>x.id===task.ref);
+  if(!plan)throw Error('Refeição não encontrada.');
+  const mealList=plan.items.map(x=>(T.foodById(x.foodId)?.name||x.foodId)+' · '+num(x.grams)+' g').join('\n');
+  if(!confirm('Registrar como consumida a refeição planejada?\n\n'+mealList+'\n\nSe comeu quantidades diferentes, cancele e registre pelo Diário.'))return;
+  T.registerPlan(d,task.ref);
+  U.toast('Refeição registrada e atividade concluída.');
+  return
+ }
+ if(task.type==='water'){
+  const inserted=T.water(d,250);
+  U.toast(inserted?'250 ml registrados · atividade concluída.':'Essa quantidade já foi registrada agora.');
+  return
+ }
+ if(task.type==='supplement'){
+  T.setSupplement(d,task.ref,true);
+  U.toast('Suplemento marcado como tomado.');
+  return
+ }
+ taskOpen(taskId)
 }
 async function cloudAction(action){
  if(action==='cloud-enable'){await C.enable();U.toast('Dados enviados. Sincronização automática ativa.')}
@@ -100,9 +123,11 @@ document.addEventListener('click',async ev=>{
  if(a==='settings'){U.go('ajustes');return}
  if(a==='evolution'){U.go('evolucao');return}
  if(a==='task'){taskOpen(b.dataset.task);return}
+ if(a==='task-complete'){taskComplete(b.dataset.task);return}
  if(a==='skip'){const task=b.dataset.task;T.taskSet(d,task,T.dayRead(d).tasks?.[task]==='skipped'?'pending':'skipped');return}
- if(a==='water'){T.water(d,Number(b.dataset.ml));U.close();U.toast('Água registrada!');return}
+ if(a==='water'){const inserted=T.water(d,Number(b.dataset.ml));if(inserted)U.close();U.toast(inserted?'Água registrada!':'Esta mesma quantidade já foi registrada há poucos segundos.');return}
  if(a==='undo-water'){if(T.dayRead(d).water.length)T.waterUndo(d);return}
+ if(a==='remove-water'){if(confirm('Excluir este registro de água?')){T.waterRemove(d,b.dataset.entry);U.toast('Registro de água excluído.')}return}
  if(a==='register-meal'){T.registerPlan(d,b.dataset.slot);U.toast('Refeição registrada com os itens planejados.');return}
  if(a==='add-food'){foodModal(b.dataset.slot);return}
  if(a==='new-food'){newFoodModal();return}
@@ -161,7 +186,7 @@ document.addEventListener('submit',async ev=>{
  const d=U.date;
  if(form.dataset.form==='food'){T.addFood(d,v('slot'),v('foodId'),n('grams'));U.close();U.toast('Alimento registrado.')}
  else if(form.dataset.form==='new-food'){const f={id:T.id(),name:v('name').trim(),kcal:n('kcal'),p:n('p'),c:n('c'),f:n('f'),fiber:n('fiber')};if(!f.name)throw Error('Nome obrigatório');T.state.foods.push(f);T.save();foodModal()}
- else if(form.dataset.form==='water'){T.water(d,n('ml'));U.close();U.toast('Água registrada.')}
+ else if(form.dataset.form==='water'){const inserted=T.water(d,n('ml'));if(inserted)U.close();U.toast(inserted?'Água registrada.':'Esta mesma quantidade já foi registrada há poucos segundos.')}
  else if(form.dataset.form==='sleep'){let hours=n('hours');if(!v('hours')){const [bh,bm]=v('bed').split(':').map(Number),[wh,wm]=v('wake').split(':').map(Number);hours=((wh*60+wm-bh*60-bm+1440)%1440)/60}T.setSleep(d,v('bed'),v('wake'),hours,n('quality'),n('awakenings'));U.close();U.toast('Sono registrado.')}
  else if(form.dataset.form==='wellbeing'){const day=T.day(d);day.energy=v('energy')?n('energy'):null;day.libido=v('libido')?n('libido'):null;day.notes=v('notes').slice(0,900);T.save();U.close();U.toast('Bem-estar salvo.')}
  else if(form.dataset.form==='protocol'){T.state.config.protocolStart=v('protocolStart');T.save();U.toast('Data do protocolo atualizada.')}
