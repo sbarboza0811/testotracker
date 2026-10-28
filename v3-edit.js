@@ -112,6 +112,12 @@ document.addEventListener('click',async ev=>{
  if(a==='edit-supplement'){supplementModal(b.dataset.sid);return}
  if(a==='new-supplement'){supplementModal('');return}
  if(a==='stop-rest'){window.TTRestEnd=0;U.render();U.toast('Descanso encerrado');return}
+ if(a==='toggle-reminders'){
+  if(!T.state.config.reminders&&'Notification' in window&&Notification.permission==='default')await Notification.requestPermission();
+  T.state.config.reminders=!T.state.config.reminders;T.save();
+  U.toast(T.state.config.reminders?'Lembretes ativados enquanto o app estiver aberto.':'Lembretes desativados.');
+  return
+ }
  if(a==='export'){T.exportJson();return}
  if(a==='import'){document.getElementById('backup-file')?.click();return}
  if(a==='migrate-cloud'){T.exportJson();const success=await C.importLegacyCloud();if(success)U.toast('Histórico anterior importado sem apagar a versão 2.1.');return}
