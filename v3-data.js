@@ -137,10 +137,11 @@ function addMealBatch(s,slot,items){
      const code=String(incoming.code||'');
      const isOFF=/^off:\d{8,14}$/.test(String(incoming.id||''))&&incoming.id==='off:'+code;
      const isManual=/^manual:[0-9a-z-]{8,80}$/i.test(String(incoming.id||''))&&incoming.source==='Manual';
-     if(!isOFF&&!isManual)throw Error('Um alimento não foi identificado com segurança.');
+     const isAuto=/^auto:[a-z0-9-]{3,70}$/.test(String(incoming.id||''))&&incoming.source==='Estimativa IA';
+     if(!isOFF&&!isManual&&!isAuto)throw Error('Um alimento não foi identificado com segurança.');
      const name=String(incoming.name||'').trim(),brand=String(incoming.brand||'').trim();
      if(!name||name.length>100||brand.length>70)throw Error('Nome do produto inválido.');
-     food={id:incoming.id,name:name+(brand?' · '+brand:''),unit:incoming.unit==='ml'?'ml':'g',source:isManual?'Manual':'Open Food Facts',barcode:isOFF?code:null,packageQuantity:isOFF?String(incoming.packageQuantity||'').slice(0,50):''};
+     food={id:incoming.id,name:name+(brand?' · '+brand:''),unit:incoming.unit==='ml'?'ml':'g',source:isAuto?'Estimativa IA':isManual?'Manual':'Open Food Facts',barcode:isOFF?code:null,packageQuantity:isOFF?String(incoming.packageQuantity||'').slice(0,50):'',serving:isAuto&&Number.isFinite(Number(incoming.serving))&&Number(incoming.serving)>=10&&Number(incoming.serving)<=500?Number(incoming.serving):undefined};
      for(const k of ['kcal','p','c','f','fiber']){
        const val=Number(incoming[k]);
        if(!Number.isFinite(val)||val<0||val>100000)throw Error('Informações nutricionais inválidas.');
