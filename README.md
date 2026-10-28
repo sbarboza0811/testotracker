@@ -27,6 +27,17 @@ Os dados nutricionais iniciais são **estimativas por 100 g**, para fins de plan
 - **Configuração obrigatória:** crie uma conta gratuita em https://console.groq.com/keys, sem mudar para o plano pago, gere uma chave de API e cadastre-a em Supabase Dashboard → Edge Functions → Secrets, com nome exato `GROQ_API_KEY`. A chave é lida somente no servidor; **nunca** a adicione ao GitHub nem a compartilhe no chat. O serviço não usa mais a API paga da OpenAI; no Groq Free, ao ultrapassar a cota, o pedido é recusado em vez de gerar cobrança. O áudio é enviado ao Groq para transcrição, sob os termos e políticas do serviço.
 - As tabelas nutricionais externas devem ser conferidas contra o rótulo do produto.
 
+### Interpretação confiável da fala
+
+A transcrição (Whisper) passa por uma **análise estruturada gratuita no Groq (GPT-OSS 20B)** antes da consulta nutricional. Essa etapa descarta hesitações e palavras não alimentícias, interpreta as quantidades e tenta reconhecer correções. Exemplos:
+
+- **"100 g de arroz, 50 g de feijão, arroz, feijão"** → uma ocorrência de arroz (100 g) e uma de feijão (50 g)
+- **"100 g de arroz e mais 50 g de arroz"** → arroz (150 g)
+- **"100 g de arroz, não, 50 g de arroz"** → arroz (50 g)
+- **"100 g de telefone"** → não deve gerar alimento
+- Se a análise online falhar, o programa usa um extrator **conservador** que aceita apenas alimentos conhecidos com quantidades explícitas. Quando não há alimento confiável, pede para refazer a fala. O usuário sempre confirma antes de salvar.
+- Produtos externos somente aparecem quando seus nomes correspondem à fala; resultados não reconhecidos exigem conferência manual. Os valores nutricionais continuam estimativas.
+
 ## Dados e migração
 - V3 grava localmente no navegador com a chave `testotrack-v3-local-v1`.
 - A versão anterior está preservada em [legacy.html](legacy.html), com a chave original `testotrack-data-v1` intacta.
