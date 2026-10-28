@@ -61,3 +61,124 @@ function amount(item,food){
 }
 window.TTMeal={parse,local,amount,norm};
 })();
+
+(function(){
+'use strict';
+const T=window.TT,U=window.TTUI,C=window.TTCloud,M=window.TTMeal;
+if(!T||!U||!M)return;
+let draft=null,requestId=0,recognition=null;
+const esc=T.esc,fmt=T.money;
+const action=(label,name,extra='')=>U.button(label,name,'small secondary',extra);
+function optionHtml(food){return esc(food.name+(food.brand?' · '+food.brand:'')+(food.packageQuantity?' · '+food.packageQuantity:''));}
+function start(slot){
+ draft=null;requestId++;
+ const meals=T.state.mealPlans,chosen=slot||meals[0]?.id;
+ U.modal('Registrar refeição por voz ou texto',
+ '<p class="muted small">Diga tudo o que comeu e quanto consumiu. Você confere os resultados antes de salvar.</p>'+
+ '<form data-form="meal-text"><div class="field"><label>Refeição</label><select name="slot">'+meals.map(x=>'<option value="'+esc(x.id)+'" '+(x.id===chosen?'selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></div>'+
+ '<div class="field"><label>O que você consumiu?</label><textarea name="description" rows="4" maxlength="550" required placeholder="Comi 200 g de patinho, 150 g de arroz e tomei um Monster"></textarea></div>'+
+ '<div class="actions"><button type="submit" class="btn">Analisar refeição</button>'+action('🎤 Falar refeição','voice-meal')+'</div></form>'+
+ '<p class="muted micro" style="margin-top:12px">O ditado depende do navegador e requer permissão para o microfone. Nenhum alimento é salvo automaticamente.</p>');
+}
+function dictate(){
+ const Speech=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!Speech)throw Error('Reconhecimento de voz não disponível neste navegador. Use o texto.');
+ recognition=new Speech();recognition.lang='pt-BR';recognition.interimResults=false;recognition.maxAlternatives=1;
+ recognition.onresult=event=>{
+  const phrase=String(event.results?.[0]?.[0]?.transcript||'').trim();
+  const f=document.querySelector('form[data-form="meal-text"]');
+  if(f&&phrase){f.elements.description.value=phrase;f.requestSubmit();}
+ };
+ recognition.onerror=ev=>U.toast('Não consegui reconhecer a voz ('+(ev.error||'erro')+'). Digite a refeição.');
+ recognition.start();U.toast('Fale sua refeição.');
+}
+function chosen(row){return row.options[row.selected]||null;}
+function refresh(){
+ if(!draft)return;
+ const meals=T.state.mealPlans;
+ const lines=draft.rows.map((r,i)=>{
+  const food=chosen(r),calc=T.calc(food,r.amount||0);
+  const opts=r.options.map((f,j)=>'<option value="'+j+'" '+(j===r.selected?'selected':'')+'>'+optionHtml(f)+'</option>').join('');
+  return '<div class="listrow" style="align-items:flex-start"><div class="content" style="min-width:0">'+
+   '<div class="right"><b>'+esc(r.parsed.original)+'</b>'+action('Excluir','meal-drop','data-index="'+i+'"')+'</div>'+
+   '<div class="field"><label>Produto identificado</label>'+(r.options.length?
+     '<select data-meal-select="'+i+'"><option value="-1" '+(r.selected<0?'selected':'')+'>Escolha a opção correta</option>'+opts+'</select>':
+     '<p class="warning small">Não encontrado. Exclua este item e registre-o manualmente.</p>')+'</div>'+
+   (r.problem?'<p class="warning small">'+esc(r.problem)+'</p>':'')+
+   '<div class="formgrid"><div class="field"><label>Quantidade em '+esc(food?.unit||'g ou ml')+'</label><input type="number" min="1" max="5000" step="1" data-meal-quantity="'+i+'" value="'+(r.amount||'')+'" placeholder="Informe a quantidade"></div>'+
+   '<div class="field"><label>Energia</label><div class="kpi">'+fmt(calc.kcal)+' kcal</div></div></div>'+
+   (r.note?'<small class="warning">'+esc(r.note)+'</small>':'')+
+   (food?'<small>P '+fmt(calc.p,1)+' g · C '+fmt(calc.c,1)+' g · G '+fmt(calc.f,1)+' g</small>':'')+
+   '</div></div>';
+ }).join('');
+ const total=T.sum(draft.rows.map(r=>T.calc(chosen(r),r.amount||0)));
+ const ready=draft.rows.length&&draft.rows.every(r=>chosen(r)&&Number(r.amount)>0&&Number(r.amount)<=5000);
+ U.modal('Conferir refeição',
+ '<p class="muted small">Confira as quantidades e os produtos. Valores nutricionais externos podem conter erros.</p>'+
+ '<div class="field"><label>Refeição</label><select data-meal-slot>'+meals.map(x=>'<option value="'+esc(x.id)+'" '+(x.id===draft.slot?'selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></div>'+
+ lines+
+ '<section class="panel soft"><b>Total estimado: '+fmt(total.kcal)+' kcal</b><p class="muted small">Proteínas '+fmt(total.p,1)+' g · Carboidratos '+fmt(total.c,1)+' g · Gorduras '+fmt(total.f,1)+' g</p></section>'+
+ '<form data-form="meal-save" style="margin-top:12px"><button type="submit" class="btn full" '+(ready?'':'disabled')+'>Salvar '+draft.rows.length+' alimentos de uma vez</button></form>'+
+ (!ready?'<p class="warning small" style="margin-top:9px">Selecione todos os produtos e informe as quantidades antes de salvar.</p>':'')+
+ '<div style="margin-top:12px">'+action('Recomeçar','meal-reset')+'</div>');
+}
+async function analyze(text,slot){
+ const parsed=M.parse(text),seq=++requestId;
+ document.getElementById('modal-body').innerHTML='<p id="meal-loading">Identificando '+parsed.length+' alimentos…</p>';
+ const rows=parsed.map(item=>{
+  const options=M.local(item.term,T.state.foods);
+  const selected=options.length===1?0:-1,portion=M.amount(item,options[selected]);
+  return {parsed:item,options,selected,amount:portion.value,note:portion.note,problem:''};
+ });
+ const unresolved=rows.filter(row=>!row.options.length);
+ await Promise.all(unresolved.slice(0,5).map(async row=>{
+  try{
+   const found=await C.searchFoods(row.parsed.term);
+   if(found.length){row.options=found.slice(0,10);row.selected=found.length===1?0:-1;
+    const portion=M.amount(row.parsed,chosen(row));row.amount=portion.value;row.note=portion.note;}
+   else row.problem='A busca online não encontrou o alimento com nutrientes suficientes.';
+  }catch(err){row.problem=err?.message||'Pesquisa externa indisponível.';}
+ }));
+ unresolved.slice(5).forEach(r=>r.problem='Limite de cinco buscas por refeição. Registre os demais separadamente.');
+ if(seq!==requestId||!document.getElementById('meal-loading'))return;
+ draft={slot,rows};refresh();
+}
+document.addEventListener('click',ev=>{
+ const b=ev.target.closest('button[data-action]');if(!b)return;
+ const a=b.dataset.action;
+ try{
+  if(a==='meal-text'){start(b.dataset.slot);return;}
+  if(a==='voice-meal'){dictate();return;}
+  if(a==='meal-reset'){start(draft?.slot);return;}
+  if(a==='meal-drop'&&draft){draft.rows.splice(Number(b.dataset.index),1);refresh();return;}
+ }catch(err){U.error(err);}
+});
+document.addEventListener('change',ev=>{
+ const t=ev.target;if(!draft)return;
+ if(t.matches('[data-meal-select]')){
+  const row=draft.rows[Number(t.dataset.mealSelect)];
+  if(!row)return;row.selected=Number(t.value);
+  const portion=M.amount(row.parsed,chosen(row));
+  row.amount=portion.value;row.note=portion.note;refresh();
+ }else if(t.matches('[data-meal-quantity]')){
+  const row=draft.rows[Number(t.dataset.mealQuantity)];
+  if(!row)return;row.amount=Number(t.value);row.note='';refresh();
+ }else if(t.matches('[data-meal-slot]'))draft.slot=t.value;
+});
+document.addEventListener('submit',async ev=>{
+ const f=ev.target,kind=f.dataset.form;
+ if(kind!=='meal-text'&&kind!=='meal-save')return;
+ ev.preventDefault();
+ try{
+  if(kind==='meal-text'){
+   const fd=new FormData(f);
+   await analyze(String(fd.get('description')||''),String(fd.get('slot')||''));
+  }else{
+   if(!draft?.rows.length)throw Error('Nenhum alimento selecionado.');
+   const rows=draft.rows.map(r=>({food:chosen(r),amount:r.amount}));
+   const saved=T.addMealBatch(U.date,draft.slot,rows);
+   draft=null;requestId++;U.close();U.toast(saved.length+' alimentos registrados com sucesso!');
+  }
+ }catch(err){U.error(err);}
+});
+})();
