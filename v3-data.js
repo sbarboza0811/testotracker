@@ -100,7 +100,27 @@ function sum(items){return items.reduce((a,b)=>{for(const k of ['kcal','p','c','
 function getMacros(s){return sum(dayRead(s).foods)}
 function foodsForSlot(s,slot){return dayRead(s).foods.filter(x=>x.slot===slot)}
 function plannedMacros(slot){const plan=state.mealPlans.find(x=>x.id===slot);return sum((plan?.items||[]).map(it=>calc(foodById(it.foodId),it.grams)))}
-function addFood(s,slot,foodId,grams){const f=foodById(foodId);if(!f)throw Error('Alimento não encontrado');day(s).foods.push({id:id(),slot,foodId,name:f.name,grams:n(grams),...calc(f,grams),at:new Date().toISOString()});save()}
+function addFood(s,slot,foodId,grams){const f=foodById(foodId);if(!f)throw Error('Alimento não encontrado');day(s).foods.push({id:id(),slot,foodId,name:f.name,grams:n(grams),unit:f.unit||'g',...calc(f,grams),at:new Date().toISOString()});save()}
+function addExternalFood(s,slot,product,amount){
+ const code=String(product?.code||'').trim(),qty=Number(amount);
+ if(!/^\d{8,14}$/.test(code))throw Error('Produto externo sem código válido.');
+ if(!state.mealPlans.some(m=>m.id===slot))throw Error('Refeição não encontrada.');
+ if(!Number.isFinite(qty)||qty<=0||qty>5000)throw Error('Informe uma quantidade entre 1 e 5.000.');
+ const names=String(product?.name||'').trim(),brand=String(product?.brand||'').trim();
+ if(!names||names.length>100||brand.length>70)throw Error('Nome de produto inválido.');
+ const fields=['kcal','p','c','f','fiber'];
+ if(fields.some(k=>!Number.isFinite(Number(product[k]))||Number(product[k])<0||Number(product[k])>100000))throw Error('Informações nutricionais inválidas.');
+ const key='off:'+code;
+ let food=foodById(key);
+ if(!food){
+   food={id:key,name:(names+(brand?' · '+brand:'')),unit:product.unit==='ml'?'ml':'g',
+     source:'Open Food Facts',barcode:code,packageQuantity:String(product.packageQuantity||'').slice(0,50)};
+   for(const k of fields)food[k]=Number(product[k]);
+   state.foods.push(food);
+ }
+ const record={id:id(),slot,foodId:food.id,name:food.name,grams:qty,unit:food.unit||'g',...calc(food,qty),at:new Date().toISOString()};
+ day(s).foods.push(record);save();return record;
+}
 function registerPlan(s,slot){const plan=state.mealPlans.find(x=>x.id===slot);if(!plan)throw Error('Refeição não encontrada');if(foodsForSlot(s,slot).length)throw Error('Essa refeição já tem registros.');for(const it of plan.items){const f=foodById(it.foodId);if(f)day(s).foods.push({id:id(),slot,foodId:it.foodId,name:f.name,grams:n(it.grams),...calc(f,it.grams),at:new Date().toISOString()})}save()}
 function removeFood(s,eid){day(s).foods=day(s).foods.filter(x=>x.id!==eid);save()}
 function water(s,ml){
@@ -214,5 +234,5 @@ function importLegacy(raw){
 }
 function current(){return state}
 function setState(s){state=normalize(s);save()}
-window.TT={KEY,LEGACY_KEY,$,today,date,parse,addDay,fmt,n,id,esc,money,FOODS,SLOTS,MEAL_TEMPLATES,SUPPLEMENT_BASE,EXERCISES,fresh,normalize,get state(){return state},get dirty(){return dirty},day,dayRead,save,setClean,setState,replaceFromCloud,foodById,calc,sum,getMacros,foodsForSlot,plannedMacros,addFood,registerPlan,removeFood,water,waterTotal,waterUndo,waterRemove,setSupplement,setMeasure,setSleep,slots,workoutLetters,isTraining,workoutLetter,workoutFor,lastSet,workoutStart,workoutSet,workoutFinish,cardioAdd,taskStatus,taskDetail,schedule,taskSet,applyDiet,saveDiet,applySavedDiet,applySplit,exportJson,importJson,importLegacy,legacyAvailable};
+window.TT={KEY,LEGACY_KEY,$,today,date,parse,addDay,fmt,n,id,esc,money,FOODS,SLOTS,MEAL_TEMPLATES,SUPPLEMENT_BASE,EXERCISES,fresh,normalize,get state(){return state},get dirty(){return dirty},day,dayRead,save,setClean,setState,replaceFromCloud,foodById,calc,sum,getMacros,foodsForSlot,plannedMacros,addFood,addExternalFood,registerPlan,removeFood,water,waterTotal,waterUndo,waterRemove,setSupplement,setMeasure,setSleep,slots,workoutLetters,isTraining,workoutLetter,workoutFor,lastSet,workoutStart,workoutSet,workoutFinish,cardioAdd,taskStatus,taskDetail,schedule,taskSet,applyDiet,saveDiet,applySavedDiet,applySplit,exportJson,importJson,importLegacy,legacyAvailable};
 })();
