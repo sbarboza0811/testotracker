@@ -5,12 +5,14 @@ PWA pessoal para acompanhar alimentação, treino, cronograma, sono, hidrataçã
 Aplicativo: https://sbarboza0811.github.io/testotracker/
 
 ## Funcionalidades
-- **Hoje:** cronograma diário, tarefas, metas, hidratação rápida, marcadores de conclusão/ignorado.
+- **Hoje:** cronograma diário com quantidades por tarefa (alimentos em gramas, água em ml, séries, suplementos e meta de sono), marcação visível de concluído/ignorado e registro direto da atividade.
 - **Diário:** refeição planejada ou livre por gramas, macros e fibras, água, suplementos e sono.
 - **Treinar:** fichas AB, ABC e ABCD editáveis, séries com carga/repetições, histórico, descanso e cardio.
 - **Evolução:** medidas corporais, tendência de peso, indicadores semanais e registro de exames.
-- **Modelos:** dietas de referência para objetivos diferentes, **três cardápios adicionais de 2.000, 2.250 e 2.500 kcal com patinho, ovos, sementes de abóbora e castanhas**, com prévia por refeição, gramas e macros antes de aplicar; salvar e aplicar dieta personalizada; suplementos opcionais; modos de dia com treino, descanso e viagem.
+- **Modelos:** todas as dietas no mesmo painel **Minhas dietas**, incluindo opções por objetivo e **três cardápios adicionais de 2.000, 2.250 e 2.500 kcal com patinho, ovos, sementes de abóbora e castanhas**; prévia por refeição, gramas e macros antes de aplicar; modelos personalizados e suplementos opcionais.
 - **Ajustes:** metas, horários, dias de treino, backup JSON, autenticação e nuvem.
+- **Água:** impede a duplicação acidental da mesma quantidade em 45 segundos, sem impedir o registro de novas doses ao longo do dia; oferece histórico, exclusão de itens e desfazer o último registro.
+- **Conclusões:** refeições e água são marcadas por registros efetivos, suplementos por confirmação; a preparação para dormir pode ser marcada como realizada independentemente do registro das horas de sono.
 
 Os dados nutricionais iniciais são **estimativas por 100 g**, para fins de planejamento. Verifique rótulos e tabelas confiáveis; modelos não substituem orientação nutricional, médica ou física.
 
