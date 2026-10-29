@@ -12,28 +12,44 @@ function button(label,action,cls,attrs){return '<button type="button" class="btn
 function panel(title,body,tools){return '<section class="panel"><div class="label-row"><h2>'+esc(title)+'</h2>'+(tools||'')+'</div>'+body+'</section>'}
 function pct(a,b){return '<div class="progress"><span style="width:'+Math.max(0,Math.min(100,b?100*a/b:0))+'%"></span></div>'}
 function stat(label,value,sub,emoji,a,b){return '<div class="panel stat"><div class="topstat"><span class="icon">'+emoji+'</span><span class="label">'+esc(label)+'</span></div><div><div class="num">'+esc(value)+'</div><div class="sub">'+esc(sub)+'</div></div>'+pct(a,b)+'</div>'}
-function heading(kicker,title,description){return '<div class="page-head"><div class="eyebrow">'+esc(kicker)+'</div><h1>'+esc(title)+'</h1><div class="subline">'+esc(description)+'</div><div class="date-line"><button data-action="prev">‹</button><input type="date" id="selected-date" value="'+selected+'"><button data-action="next">›</button><span class="small muted">'+esc(T.fmt(selected))+'</span></div></div>'}
+function accordion(title,body,opened=false,subtitle=''){
+ return '<details class="panel app-accordion"'+(opened?' open':'')+'><summary><span class="accordion-label">'+esc(title)+(subtitle?'<small>'+esc(subtitle)+'</small>':'')+'</span><span class="accordion-chevron">⌄</span></summary><div class="accordion-content">'+body+'</div></details>';
+}
+function heading(kicker,title,description,showDate=true){
+ return '<div class="page-head"><div class="page-head-line"><div><span class="eyebrow">'+esc(kicker)+'</span><h1>'+esc(title)+'</h1>'+(description?'<p class="subline">'+esc(description)+'</p>':'')+'</div></div>'+
+ (showDate?'<div class="date-line"><button type="button" data-action="prev" aria-label="Dia anterior">‹</button><input type="date" id="selected-date" aria-label="Data do diário" value="'+selected+'"><button type="button" data-action="next" aria-label="Próximo dia">›</button><span class="small muted">'+esc(T.fmt(selected))+'</span></div>':'')+'</div>';
+}
 function taskIcon(type){return {water:'💧',meal:'🍽️',workout:'🏋️',supplement:'💊',sleep:'🌙',measure:'📏'}[type]||'✓'}
+function taskRow(x){
+ const status=T.taskStatus(selected,x),finished=status==='done';
+ const primary=finished?button('Ver','task','small secondary','data-task="'+esc(x.id)+'"')
+   :status==='skipped'?button('Reativar','skip','small secondary','data-task="'+esc(x.id)+'"')
+   :(['water','meal','supplement','sleep'].includes(x.type)?button(x.type==='water'?'+ 250 ml':x.type==='meal'?'Registrar':x.type==='sleep'?'Concluir':'Concluir','task-complete','small','data-task="'+esc(x.id)+'"'):button('Abrir','task','small','data-task="'+esc(x.id)+'"'));
+ const secondary=!finished&&status!=='skipped'?button('Ignorar','skip','small outline','data-task="'+esc(x.id)+'"'):'';
+ return '<div class="listrow taskrow '+(finished?'done':'')+'"><div class="stamp">'+esc(x.time)+'</div><div class="roundicon">'+taskIcon(x.type)+'</div><div class="content"><b>'+esc(x.label)+'</b><small class="task-quantity">'+esc(T.taskDetail(selected,x))+'</small><span class="pill task-status '+(finished?'good':status==='skipped'?'bad':'')+'">'+(finished?'✓ Feito':status==='skipped'?'Ignorado':'Pendente')+'</span></div><div class="task-actions">'+primary+secondary+'</div></div>';
+}
 function pageToday(){
  const macros=T.getMacros(selected),goals=T.state.config.goals,day=T.dayRead(selected),water=T.waterTotal(selected),tasks=T.schedule(selected);
  const done=tasks.filter(x=>T.taskStatus(selected,x)==='done').length,upcoming=tasks.find(x=>T.taskStatus(selected,x)==='pending');
- let html=heading('ROTINA DO DIA','Meu dia','Seu cronograma, seus registros e suas metas.');
- html+='<section class="home-capture"><div><span class="eyebrow">REFEIÇÃO SEM COMPLICAÇÃO</span><h3>Já comeu alguma coisa?</h3><p>Fale tudo de uma vez. Confira e salve.</p></div><div class="actions">'+button('🎙 Registrar por voz','meal-speak','small')+button('Digitar','meal-text','small secondary')+'</div></section>';
- html+='<div class="grid2">'+stat('Alimentação',num(macros.kcal)+' kcal','de '+num(goals.calories)+' kcal','🍽️',macros.kcal,goals.calories)+stat('Água',num(water/1000,2)+' L','de '+num(goals.water/1000,2)+' L','💧',water,goals.water)+stat('Musculação',day.workout?.finished?'Feito':T.isTraining(selected)?'Treino '+T.workoutLetter(selected):'Descanso','Plano '+T.state.config.split,'🏋️',day.workout?.finished?1:0,1)+stat('Sono',day.sleep?num(day.sleep.hours,1)+' h':'—','Meta '+goals.sleep+' h','🌙',day.sleep?.hours||0,goals.sleep)+'</div>';
- html+='<section class="panel soft"><div class="right"><div><span class="eyebrow">PRÓXIMA ATIVIDADE</span><h2 style="margin-top:7px">'+esc(upcoming?upcoming.time+' · '+upcoming.label:'Tudo concluído!')+'</h2></div><span class="pill">'+done+'/'+tasks.length+'</span></div><div style="margin:13px 0">'+pct(done,tasks.length)+'</div>'+(upcoming?button('Abrir atividade','task','', 'data-task="'+esc(upcoming.id)+'"'):button('Ver evolução','evolution'))+'</section>';
- let rows=tasks.map(x=>{
- const status=T.taskStatus(selected,x),finished=status==='done';
- const primary=finished?button('Ver / editar','task','small secondary','data-task="'+esc(x.id)+'"')
- :status==='skipped'?button('Reativar','skip','small secondary','data-task="'+esc(x.id)+'"')
- :(['water','meal','supplement','sleep'].includes(x.type)?button(x.type==='water'?'Registrar 250 ml':x.type==='meal'?'Registrar refeição':x.type==='sleep'?'Concluir rotina noturna':'Marcar como tomado','task-complete','small','data-task="'+esc(x.id)+'"'):button('Abrir registro','task','small','data-task="'+esc(x.id)+'"'));
- const secondary=finished?(x.type==='sleep'&&!T.dayRead(selected).sleep?button('Desmarcar','task-reset','small outline','data-task="'+esc(x.id)+'"'):''):status==='skipped'?'':button('Ignorar','skip','small outline','data-task="'+esc(x.id)+'"');
- return '<div class="listrow taskrow '+(finished?'done':'')+'"><div class="stamp">'+esc(x.time)+'</div><div class="roundicon">'+taskIcon(x.type)+'</div><div class="content"><b>'+esc(x.label)+'</b><small class="task-quantity">'+esc(T.taskDetail(selected,x))+'</small><span class="pill task-status '+(finished?'good':status==='skipped'?'bad':'')+'">'+(finished?'✓ Concluída':status==='skipped'?'Ignorada':'○ Pendente')+'</span></div><div class="task-actions">'+primary+secondary+'</div></div>'
- }).join('');
- html+=panel('Cronograma diário',rows,button('Editar','models','small secondary'));
- html+=panel('Adicionar rapidamente','<div class="actions">'+button('+ 250 ml','water','small secondary','data-ml="250"')+button('+ 500 ml','water','small secondary','data-ml="500"')+button('+ Refeição','add-food','small')+button('🎤 Refeição completa','meal-text','small secondary')+button('+ Medida','measure-form','small secondary')+'</div>');
- if(T.legacyAvailable()&&!T.state.legacyImported)html+='<div class="tip">Encontramos seu histórico da versão anterior neste celular. '+button('Importar sem apagar o antigo','migrate','small secondary')+'</div>';
- return html
+ const kcalPct=Math.max(0,Math.min(100,Math.round((macros.kcal/Math.max(1,goals.calories))*100)));
+ let html=heading('VISÃO GERAL','Seu dia','O essencial da sua rotina, sem distrações.');
+ html+='<section class="dashboard-hero"><div class="dashboard-hero-copy"><span class="eyebrow">REGISTRO MAIS RÁPIDO</span><h2>O que você comeu?</h2><p>Fale os alimentos e as quantidades. O resto é automático.</p></div><div class="dashboard-hero-actions">'+button('🎙 Registrar por voz','meal-speak','voice-main')+button('Digitar','meal-text','voice-alt')+'</div></section>';
+ html+='<section class="panel calorie-overview"><div class="calorie-layout"><div><span class="eyebrow">CALORIAS DE HOJE</span><div class="calorie-value">'+num(macros.kcal)+' <small>kcal</small></div><p class="muted small">Meta: '+num(goals.calories)+' kcal</p></div><div class="calorie-ring" style="--ring-progress:'+kcalPct+'%" role="img" aria-label="'+kcalPct+'% da meta calórica"><strong>'+kcalPct+'%</strong></div></div>'+
+ pct(macros.kcal,goals.calories)+'<div class="calorie-footer"><span>'+num(Math.max(0,goals.calories-macros.kcal))+' kcal restantes</span>'+button('Ver diário','view-diary','small secondary')+'</div></section>';
+ html+='<section class="metric-strip" aria-label="Resumo do dia">'+
+ '<div class="mini-metric"><span>PROTEÍNA</span><strong>'+num(macros.p)+' <small>g</small></strong><small>de '+num(goals.protein)+' g</small>'+pct(macros.p,goals.protein)+'</div>'+
+ '<div class="mini-metric"><span>ÁGUA</span><strong>'+num(water/1000,1)+' <small>L</small></strong><small>de '+num(goals.water/1000,1)+' L</small>'+pct(water,goals.water)+'</div>'+
+ '<div class="mini-metric"><span>TREINO</span><strong>'+(day.workout?.finished?'Feito':T.isTraining(selected)?'Dia '+esc(T.workoutLetter(selected)):'Pausa')+'</strong><small>'+(day.workout?.finished?'Concluído':day.workout?'Em andamento':T.isTraining(selected)?'Programado':'Recuperação')+'</small>'+pct(day.workout?.finished?1:0,1)+'</div></section>';
+ html+='<section class="panel quick-actions"><div class="label-row"><h2>Atalhos</h2></div><div class="quick-grid">'+
+ button('+ 250 ml de água','water','secondary','data-ml="250"')+
+ button('Abrir treino','view-train','secondary')+
+ button('Registrar peso','measure-form','secondary')+'</div></section>';
+ html+='<section class="panel next-activity"><div class="label-row"><h2>Próxima atividade</h2><span class="pill '+(done===tasks.length?'good':'')+'">'+done+'/'+tasks.length+'</span></div><div class="next-activity-line"><div><strong>'+esc(upcoming?upcoming.label:'Tudo concluído por hoje!')+'</strong><small>'+(upcoming?esc(upcoming.time)+' · '+esc(T.taskDetail(selected,upcoming)):'Suas tarefas estão em dia.')+'</small></div>'+(upcoming?button('Abrir','task','small','data-task="'+esc(upcoming.id)+'"'):button('Evolução','evolution','small secondary'))+'</div></section>';
+ html+=accordion('Cronograma completo',tasks.map(taskRow).join(''),false,'Veja e conclua as outras atividades');
+ if(T.legacyAvailable()&&!T.state.legacyImported)html+='<div class="tip">Seu histórico antigo está disponível. '+button('Importar','migrate','small secondary')+'</div>';
+ return html;
 }
+
 function pageDiary(){
  const macros=T.getMacros(selected),goals=T.state.config.goals,water=T.waterTotal(selected),day=T.dayRead(selected);
  let html=heading('ALIMENTAÇÃO','Meu diário','Registre em segundos e acompanhe suas metas.');
