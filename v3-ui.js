@@ -196,7 +196,7 @@ function pageMore(){
  let html=heading('PERSONALIZE','Mais','Configurações e opções que você usa ocasionalmente.',false);
  html+='<section class="more-list">'+
  '<article class="more-card"><div class="more-card-icon">▦</div><div><h2>Modelos e dietas</h2><p>Cardápios, fichas e suplementos.</p></div>'+button('Abrir','models','small secondary')+'</article>'+
- '<article class="more-card"><div class="more-card-icon">⚙</div><div><h2>Ajustes e dados</h2><p>Metas, horários, conta e backup.</p></div>'+button('Abrir','settings','small secondary')+'</article></section>';
+ '<article class="more-card"><div class="more-card-icon">⚙</div><div><h2>Ajustes e dados</h2><p>Metas, horários e backups.</p></div>'+button('Abrir','settings','small secondary')+'</article></section>';
  html+='<p class="muted micro more-footnote">'+(cloud.connected?'Sua conta está conectada.':'Os registros continuam salvos neste aparelho.')+'</p>';
  return html;
 }
