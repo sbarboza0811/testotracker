@@ -125,17 +125,27 @@ function weightGraph(){
 }
 function pageEvolution(){
  const days=Array.from({length:7},(_,i)=>T.addDay(selected,i-6)),logged=days.filter(x=>T.dayRead(x).foods.length);
- let html=heading('RELATÓRIOS','Evolução','Seu progresso ao longo do tempo.');
- html+=panel('Medidas corporais','<div class="measuregrid">'+MEASURES.map(x=>'<div class="measurebox"><span>'+esc(x[1])+'</span><strong>'+((measureLast(x[0])===null)?'—':num(measureLast(x[0]),1)+' '+x[2])+'</strong></div>').join('')+'</div>',button('+ Atualizar','measure-form','small'));
- html+=panel('Tendência do peso',weightGraph());
- html+=panel('Últimos 7 dias','<div class="grid3"><div><div class="kpi">'+logged.length+'</div><small>Dias com refeições registradas</small></div><div><div class="kpi">'+days.filter(x=>T.dayRead(x).workout?.finished).length+'</div><small>Treinos concluídos</small></div><div><div class="kpi">'+num(days.reduce((a,x)=>a+T.waterTotal(x),0)/7/1000,1)+'L</div><small>Água/dia registrada*</small></div></div><p class="muted micro" style="margin-top:10px">* Dias sem registro não devem ser interpretados como consumo zero.</p>');
+ const weight=measureLast('weight'),waist=measureLast('waist'),workouts=days.filter(x=>T.dayRead(x).workout?.finished).length;
+ let html=heading('SEUS RESULTADOS','Evolução','Acompanhe as mudanças ao longo do tempo.');
+ html+='<section class="evolution-stats">'+
+ '<div class="evolution-stat"><small>PESO ATUAL</small><strong>'+(weight===null?'—':num(weight,1))+'</strong><span>'+(weight===null?'Sem registro':'kg')+'</span></div>'+
+ '<div class="evolution-stat"><small>CINTURA</small><strong>'+(waist===null?'—':num(waist,1))+'</strong><span>'+(waist===null?'Sem registro':'cm')+'</span></div>'+
+ '<div class="evolution-stat"><small>TREINOS / 7 DIAS</small><strong>'+workouts+'</strong><span>concluídos</span></div></section>';
+ html+='<div class="feature-action">'+button('+ Atualizar medidas','measure-form','full')+'</div>';
+ html+=panel('Evolução do peso',weightGraph());
+ html+=panel('Resumo dos últimos 7 dias','<div class="weekly-summary"><div><strong>'+logged.length+' / 7</strong><small>dias com alimentação registrada</small></div><div><strong>'+num(days.reduce((a,x)=>a+T.waterTotal(x),0)/7/1000,1)+' L</strong><small>média registrada de água/dia*</small></div></div><p class="muted micro" style="margin-top:12px">* Dias sem registros não representam necessariamente consumo zero.</p>');
+ html+=accordion('Todas as medidas corporais','<div class="measuregrid">'+MEASURES.map(x=>'<div class="measurebox"><span>'+esc(x[1])+'</span><strong>'+((measureLast(x[0])===null)?'—':num(measureLast(x[0]),1)+' '+x[2])+'</strong></div>').join('')+'</div>',false,'Braços, peito, quadril e outras medidas');
  const pstart=T.state.config.protocolStart||T.today(),elapsed=Math.floor((T.parse(selected)-T.parse(pstart))/86400000),week=Math.max(1,Math.min(12,Math.floor(elapsed/7)+1));
  const phase=week<=4?'Fundamentos: sono, alimentação e consistência':week<=8?'Consolidar rotina e acompanhar recuperação':'Revisar tendências, evolução e exames';
  const wellbeing=T.dayRead(selected);
- html+=panel('Protocolo de 12 semanas','<div class="line"><div><div class="kpi">Semana '+week+' de 12</div><small>Início: '+esc(pstart)+'</small></div><span class="pill">'+(elapsed<0?'Ainda não iniciado':elapsed>=84?'Ciclo concluído':'Em andamento')+'</span></div><div style="margin:12px 0">'+pct(Math.max(0,Math.min(84,elapsed+1)),84)+'</div><p class="muted small">'+esc(phase)+'</p><div class="hr"></div><div class="grid3"><div><div class="kpi">'+(wellbeing.energy??'—')+'/5</div><small>Energia</small></div><div><div class="kpi">'+(wellbeing.libido??'—')+'/5</div><small>Libido</small></div><div><div class="kpi">'+(wellbeing.notes?'✓':'—')+'</div><small>Anotações</small></div></div>'+(wellbeing.notes?'<p class="small muted" style="margin-top:9px">'+esc(wellbeing.notes)+'</p>':''),button('Registrar bem-estar','wellbeing-form','small secondary'));
- html+=panel('Exames laboratoriais','<p class="muted small">Não estimamos testosterona a partir de hábitos. Registre resultados laboratoriais para acompanhamento.</p>'+[...T.state.exams].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8).map(x=>'<div class="listrow"><div class="content"><b>'+esc(x.date)+' · '+num(x.value,1)+' ng/dL</b><small>'+esc(x.notes||'')+'</small></div></div>').join(''),button('+ Exame','exam-form','small secondary'));
- html+='<div class="tip">O protocolo de 12 semanas e a interface anterior continuam disponíveis em <a href="./legacy.html">Versão 2.1</a>.</div>';
- return html
+ html+=accordion('Acompanhamento de 12 semanas','<div class="line"><div><div class="kpi">Semana '+week+' de 12</div><small>Início: '+esc(pstart)+'</small></div><span class="pill">'+(elapsed<0?'Ainda não iniciado':elapsed>=84?'Ciclo concluído':'Em andamento')+'</span></div><div style="margin:12px 0">'+pct(Math.max(0,Math.min(84,elapsed+1)),84)+'</div><p class="muted small">'+esc(phase)+'</p>'+
+ '<div class="hr"></div><div class="grid3"><div><div class="kpi">'+(wellbeing.energy??'—')+'/5</div><small>Energia</small></div><div><div class="kpi">'+(wellbeing.libido??'—')+'/5</div><small>Libido</small></div><div><div class="kpi">'+(wellbeing.notes?'✓':'—')+'</div><small>Anotações</small></div></div>'+
+ (wellbeing.notes?'<p class="small muted" style="margin-top:9px">'+esc(wellbeing.notes)+'</p>':'')+
+ '<div class="actions" style="margin-top:12px">'+button('Registrar bem-estar','wellbeing-form','small secondary')+'</div>',false,'Energia, bem-estar e hábitos');
+ html+=accordion('Exames laboratoriais','<p class="muted small">Registre seus resultados; o aplicativo não estima hormônios a partir de hábitos.</p>'+
+ [...T.state.exams].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8).map(x=>'<div class="listrow"><div class="content"><b>'+esc(x.date)+' · '+num(x.value,1)+' ng/dL</b><small>'+esc(x.notes||'')+'</small></div></div>').join('')+
+ '<div class="actions" style="margin-top:12px">'+button('+ Registrar exame','exam-form','small secondary')+'</div>',false,'Resultados e histórico');
+ return html;
 }
 function pageModels(){
  const c=T.state.config;
