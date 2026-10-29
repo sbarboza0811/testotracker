@@ -95,12 +95,20 @@ function exerciseCard(ex,workout,day){
 }
 function pageTrain(){
  const day=T.dayRead(selected),workout=day.workout,letter=workout?.letter||trainLetter||T.workoutLetter(selected);
- let html=heading('TREINO GUIADO','Musculação','Plano '+T.state.config.split+' · Séries, cargas e descanso.');
- html+='<section class="panel"><div class="right"><h2>Treino '+esc(letter)+'</h2><span class="pill">'+(T.isTraining(selected)?'Programado':'Dia livre')+'</span></div><div class="chipbar" style="margin-top:12px">'+T.workoutLetters().map(x=>'<button class="chip '+(letter===x?'active':'')+'" data-action="choose-workout" data-letter="'+x+'" '+(workout?'disabled':'')+'>Treino '+x+'</button>').join('')+'</div><div class="actions">'+(!workout?button('Iniciar treino','start-workout','', 'data-letter="'+letter+'"'):workout.finished?'<span class="pill good">✓ Concluído</span>':button('Finalizar treino','finish-workout',''))+button('Editar ficha','edit-workout','secondary')+button('+ Cardio','cardio-form','secondary')+'</div></section>';
- if(window.TTRestEnd>Date.now())html+='<section class="panel soft" id="rest-panel"><div class="right"><div><b>⏱ Descanso entre séries</b><div class="kpi" id="rest-counter">'+Math.ceil((window.TTRestEnd-Date.now())/1000)+' s</div></div>'+button('Encerrar','stop-rest','small secondary')+'</div></section>';
- html+='<div id="exercise-cards">'+(T.state.workoutPlans[letter]||[]).map(ex=>exerciseCard(ex,workout,day)).join('')+'</div>';
+ const exercises=T.state.workoutPlans[letter]||[],totalSets=exercises.reduce((a,x)=>a+Number(x.sets||0),0);
+ const complete=workout?.sets?.filter(x=>x.done).length||0;
+ let html=heading('ATIVIDADE FÍSICA','Treino','Seu treino e suas séries, tudo num só lugar.');
+ html+='<section class="panel workout-hero"><div class="workout-summary"><div><span class="eyebrow">FICHA DO DIA</span><h2>Treino '+esc(letter)+'</h2><p>'+exercises.length+' exercícios · '+totalSets+' séries'+(workout?' · '+complete+' concluídas':'')+'</p></div><span class="pill '+(workout?.finished?'good':'')+'">'+(workout?.finished?'✓ Concluído':workout?'Em andamento':T.isTraining(selected)?'Programado':'Dia livre')+'</span></div>'+
+ '<div class="chipbar workout-chips">'+T.workoutLetters().map(x=>'<button type="button" class="chip '+(letter===x?'active':'')+'" data-action="choose-workout" data-letter="'+x+'" '+(workout?'disabled':'')+'>Treino '+x+'</button>').join('')+'</div>'+
+ (!workout?button('▶ Iniciar treino','start-workout','full','data-letter="'+letter+'"'):workout.finished?'<div class="workout-complete">✓ Treino concluído. Bom trabalho!</div>':button('✓ Finalizar treino','finish-workout','full'))+
+ '</section>';
+ if(window.TTRestEnd>Date.now())html+='<section class="panel soft" id="rest-panel"><div class="right"><div><b>⏱ Intervalo entre séries</b><div class="kpi" id="rest-counter">'+Math.ceil((window.TTRestEnd-Date.now())/1000)+' s</div></div>'+button('Encerrar','stop-rest','small secondary')+'</div></section>';
+ const cards=exercises.map(ex=>exerciseCard(ex,workout,day)).join('');
+ if(workout&&!workout.finished)html+='<div class="section-heading"><h2>Exercícios</h2><span class="pill">'+complete+'/'+totalSets+' séries</span></div><div id="exercise-cards">'+cards+'</div>';
+ else html+=accordion('Exercícios da ficha',cards,false,workout?.finished?'Ver o treino que você concluiu':'Ver a lista antes de começar');
  const cardio=day.cardio||[];
- html+=panel('Cardio',cardio.length?cardio.map(x=>'<div class="listrow"><div class="content"><b>'+esc(x.type)+'</b><small>'+num(x.minutes)+' min · '+num(x.distance,1)+' km</small></div></div>').join(''):'<p class="muted small">Nenhuma atividade cardiovascular registrada.</p>',button('+ Adicionar','cardio-form','small secondary'));
+ html+=panel('Cardio',(cardio.length?cardio.map(x=>'<div class="listrow"><div class="content"><b>'+esc(x.type)+'</b><small>'+num(x.minutes)+' min'+(x.distance?' · '+num(x.distance,1)+' km':'')+'</small></div></div>').join(''):'<p class="muted small">Nenhum cardio registrado neste dia.</p>')+'<div class="actions" style="margin-top:12px">'+button('+ Registrar cardio','cardio-form','small secondary')+'</div>');
+ html+='<div class="page-footer-link">'+button('Editar minha ficha','edit-workout','small outline')+button('Modelos AB / ABC / ABCD','models','small outline')+'</div>';
  return html;
 }
 const MEASURES=[['weight','Peso','kg'],['waist','Cintura','cm'],['chest','Tórax','cm'],['armR','Braço direito','cm'],['armL','Braço esquerdo','cm'],['forearmR','Antebraço direito','cm'],['forearmL','Antebraço esquerdo','cm'],['hip','Quadril','cm'],['thighR','Coxa direita','cm'],['thighL','Coxa esquerda','cm']];
