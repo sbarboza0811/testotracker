@@ -5,12 +5,12 @@ PWA pessoal para acompanhar alimentação, treino, cronograma, sono, hidrataçã
 Aplicativo: https://sbarboza0811.github.io/testotracker/
 
 ## Layout simplificado (3.1)
-- **Hoje:** uma ação principal de registro por voz, calorias, proteína, água, treino, próximo compromisso e cronograma completo recolhido.
-- **Diário:** refeições consumidas, água e registro por voz; planos de dieta, macros completos e suplementos aparecem sob demanda.
+- **Hoje:** resumo das calorias, proteínas, água, treino e próximo compromisso, sem atalhos duplicados; o cronograma completo fica recolhido.
+- **Diário:** refeições e água, sem botões repetidos para gravar; planos, macros completos e suplementos aparecem sob demanda.
 - **Treino:** escolha a ficha e inicie; somente depois aparecem todas as séries. Cardio e edição permanecem disponíveis.
 - **Evolução:** peso, cintura, treinos e tendência de peso em destaque; demais medidas e protocolo de 12 semanas em seções recolhidas.
 - **Mais:** modelos e dietas, metas e horários, conta, sincronização e backup. Nenhum recurso antigo foi intencionalmente removido.
-- Navegação inferior fixa de cinco áreas, acessibilidade por teclado e seleção da data nas telas que lidam com registros. O atalho flutuante de voz só aparece em Hoje e Diário.
+- Navegação inferior fixa de cinco áreas e seleção de data nas telas de registros. **Um único botão flutuante “🎙 Registrar”**, apenas em Hoje e Diário, concentra o registro por voz; o próprio formulário oferece digitação como alternativa. Os demais controles aparecem somente na área correspondente.
 - Os registros e catálogos existentes continuam na mesma estrutura de armazenamento local e Supabase.
 
 ## Funcionalidades
