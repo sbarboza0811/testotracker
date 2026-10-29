@@ -107,11 +107,15 @@ function amount(item,food){
  const tag=norm(item.term);
  const known={'ovo':50,'banana':100,'pera':150,'pao':50,'fatia de pao':25};
  const perUnit=known[tag]||normalPortion;
- if((u==='unidade'||u==='porcao'||!u&&qty<=9)&&Number.isFinite(perUnit))
-  return{value:Math.min(5000,perUnit*qty),note:'Quantidade convertida usando o tamanho comum da porção.'};
+ if(u==='copo')return{value:Math.min(5000,200*qty),note:'Copo comum estimado em 200 ml.'};
+ // Uma lata, garrafa ou unidade de produto industrializado usa a embalagem real quando encontrada.
  const pack=String(food.packageQuantity||'').match(/(\d+(?:[.,]\d+)?)\s*(ml|g|cl|l|kg)\b/i);
- if(pack){const mult={ml:1,g:1,cl:10,l:1000,kg:1000}[pack[2].toLowerCase()]||1;
-   return{value:Math.round(Number(pack[1].replace(',','.'))*mult*qty),note:'Estimativa por embalagem. Confira o que consumiu.'};}
+ if(pack&&(u==='lata'||u==='garrafa'||u==='unidade'||!u&&qty<=9)){
+   const mult={ml:1,g:1,cl:10,l:1000,kg:1000}[pack[2].toLowerCase()]||1;
+   return{value:Math.min(5000,Math.round(Number(pack[1].replace(',','.'))*mult*qty)),note:'Quantidade calculada pelo tamanho informado da embalagem.'};
+ }
+ if((u==='unidade'||u==='porcao'||!u&&qty<=9)&&Number.isFinite(perUnit))
+  return{value:Math.min(5000,perUnit*qty),note:'Quantidade convertida usando a porção mais comum.'};
  if(known[tag]&&(!u||u.startsWith('unidade')))return{value:known[tag]*qty,note:'Peso médio estimado por unidade. Ajuste se necessário.'};
  if(u.startsWith('copo'))return{value:200*qty,note:'Estimativa de 200 ml por copo.'};
  if(u==='lata'||u==='garrafa')return{value:Math.min(5000,qty*(food.unit==='ml'?350:normalPortion)),note:'Tamanho usual da embalagem estimado.'};
@@ -280,32 +284,42 @@ function review(){
  '<div class="review-footer">'+action('← Corrigir o que falei','meal-back','small secondary')+'</div>');
 }
 function plausibleProducts(term,products){
- const key=M.norm(term).split(' ').filter(word=>word.length>=3);
+ const q=M.norm(term),key=q.split(' ').filter(word=>word.length>=3);
  if(!key.length)return[];
- return (Array.isArray(products)?products:[]).filter(p=>{
-  const text=M.norm((p?.name||'')+' '+(p?.brand||''));
-  return key.every(w=>text.split(' ').some(t=>t===w||t===w+'s'));
+ const candidates=(Array.isArray(products)?products:[]).filter(p=>{
+   const name=M.norm(p?.name),full=M.norm((p?.name||'')+' '+(p?.brand||''));
+   const macros=['kcal','p','c','f'].every(k=>Number.isFinite(Number(p?.[k]))&&Number(p[k])>=0);
+   return /^off:\d{8,14}$/.test(String(p?.id||''))&&/^\d{8,14}$/.test(String(p?.code||''))&&
+      macros&&key.every(w=>full.split(' ').some(t=>t===w||t===w+'s'))&&name.length>=3;
  });
+ const score=p=>{
+   const name=M.norm(p.name),brand=M.norm(p.brand);
+   let points=name===q?120:name.startsWith(q+' ')?85:name.includes(' '+q+' ')?65:45;
+   if(brand&&q.includes(brand))points+=20;
+   if(p.packageQuantity)points+=3;
+   points-=Math.min(40,Math.max(0,name.length-q.length)*.65);
+   return points;
+ };
+ return candidates.sort((a,b)=>score(b)-score(a)).slice(0,10);
 }
 async function analyze(description,slot){
  const seq=++requestId;
  inputText=description;inputSlot=slot;
  const body=document.getElementById('modal-body');
- if(body)body.innerHTML='<div class="capture-wait" id="meal-loading"><span class="capture-spinner"></span><h3>Conferindo os alimentos e as quantidades…</h3><p>Ignorando repetições, interrupções e palavras que não são alimentos.</p></div>';
+ if(body)body.innerHTML='<div class="capture-wait" id="meal-loading"><span class="capture-spinner"></span><h3>Pesquisando alimentos e valores nutricionais…</h3><p>Primeiro no catálogo pessoal, depois na base externa e, se necessário, por estimativa.</p></div>';
  let parsed=[],warning='';
  try{
    if(!C?.parseMeal)throw Error('Análise inteligente indisponível.');
    parsed=await C.parseMeal(description);
  }catch(err){
    parsed=M.parse(description,T.state.foods);
-   warning='Análise inteligente indisponível. Usei somente alimentos conhecidos com quantidades explícitas. Confira o resultado.';
+   warning='A interpretação inteligente ficou indisponível. Utilizei alimentos reconhecidos localmente; confira o resultado.';
  }
  if(seq!==requestId)return;
  if(!Array.isArray(parsed)||!parsed.length){
-   U.modal('Nenhum alimento confiável identificado',
-    '<p class="muted small">Não encontrei alimentos e quantidades suficientes nesta fala. Palavras soltas e gaguejos são ignorados para evitar registros errados.</p>'+
-    '<p class="muted small" style="margin:12px 0">Tente: “100 gramas de arroz e 50 gramas de feijão”.</p>'+
-    action('← Falar ou corrigir novamente','meal-rewrite','full secondary'));
+   U.modal('Nenhum alimento identificado',
+    '<p class="muted small">Não consegui reconhecer alimentos nesta descrição. Tente citar os nomes e as quantidades consumidas.</p>'+
+    action('← Tentar novamente','meal-rewrite','full secondary'));
    return;
  }
  const valid=parsed.filter(item=>item&&typeof item.term==='string'&&item.term.trim().length>=3).slice(0,12);
@@ -314,41 +328,57 @@ async function analyze(description,slot){
    const row={parsed:item,options,selected:-1,amount:0,note:'',problem:''};
    choosePreferred(row);recalc(row);return row;
  });
+ // Busca na internet ANTES de gerar estimativas; dados externos são reaproveitados nas próximas refeições.
  const missing=rows.filter(row=>!row.options.length);
- // Para nomes ainda desconhecidos, pedir uma estimativa típica gratuita e cadastrá-la na hora de salvar.
- if(missing.length&&C?.estimateFoods){
-   try{
-     const estimates=await C.estimateFoods(missing.slice(0,5).map(row=>row.parsed.term));
+ let lookupFailures=0;
+ if(C?.searchFoods){
+   for(let i=0;i<missing.length;i+=3){
+     await Promise.all(missing.slice(i,i+3).map(async row=>{
+       try{
+         const found=plausibleProducts(row.parsed.term,await C.searchFoods(row.parsed.term));
+         if(seq!==requestId)return;
+         if(found.length){row.options=found;choosePreferred(row);recalc(row);}
+       }catch(error){
+         lookupFailures++;
+         console.warn('Pesquisa externa indisponível:',error?.message||error);
+       }
+     }));
      if(seq!==requestId)return;
-     for(const row of missing.slice(0,5)){
-       const entry=estimates.find(e=>M.norm(e.input)===M.norm(row.parsed.term));
-       if(!entry||entry.source!=='Estimativa IA'||!['g','ml'].includes(entry.unit))continue;
-       const slug=M.norm(row.parsed.term).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,55);
-       const nums=['kcal','p','c','f','fiber','serving'].map(k=>Number(entry[k]));
-       if(slug.length<3||nums.some(n=>!Number.isFinite(n)||n<0)||nums[0]>900||nums.slice(1,5).some(n=>n>100)||nums[5]<10||nums[5]>500)continue;
-       row.options=[{id:'auto:'+slug,name:String(entry.name).slice(0,100),unit:entry.unit,
-         kcal:nums[0],p:nums[1],c:nums[2],f:nums[3],fiber:nums[4],serving:nums[5],source:'Estimativa IA'}];
-       choosePreferred(row);recalc(row);
-     }
-   }catch(error){warning+=' Algumas estimativas automáticas ficaram indisponíveis.';}
+   }
  }
- // Para produtos sem estimativa, priorizar a correspondência exata na base externa.
+ // Somente itens ainda ausentes recebem estimativa nutricional para a preparação mais comum.
  const unresolved=rows.filter(row=>!row.options.length);
- await Promise.all(unresolved.slice(0,5).map(async row=>{
-   try{
-     const found=plausibleProducts(row.parsed.term,await C.searchFoods(row.parsed.term));
+ if(unresolved.length&&C?.estimateFoods){
+   for(let i=0;i<unresolved.length;i+=5){
+     const batch=unresolved.slice(i,i+5);
+     try{
+       const estimates=await C.estimateFoods(batch.map(row=>row.parsed.term));
+       if(seq!==requestId)return;
+       for(const row of batch){
+         const entry=estimates.find(e=>M.norm(e.input)===M.norm(row.parsed.term));
+         if(!entry||entry.source!=='Estimativa IA'||!['g','ml'].includes(entry.unit))continue;
+         const slug=M.norm(row.parsed.term).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,55);
+         const nums=['kcal','p','c','f','fiber','serving'].map(k=>Number(entry[k]));
+         if(slug.length<3||nums.some(n=>!Number.isFinite(n)||n<0)||nums[0]>900||nums.slice(1,5).some(n=>n>100)||nums[5]<10||nums[5]>500)continue;
+         row.options=[{id:'auto:'+slug,name:String(entry.name).slice(0,100),unit:entry.unit,
+           kcal:nums[0],p:nums[1],c:nums[2],f:nums[3],fiber:nums[4],serving:nums[5],source:'Estimativa IA'}];
+         choosePreferred(row);recalc(row);
+       }
+     }catch(error){
+       console.warn('Estimativa indisponível:',error?.message||error);
+     }
      if(seq!==requestId)return;
-     if(found.length){row.options=found.slice(0,10);choosePreferred(row);recalc(row);}
-   }catch(error){console.warn('Consulta alimentar indisponível',error?.message||error);}
- }));
+   }
+ }
  if(seq!==requestId||!document.getElementById('meal-loading'))return;
  const ready=rows.filter(row=>pick(row)&&Number.isFinite(row.amount)&&row.amount>0&&row.amount<=5000);
  const ignored=rows.length-ready.length;
- if(ignored)warning+=(warning?' ':'')+ignored+' item(ns) sem identificação segura foram ignorados; não inventei alimentos.';
+ if(ignored)warning+=(warning?' ':'')+ignored+' alimento(s) não identificado(s) com segurança foram omitidos. Os demais podem ser salvos.';
+ if(lookupFailures&&!unresolved.length)warning+=(warning?' ':'')+'Houve falha temporária na busca externa para alguns itens.';
  if(!ready.length){
    U.modal('Nenhum alimento identificado automaticamente',
-    '<p class="muted small">Não encontrei comida com dados nutricionais confiáveis nesta fala. Tente falar o nome do alimento de forma mais específica.</p>'+
-    action('← Gravar novamente','meal-rewrite','full secondary'));
+    '<p class="muted small">A pesquisa e as estimativas não encontraram dados suficientes. Informe o nome do alimento com mais detalhes e tente novamente.</p>'+
+    action('← Tentar novamente','meal-rewrite','full secondary'));
    return;
  }
  draft={slot,rows:ready,description,warning:warning.trim()};review();
