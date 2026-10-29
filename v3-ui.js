@@ -13,6 +13,7 @@ function panel(title,body,tools){return '<section class="panel"><div class="labe
 function pct(a,b){return '<div class="progress"><span style="width:'+Math.max(0,Math.min(100,b?100*a/b:0))+'%"></span></div>'}
 function stat(label,value,sub,emoji,a,b){return '<div class="panel stat"><div class="topstat"><span class="icon">'+emoji+'</span><span class="label">'+esc(label)+'</span></div><div><div class="num">'+esc(value)+'</div><div class="sub">'+esc(sub)+'</div></div>'+pct(a,b)+'</div>'}
 function accordion(title,body,opened=false,subtitle=''){
+ if(title==='Minha nuvem')opened=true;
  return '<details class="panel app-accordion"'+(opened?' open':'')+'><summary><span class="accordion-label">'+esc(title)+(subtitle?'<small>'+esc(subtitle)+'</small>':'')+'</span><span class="accordion-chevron">⌄</span></summary><div class="accordion-content">'+body+'</div></details>';
 }
 function heading(kicker,title,description,showDate=true){
@@ -185,17 +186,37 @@ function pageMore(){
  return html;
 }
 function render(){
- const pages={hoje:pageToday,diario:pageDiary,treinar:pageTrain,evolucao:pageEvolution,modelos:pageModels,ajustes:pageSettings};
+ const pages={hoje:pageToday,diario:pageDiary,treinar:pageTrain,evolucao:pageEvolution,mais:pageMore,modelos:pageModels,ajustes:pageSettings};
  T.$('app').innerHTML=(pages[tab]||pageToday)();
- document.querySelectorAll('[data-go]').forEach(x=>x.classList.toggle('active',x.dataset.go===tab));
- const status=C.state();const badge=T.$('sync-badge');
- if(status.connected){badge.textContent=status.blocked?'Conflito':status.enabled?(status.busy?'Enviando…':'Nuvem ativa'):'Conectado';badge.className='sync-badge '+(status.blocked?'warn':status.enabled?'ok':'')}
- else{badge.textContent=status.available?'Local':'Local offline';badge.className='sync-badge'}
+ const activeTab=['modelos','ajustes'].includes(tab)?'mais':tab;
+ document.querySelectorAll('.bottom-nav [data-go]').forEach(x=>{
+   const active=x.dataset.go===activeTab;
+   x.classList.toggle('active',active);
+   if(active)x.setAttribute('aria-current','page');else x.removeAttribute('aria-current');
+ });
+ const fab=T.$('fab');
+ const hidden=['mais','modelos','ajustes'].includes(tab);
+ fab.hidden=hidden;
+ fab.textContent=tab==='treinar'?'+':tab==='evolucao'?'+':'🎙';
+ const label=tab==='treinar'?'Registrar cardio':tab==='evolucao'?'Atualizar medidas':'Registrar refeição por voz';
+ fab.setAttribute('aria-label',label);fab.title=label;
+ const status=C.state(),badge=T.$('sync-badge');
+ if(status.connected){badge.textContent=status.blocked?'Conflito':status.enabled?'Nuvem':'Conectado';badge.className='sync-badge '+(status.blocked?'warn':status.enabled?'ok':'')}
+ else{badge.textContent=status.available?'Local':'Offline';badge.className='sync-badge'}
 }
 window.TTUI={get date(){return selected},set date(v){selected=v},get tab(){return tab},get trainLetter(){return trainLetter},set trainLetter(v){trainLetter=v},go,render,toast,error,modal,close,MEASURES,button};
 T.toast=toast;
 document.querySelectorAll('[data-go]').forEach(el=>el.addEventListener('click',()=>go(el.dataset.go)));
-T.$('fab').addEventListener('click',()=>{if(tab==='diario'){window.TTMealOpen?.('speak');return}modal('Adicionar registro','<div class="stack">'+[['Refeição inteira (voz/texto)','meal-text'],['Refeição','add-food'],['Água','water-form'],['Sono','sleep-form'],['Medidas','measure-form'],['Suplementos','models'],['Cardio','cardio-form'],['Exame','exam-form']].map(x=>button(x[0],x[1],'full secondary')).join('')+'</div>')});
+T.$('fab').addEventListener('click',()=>{
+ if(tab==='treinar'){modal('Registrar cardio', '<div class="stack">'+button('Adicionar atividade','cardio-form','full')+'</div>');return;}
+ if(tab==='evolucao'){modal('Atualizar medidas', '<div class="stack">'+button('Registrar medidas','measure-form','full')+'</div>');return;}
+ window.TTMealOpen?.('speak');
+});
+document.addEventListener('click',event=>{
+ const btn=event.target.closest('button[data-action]');if(!btn)return;
+ if(btn.dataset.action==='view-diary')go('diario');
+ if(btn.dataset.action==='view-train')go('treinar');
+});
 window.addEventListener('tt:change',render);
 window.addEventListener('tt:loaded',render);
 window.addEventListener('tt:cloud',()=>{if(tab==='ajustes')render()});
