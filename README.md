@@ -4,6 +4,14 @@ PWA pessoal para acompanhar alimentação, treino, cronograma, sono, hidrataçã
 
 Aplicativo: https://sbarboza0811.github.io/testotracker/
 
+## Acesso à conta
+
+- **Entrar / Criar conta** fica sempre visível no canto superior direito, em todas as telas.
+- Um toque abre uma página dedicada a e-mail e senha, com botões claros para **Entrar** e **Criar conta**.
+- Depois de entrar, o mesmo botão passa a mostrar **Minha conta**.
+- A sincronização opcional e a saída da conta ficam nessa página; as preferências de metas continuam em **Mais → Ajustes e dados**.
+- Criar conta não exige configurar a sincronização; os registros seguem salvos localmente primeiro.
+
 ## Layout simplificado (3.1)
 - **Hoje:** resumo das calorias, proteínas, água, treino e próximo compromisso, sem atalhos duplicados; o cronograma completo fica recolhido.
 - **Diário:** refeições e água, sem botões repetidos para gravar; planos, macros completos e suplementos aparecem sob demanda.
