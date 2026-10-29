@@ -34,18 +34,14 @@ function pageToday(){
  const done=tasks.filter(x=>T.taskStatus(selected,x)==='done').length,upcoming=tasks.find(x=>T.taskStatus(selected,x)==='pending');
  const kcalPct=Math.max(0,Math.min(100,Math.round((macros.kcal/Math.max(1,goals.calories))*100)));
  let html=heading('VISÃO GERAL','Seu dia','O essencial da sua rotina, sem distrações.');
- html+='<section class="dashboard-hero"><div class="dashboard-hero-copy"><span class="eyebrow">REGISTRO MAIS RÁPIDO</span><h2>O que você comeu?</h2><p>Fale os alimentos e as quantidades. O resto é automático.</p></div><div class="dashboard-hero-actions">'+button('🎙 Registrar por voz','meal-speak','voice-main')+button('Digitar','meal-text','voice-alt')+'</div></section>';
+ html+='<section class="dashboard-hero dashboard-hero-calm"><span class="eyebrow">REGISTRO SIMPLES</span><h2>Seu dia, sem complicação</h2><p>Use <strong>🎙 Registrar</strong> para contar tudo o que comeu. O app calcula as quantidades automaticamente.</p></section>';
  html+='<section class="panel calorie-overview"><div class="calorie-layout"><div><span class="eyebrow">CALORIAS DO DIA</span><div class="calorie-value">'+num(macros.kcal)+' <small>kcal</small></div><p class="muted small">Meta: '+num(goals.calories)+' kcal</p></div><div class="calorie-ring" style="--ring-progress:'+kcalPct+'%" role="img" aria-label="'+kcalPct+'% da meta calórica"><strong>'+kcalPct+'%</strong></div></div>'+
- pct(macros.kcal,goals.calories)+'<div class="calorie-footer"><span>'+num(Math.max(0,goals.calories-macros.kcal))+' kcal restantes</span>'+button('Ver diário','view-diary','small secondary')+'</div></section>';
+ pct(macros.kcal,goals.calories)+'<div class="calorie-footer"><span>'+num(Math.max(0,goals.calories-macros.kcal))+' kcal restantes</span></div></section>';
  html+='<section class="metric-strip" aria-label="Resumo do dia">'+
  '<div class="mini-metric"><span>PROTEÍNA</span><strong>'+num(macros.p)+' <small>g</small></strong><small>de '+num(goals.protein)+' g</small>'+pct(macros.p,goals.protein)+'</div>'+
  '<div class="mini-metric"><span>ÁGUA</span><strong>'+num(water/1000,1)+' <small>L</small></strong><small>de '+num(goals.water/1000,1)+' L</small>'+pct(water,goals.water)+'</div>'+
  '<div class="mini-metric"><span>TREINO</span><strong>'+(day.workout?.finished?'Feito':T.isTraining(selected)?'Dia '+esc(T.workoutLetter(selected)):'Pausa')+'</strong><small>'+(day.workout?.finished?'Concluído':day.workout?'Em andamento':T.isTraining(selected)?'Programado':'Recuperação')+'</small>'+pct(day.workout?.finished?1:0,1)+'</div></section>';
- html+='<section class="panel quick-actions"><div class="label-row"><h2>Atalhos</h2></div><div class="quick-grid">'+
- button('+ 250 ml de água','water','secondary','data-ml="250"')+
- button('Abrir treino','view-train','secondary')+
- button('Registrar peso','measure-form','secondary')+'</div></section>';
- html+='<section class="panel next-activity"><div class="label-row"><h2>Próxima atividade</h2><span class="pill '+(done===tasks.length?'good':'')+'">'+done+'/'+tasks.length+'</span></div><div class="next-activity-line"><div><strong>'+esc(upcoming?upcoming.label:'Tudo concluído por hoje!')+'</strong><small>'+(upcoming?esc(upcoming.time)+' · '+esc(T.taskDetail(selected,upcoming)):'Suas tarefas estão em dia.')+'</small></div>'+(upcoming?button('Abrir','task','small','data-task="'+esc(upcoming.id)+'"'):button('Evolução','evolution','small secondary'))+'</div></section>';
+ html+='<section class="panel next-activity"><div class="label-row"><h2>Próxima atividade</h2><span class="pill '+(done===tasks.length?'good':'')+'">'+done+'/'+tasks.length+'</span></div><div class="next-activity-line"><div><strong>'+esc(upcoming?upcoming.label:'Tudo concluído por hoje!')+'</strong><small>'+(upcoming?esc(upcoming.time)+' · '+esc(T.taskDetail(selected,upcoming)):'Suas tarefas estão em dia.')+'</small></div>'+(upcoming?button('Abrir','task','small','data-task="'+esc(upcoming.id)+'"'):'')+'</div></section>';
  html+=accordion('Cronograma completo',tasks.map(taskRow).join(''),false,'Veja e conclua as outras atividades');
  if(T.legacyAvailable()&&!T.state.legacyImported)html+='<div class="tip">Seu histórico antigo está disponível. '+button('Importar','migrate','small secondary')+'</div>';
  return html;
@@ -54,9 +50,6 @@ function pageToday(){
 function pageDiary(){
  const macros=T.getMacros(selected),goals=T.state.config.goals,water=T.waterTotal(selected),day=T.dayRead(selected);
  let html=heading('ALIMENTAÇÃO','Diário alimentar','Registre sem procurar alimentos um por um.');
- html+='<section class="voice-hero"><div class="voice-hero-copy"><span class="eyebrow">UM TOQUE PARA REGISTRAR</span><h2>Fale sua refeição</h2><p>O app reconhece alimentos, quantidades e calorias. Você só confere antes de salvar.</p></div>'+
- '<div class="voice-hero-actions">'+button('🎙 Falar agora','meal-speak','voice-main')+button('Digitar','meal-text','voice-alt')+'</div>'+
- '<p class="voice-hint">Exemplo: “100 gramas de arroz, 50 de feijão e 2 ovos”</p></section>';
  html+='<section class="diary-highlights"><div class="diary-highlight"><small>CALORIAS</small><strong>'+num(macros.kcal)+' <span>/ '+num(goals.calories)+'</span></strong>'+pct(macros.kcal,goals.calories)+'</div>'+
  '<div class="diary-highlight"><small>PROTEÍNA</small><strong>'+num(macros.p)+' <span>/ '+num(goals.protein)+' g</span></strong>'+pct(macros.p,goals.protein)+'</div></section>';
  const meals=T.state.mealPlans.map(meal=>{
@@ -64,25 +57,20 @@ function pageDiary(){
   const summary=entries.map(x=>x.name+' · '+num(x.grams)+' '+(x.unit||'g')).join(' • ');
   const planned=meal.items.map(item=>(T.foodById(item.foodId)?.name||'Alimento')+' '+num(item.grams)+' g').join(' · ');
   return '<article class="meal-tile"><div class="meal-tile-top"><div class="meal-meta"><small>'+esc(meal.time)+'</small><h3>'+esc(meal.name)+'</h3><p class="meal-summary">'+(present?esc(summary):'Ainda não registrado')+'</p></div><span class="pill '+(present?'good':'')+'">'+(present?num(actual.kcal)+' kcal':'Pendente')+'</span></div>'+
-  '<div class="meal-tile-actions">'+
-  (present?button('Ver registros','meal-detail','small secondary','data-slot="'+esc(meal.id)+'"')+
-    button('+ Adicionar por voz','meal-speak','small outline','data-slot="'+esc(meal.id)+'"'):
-    button('🎙 Registrar','meal-speak','small','data-slot="'+esc(meal.id)+'"'))+
-  '</div>'+
+  (present?'<div class="meal-tile-actions">'+button('Ver detalhes','meal-detail','small secondary','data-slot="'+esc(meal.id)+'"')+'</div>':'')+
   (present?'':'<details class="meal-plan-details"><summary>Usar o cardápio planejado</summary><p class="small muted">'+esc(planned||'Nenhum alimento planejado.')+'</p>'+
     button('Registrar esse plano','register-meal','small secondary','data-slot="'+esc(meal.id)+'"')+'</details>')+
   '</article>';
  }).join('');
  html+=panel('Suas refeições','<div class="meal-tile-list">'+meals+'</div>');
  html+='<section class="panel water-panel"><div class="label-row"><h2>Água</h2><small class="muted">Meta: '+num(goals.water)+' ml</small></div><div class="water-overview"><strong>'+num(water)+' <span>ml</span></strong><div class="water-progress">'+pct(water,goals.water)+'</div></div>'+
- '<div class="actions water-buttons">'+button('+250 ml','water','secondary','data-ml="250"')+button('+500 ml','water','secondary','data-ml="500"')+button('Outro','water-form','secondary')+'</div>'+
+ '<div class="actions water-buttons">'+button('+250 ml','water','secondary','data-ml="250"')+button('Outra quantidade','water-form','secondary')+'</div>'+
  (day.water?.length?'<details class="simple-details"><summary>Ver histórico ('+day.water.length+')</summary><div class="actions" style="margin-top:9px">'+button('Desfazer último','undo-water','small secondary')+'</div>'+day.water.map(x=>'<div class="listrow"><div class="content"><b>'+num(x.ml)+' ml</b><small>'+esc(new Date(x.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}))+'</small></div>'+button('Excluir','remove-water','small outline','data-entry="'+esc(x.id)+'"')+'</div>').join('')+'</details>':'')+'</section>';
  html+=accordion('Macros, suplementos e sono',
   '<div class="grid3 macro-mini"><div><b>'+num(macros.p)+' g</b><small>Proteínas</small>'+pct(macros.p,goals.protein)+'</div><div><b>'+num(macros.c)+' g</b><small>Carboidratos</small>'+pct(macros.c,goals.carbs)+'</div><div><b>'+num(macros.f)+' g</b><small>Gorduras</small>'+pct(macros.f,goals.fat)+'</div></div><p class="small muted" style="margin:12px 0">Fibras: '+num(macros.fiber,1)+' g · Valores nutricionais aproximados.</p>'+
   '<div class="hr"></div><div class="label-row"><h3>Suplementos</h3>'+button('Configurar','models','small secondary')+'</div>'+
   (T.state.supplements.filter(x=>x.enabled).map(x=>'<div class="listrow"><div class="content"><b>'+esc(x.name)+'</b><small>'+esc(x.dose)+'</small></div><input type="checkbox" class="check" data-supplement="'+esc(x.id)+'" '+(day.supplements?.[x.id]?'checked':'')+' aria-label="Tomei '+esc(x.name)+'"></div>').join('')||'<p class="small muted">Nenhum suplemento ativo.</p>')+
   '<div class="hr"></div><div class="label-row"><h3>Sono</h3>'+button(day.sleep?'Editar':'Registrar','sleep-form','small secondary')+'</div><p class="small muted">'+(day.sleep?num(day.sleep.hours,1)+' horas registradas':'Ainda não registrado.')+'</p>',false,'Detalhes que você consulta quando precisar');
- html+='<div class="page-footer-link">'+button('Modelos de dieta e refeições','models','small outline')+'</div>';
  return html;
 }
 function exerciseCard(ex,workout,day){
@@ -176,13 +164,11 @@ function pageSettings(){
 }
 function pageMore(){
  const cloud=C.state();
- let html=heading('PERSONALIZE','Mais','Tudo que você usa de vez em quando.',false);
+ let html=heading('PERSONALIZE','Mais','Configurações e opções que você usa ocasionalmente.',false);
  html+='<section class="more-list">'+
- '<article class="more-card"><div class="more-card-icon">▦</div><div><h2>Dietas e modelos</h2><p>Cardápios, fichas de musculação e suplementos.</p></div>'+button('Abrir','models','small secondary')+'</article>'+
- '<article class="more-card"><div class="more-card-icon">⚙</div><div><h2>Metas e ajustes</h2><p>Calorias, proteína, horários e notificações.</p></div>'+button('Abrir','settings','small secondary')+'</article>'+
- '<article class="more-card"><div class="more-card-icon">↗</div><div><h2>Meu progresso</h2><p>Medidas corporais, peso e relatórios.</p></div>'+button('Ver','evolution','small secondary')+'</article></section>';
- html+='<section class="panel more-sync"><div class="label-row"><h2>Seus dados</h2><span class="pill '+(cloud.enabled?'good':'')+'">'+(cloud.connected?(cloud.enabled?'Nuvem ativa':'Conta conectada'):'Somente neste aparelho')+'</span></div><p class="muted small">Faça backup ou conecte sua conta para manter os registros sincronizados.</p><div class="actions" style="margin-top:14px">'+button('Conta e backup','settings','small secondary')+button('Exportar dados','export','small outline')+'</div></section>';
- html+='<p class="micro muted more-footnote">TestoTrack · informações nutricionais são estimativas e não substituem acompanhamento profissional.</p>';
+ '<article class="more-card"><div class="more-card-icon">▦</div><div><h2>Modelos e dietas</h2><p>Cardápios, fichas e suplementos.</p></div>'+button('Abrir','models','small secondary')+'</article>'+
+ '<article class="more-card"><div class="more-card-icon">⚙</div><div><h2>Ajustes e dados</h2><p>Metas, horários, conta e backup.</p></div>'+button('Abrir','settings','small secondary')+'</article></section>';
+ html+='<p class="muted micro more-footnote">'+(cloud.connected?'Sua conta está conectada.':'Os registros continuam salvos neste aparelho.')+'</p>';
  return html;
 }
 function render(){
@@ -197,7 +183,6 @@ function render(){
  const fab=T.$('fab');
  const hidden=!['hoje','diario'].includes(tab);
  fab.hidden=hidden;
- fab.textContent='🎙';
  const label='Registrar refeição por voz';
  fab.setAttribute('aria-label',label);fab.title=label;
  const status=C.state(),badge=T.$('sync-badge');
