@@ -6,7 +6,7 @@ Aplicativo: https://sbarboza0811.github.io/testotracker/
 
 ## Funcionalidades
 - **Hoje:** cronograma diário com quantidades por tarefa (alimentos em gramas, água em ml, séries, suplementos e meta de sono), marcação visível de concluído/ignorado e registro direto da atividade.
-- **Diário:** refeição planejada ou livre por gramas, macros e fibras, água, suplementos e sono. A busca externa identifica produtos industrializados pelo Open Food Facts (login no Supabase obrigatório), permite ditar o nome em navegadores compatíveis e confirma o rótulo antes de adicionar automaticamente ao catálogo pessoal. Agora também permite **registrar uma refeição inteira por fala ou texto**, identificando cada alimento e quantidade; mostra uma prévia para revisar as porções, escolher variantes industriais e confirmar tudo em um único salvamento. O recurso de voz depende do navegador. Alimentos que não puderem ser identificados deverão ser adicionados manualmente.
+- **Diário:** refeição planejada ou livre por gramas, macros e fibras, água, suplementos e sono. A busca externa identifica produtos industrializados pelo Open Food Facts (login no Supabase obrigatório), permite ditar o nome em navegadores compatíveis e confirma o rótulo antes de adicionar automaticamente ao catálogo pessoal. Agora também permite **registrar uma refeição inteira por fala ou texto**, identificando cada alimento e quantidade; mostra uma prévia com os produtos selecionados automaticamente e confirma tudo em um único salvamento. Primeiro consulta o catálogo interno; para alimentos ausentes, pesquisa na base Open Food Facts e os cadastra automaticamente. Se a busca não achar correspondência confiável, tenta uma estimativa nutricional identificada como tal. O recurso de voz depende do navegador.
 - **Treinar:** fichas AB, ABC e ABCD editáveis, séries com carga/repetições, histórico, descanso e cardio.
 - **Evolução:** medidas corporais, tendência de peso, indicadores semanais e registro de exames.
 - **Modelos:** todas as dietas no mesmo painel **Minhas dietas**, incluindo opções por objetivo e **três cardápios adicionais de 2.000, 2.250 e 2.500 kcal com patinho, ovos, sementes de abóbora e castanhas**; prévia por refeição, gramas e macros antes de aplicar; modelos personalizados e suplementos opcionais.
@@ -21,7 +21,7 @@ Os dados nutricionais iniciais são **estimativas por 100 g**, para fins de plan
 - **Diário → Falar agora:** grava o áudio diretamente no aplicativo via MediaRecorder. Toque em **Parar e transcrever** para enviar a gravação ao Supabase; a transcrição usa Groq Whisper no plano Free e retorna os alimentos para revisão antes de salvar. Não usa o microfone do teclado.
 - **Diário → Digitar:** descreva a refeição inteira em linguagem natural.
 - **Confira sua refeição:** o app escolhe automaticamente a versão mais provável do alimento, sem pedir que você selecione um resultado. Quantidades faladas são mantidas; quando faltar uma medida, uma porção usual é sugerida como estimativa.
-- **Alimento novo:** se não estiver no catálogo, o aplicativo tenta estimar a composição típica com o Groq Free e o cadastra automaticamente ao salvar. Valores calculados por IA aparecem como **estimativas**, não como valores exatos de rótulos.
+- **Alimento novo:** se não estiver no catálogo, o aplicativo pesquisa primeiro na base Open Food Facts e o cadastra automaticamente ao salvar. Se a busca não encontrar correspondência adequada, tenta estimar a composição típica com o Groq Free e também cadastra ao salvar. Valores calculados por IA aparecem como **estimativas**, não como valores exatos de rótulos.
 - **Sem identificação segura:** palavras que não são alimentos não são cadastradas. Itens desconhecidos sem dados minimamente plausíveis são ignorados e informados na prévia, sem interromper os outros.
 - **Salvar refeição:** uma única confirmação registra todos os alimentos e cadastra os novos juntos.
 - A gravação depende de permissão de microfone, conexão à internet e login no Supabase. O áudio é enviado à API de transcrição e não é salvo no catálogo ou no histórico. Há limite de aproximadamente um minuto/4 MB por gravação.
@@ -37,7 +37,7 @@ A transcrição (Whisper) passa por uma **análise estruturada gratuita no Groq 
 - **"100 g de arroz, não, 50 g de arroz"** → arroz (50 g)
 - **"100 g de telefone"** → não deve gerar alimento
 - Se a análise online falhar, o programa usa um extrator **conservador** que aceita apenas alimentos conhecidos com quantidades explícitas. Quando não há alimento confiável, pede para refazer a fala. O usuário sempre confirma antes de salvar.
-- Produtos externos só são aceitos se seus nomes corresponderem à fala; o aplicativo escolhe a versão mais provável automaticamente. Quando precisar criar um alimento novo, usa uma estimativa nutricional típica identificada como tal.
+- Produtos externos só são aceitos se seus nomes corresponderem à fala; o aplicativo escolhe a versão mais provável automaticamente. Quando a pesquisa online não retornar resultados adequados, utiliza uma estimativa nutricional típica identificada como tal.
 
 ## Dados e migração
 - V3 grava localmente no navegador com a chave `testotrack-v3-local-v1`.
