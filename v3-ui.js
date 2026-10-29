@@ -156,9 +156,39 @@ function pageSettings(){
  html+=accordion('Metas e planejamento','<form data-form="settings"><div class="formgrid">'+[['calories','Calorias kcal'],['protein','Proteína g'],['carbs','Carboidratos g'],['fat','Gorduras g'],['water','Água ml'],['sleep','Sono h']].map(([key,label])=>'<div class="field"><label>'+label+'</label><input type="number" min="0" step="'+(key==='sleep'?'0.5':'1')+'" name="'+key+'" value="'+g[key]+'" required></div>').join('')+'<div class="field"><label>Início da sequência de treinos</label><input type="date" name="planStart" value="'+esc(c.planStart)+'"></div><div class="field"><label>Medidas — dia semanal (0=domingo)</label><select name="measureDay">'+['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'].map((d,i)=>'<option value="'+i+'" '+(c.measureDay==i?'selected':'')+'>'+d+'</option>').join('')+'</select></div></div><div class="divider-title">Dias de musculação</div><div class="actions">'+['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map((d,i)=>'<label class="pill"><input type="checkbox" name="train'+i+'" '+(c.trainingDays.includes(i)?'checked':'')+'>'+d+'</label>').join('')+'</div><div class="divider-title">Horários</div><div class="formgrid"><div class="field"><label>Primeira água</label><input type="time" name="wake" value="'+esc(c.times.wake)+'"></div><div class="field"><label>Hora da musculação</label><input type="time" name="workout" value="'+esc(c.times.workout||'12:00')+'"></div><div class="field"><label>Preparar para dormir</label><input type="time" name="bed" value="'+esc(c.times.bed)+'"></div></div><button class="btn" style="margin-top:15px" type="submit">Salvar configurações</button></form>');
  html+=accordion('Lembretes opcionais','<p class="muted small">Alertas para atividades pendentes enquanto o aplicativo estiver aberto. Lembretes com o app fechado exigem notificações push, ainda não incluídas.</p><div style="margin-top:12px">'+button(c.reminders?'Desativar lembretes':'Ativar lembretes','toggle-reminders','small '+(c.reminders?'secondary':''))+'</div>');
  html+=accordion('Início do protocolo','<form data-form="protocol"><div class="field"><label>Data de início do acompanhamento de 12 semanas</label><input type="date" name="protocolStart" value="'+esc(c.protocolStart||T.today())+'" required></div><button class="btn small" type="submit">Salvar data</button></form>');
- html+=accordion('Minha nuvem',cloud.available?(cloud.connected?'<div class="tip">Conectado: '+esc(cloud.email)+'</div><p class="small muted" style="margin:12px 0">Status: '+(cloud.blocked?'Conflito entre aparelhos':cloud.enabled?'Sincronização automática ativa':'Sincronização ainda não ativada')+'. Os registros locais sempre são salvos primeiro.</p><div class="actions">'+button('Ativar / enviar','cloud-enable','small')+button('Baixar nuvem','cloud-download','small secondary')+button('Backup da nuvem','cloud-backup','small secondary')+button('Substituir nuvem','cloud-overwrite','small outline')+button('Sair da conta','cloud-logout','small secondary')+'</div>'+(cloud.error?'<p class="warning" style="margin-top:12px">'+esc(cloud.error)+'</p>':''):'<form data-form="login"><div class="field"><label>E-mail</label><input type="email" name="email" required autocomplete="email"></div><div class="field"><label>Senha</label><input type="password" name="password" minlength="6" required autocomplete="current-password"></div><div class="actions"><button class="btn" name="method" value="signin">Entrar</button><button class="btn secondary" name="method" value="signup">Criar conta</button></div></form>'):'<p class="warning">Serviço de autenticação temporariamente indisponível. Os registros locais continuam funcionando.</p>');
- if(cloud.connected)html+=accordion('Migrar registros antigos da nuvem','<p class="muted small">Se você usou o TestoTrack 2.1 em outro aparelho, importe peso, sono e exames da sua conta anterior, sem apagar o histórico original.</p>'+button('Importar dados da versão 2.1','migrate-cloud','small secondary'));
  html+=accordion('Backup e migração','<p class="muted small">Faça cópias antes de trocar de aparelho ou substituir versões.</p><div class="actions" style="margin-top:12px">'+button('Exportar backup JSON','export','small')+button('Importar backup','import','small secondary')+button('Importar versão 2.1','migrate','small secondary')+'</div><input id="backup-file" type="file" accept=".json,application/json" class="hidden"><div class="hr"></div><a href="./legacy.html">Abrir o TestoTrack anterior (v2.1)</a><p class="muted micro" style="margin-top:8px">A migração é opcional e não elimina o histórico da versão anterior.</p>');
+ return html;
+}
+function pageAccount(){
+ const cloud=C.state();
+ let html=heading('ACESSO',''+(cloud.connected?'Minha conta':'Entrar ou criar conta'),cloud.connected?'Gerencie sua conta e a sincronização.':'Faça login ou crie sua conta gratuita aqui.',false);
+ if(!cloud.available){
+   html+='<section class="panel account-panel"><h2>Conexão indisponível</h2><p class="muted small">Não foi possível carregar o serviço de contas. Verifique sua internet e abra o app novamente. Seus registros continuam salvos no aparelho.</p></section>';
+ }else if(!cloud.connected){
+   html+='<section class="panel account-panel"><div class="account-intro"><span class="account-symbol" aria-hidden="true">♙</span><div><h2>Acesse o TestoTrack</h2><p class="muted small">Use seu e-mail e uma senha de pelo menos 6 caracteres.</p></div></div>'+
+   '<form data-form="login" class="account-form">'+
+   '<div class="field"><label>E-mail</label><input type="email" name="email" autocomplete="email" placeholder="seu@email.com" required></div>'+
+   '<div class="field"><label>Senha</label><input type="password" name="password" autocomplete="current-password" minlength="6" placeholder="Sua senha" required></div>'+
+   '<div class="account-form-actions"><button class="btn full" type="submit" name="method" value="signin">Entrar</button><button class="btn secondary full" type="submit" name="method" value="signup">Criar conta</button></div>'+
+   '<p class="account-note">Criar conta é gratuito. Se for seu primeiro acesso, escolha <strong>Criar conta</strong>. Você poderá precisar confirmar o e-mail para entrar.</p>'+
+   '</form></section>';
+ }else{
+   const status=cloud.blocked?'Conflito de dados':cloud.enabled?'Sincronização automática ativa':'Sincronização não ativada';
+   html+='<section class="panel account-panel"><div class="account-intro"><span class="account-symbol" aria-hidden="true">✓</span><div><h2>Você está conectado</h2><p class="muted small">'+esc(cloud.email)+'</p></div></div>'+
+    '<div class="account-connection"><small>STATUS DOS DADOS</small><strong>'+esc(status)+'</strong></div>'+
+    '<p class="muted small" style="margin:13px 0">Os registros são salvos primeiro neste aparelho. A sincronização com a nuvem é opcional.</p>'+
+    (!cloud.enabled&&!cloud.blocked?'<div class="account-main-action">'+button('Ativar sincronização','cloud-enable','full')+'</div>':'')+
+    (cloud.blocked?'<p class="warning">Existe uma divergência entre os dados deste aparelho e os da nuvem. Escolha qual versão manter.</p>':'')+
+    (cloud.error?'<p class="warning" style="margin-top:10px">'+esc(cloud.error)+'</p>':'')+
+    '<details class="account-advanced"><summary>Gerenciar dados na nuvem</summary><div class="actions">'+
+    (cloud.blocked?button('Enviar dados deste aparelho','cloud-overwrite','small secondary'):'')+
+    button('Baixar dados da nuvem','cloud-download','small secondary')+
+    button('Fazer backup da nuvem','cloud-backup','small secondary')+
+    (!cloud.blocked?button('Substituir dados da nuvem','cloud-overwrite','small outline'):'')+
+    '</div></details>'+
+    '<div class="account-logout">'+button('Sair da conta','cloud-logout','small outline')+'</div></section>';
+   html+=accordion('Importar dados da conta antiga','<p class="muted small">Se você utilizou o TestoTrack 2.1, poderá recuperar o histórico antigo da nuvem sem apagar sua versão original.</p><div class="actions" style="margin-top:12px">'+button('Importar dados 2.1','migrate-cloud','small secondary')+'</div>');
+ }
  return html;
 }
 function pageMore(){
@@ -170,10 +200,18 @@ function pageMore(){
  html+='<p class="muted micro more-footnote">'+(cloud.connected?'Sua conta está conectada.':'Os registros continuam salvos neste aparelho.')+'</p>';
  return html;
 }
+function updateAccountButton(){
+ const el=T.$('sync-badge'),cloud=C.state();
+ if(!el)return;
+ const label=cloud.connected?'Minha conta':'Entrar / Criar conta';
+ el.textContent=label;
+ el.setAttribute('aria-label',cloud.connected?'Abrir minha conta':'Entrar ou criar conta');
+ el.className='account-entry'+(cloud.connected?' connected':'');
+}
 function render(){
- const pages={hoje:pageToday,diario:pageDiary,treinar:pageTrain,evolucao:pageEvolution,mais:pageMore,modelos:pageModels,ajustes:pageSettings};
+ const pages={hoje:pageToday,diario:pageDiary,treinar:pageTrain,evolucao:pageEvolution,mais:pageMore,modelos:pageModels,ajustes:pageSettings,conta:pageAccount};
  T.$('app').innerHTML=(pages[tab]||pageToday)();
- const activeTab=['modelos','ajustes'].includes(tab)?'mais':tab;
+ const activeTab=['modelos','ajustes','conta'].includes(tab)?'mais':tab;
  document.querySelectorAll('.bottom-nav [data-go]').forEach(x=>{
    const active=x.dataset.go===activeTab;
    x.classList.toggle('active',active);
@@ -184,9 +222,7 @@ function render(){
  fab.hidden=hidden;
  const label='Registrar refeição por voz';
  fab.setAttribute('aria-label',label);fab.title=label;
- const status=C.state(),badge=T.$('sync-badge');
- if(status.connected){badge.textContent=status.blocked?'Conflito':status.enabled?'Nuvem':'Conectado';badge.className='sync-badge '+(status.blocked?'warn':status.enabled?'ok':'')}
- else{badge.textContent=status.available?'Local':'Offline';badge.className='sync-badge'}
+ updateAccountButton();
 }
 window.TTUI={get date(){return selected},set date(v){selected=v},get tab(){return tab},get trainLetter(){return trainLetter},set trainLetter(v){trainLetter=v},go,render,toast,error,modal,close,MEASURES,button};
 T.toast=toast;
@@ -199,7 +235,7 @@ document.addEventListener('click',event=>{
 });
 window.addEventListener('tt:change',render);
 window.addEventListener('tt:loaded',render);
-window.addEventListener('tt:cloud',()=>{if(tab==='ajustes')render()});
+window.addEventListener('tt:cloud',()=>{if(tab==='conta')render();else updateAccountButton()});
 setInterval(()=>{const counter=document.getElementById('rest-counter');if(counter){const left=Math.max(0,Math.ceil(((window.TTRestEnd||0)-Date.now())/1000));counter.textContent=left+' s';if(!left){document.getElementById('rest-panel')?.remove();toast('Descanso concluído!')}}},1000);
 setInterval(()=>{if(!T.state.config.reminders)return;const now=new Date(),current=T.today(),time=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');for(const task of T.schedule(current)){if(task.time!==time||T.taskStatus(current,task)!=='pending')continue;const k='testotrack-reminded-'+current+'-'+task.id;if(localStorage.getItem(k))continue;localStorage.setItem(k,'1');if('Notification'in window&&Notification.permission==='granted'){new Notification('TestoTrack: '+task.label,{body:'Atividade planejada para '+task.time,tag:k})}else toast('Lembrete: '+task.label)}},30000);
 render();
