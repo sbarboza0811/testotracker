@@ -165,7 +165,7 @@ function pageAccount(){
  if(!cloud.available){
    html+='<section class="panel account-panel"><h2>Conexão indisponível</h2><p class="muted small">Não foi possível carregar o serviço de contas. Verifique sua internet e abra o app novamente. Seus registros continuam salvos no aparelho.</p></section>';
  }else if(!cloud.connected){
-   html+='<section class="panel account-panel"><div class="account-intro"><span class="account-symbol" aria-hidden="true">♙</span><div><h2>Acesse o TestoTrack</h2><p class="muted small">Use seu e-mail e uma senha de pelo menos 6 caracteres.</p></div></div>'+
+   html+='<section class="panel account-panel"><div class="account-intro"><span class="account-symbol" aria-hidden="true">👤</span><div><h2>Acesse o TestoTrack</h2><p class="muted small">Use seu e-mail e uma senha de pelo menos 6 caracteres.</p></div></div>'+
    '<form data-form="login" class="account-form">'+
    '<div class="field"><label>E-mail</label><input type="email" name="email" autocomplete="email" placeholder="seu@email.com" required></div>'+
    '<div class="field"><label>Senha</label><input type="password" name="password" autocomplete="current-password" minlength="6" placeholder="Sua senha" required></div>'+
