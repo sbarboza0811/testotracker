@@ -35,7 +35,7 @@ function pageToday(){
  const kcalPct=Math.max(0,Math.min(100,Math.round((macros.kcal/Math.max(1,goals.calories))*100)));
  let html=heading('VISÃO GERAL','Seu dia','O essencial da sua rotina, sem distrações.');
  html+='<section class="dashboard-hero"><div class="dashboard-hero-copy"><span class="eyebrow">REGISTRO MAIS RÁPIDO</span><h2>O que você comeu?</h2><p>Fale os alimentos e as quantidades. O resto é automático.</p></div><div class="dashboard-hero-actions">'+button('🎙 Registrar por voz','meal-speak','voice-main')+button('Digitar','meal-text','voice-alt')+'</div></section>';
- html+='<section class="panel calorie-overview"><div class="calorie-layout"><div><span class="eyebrow">CALORIAS DE HOJE</span><div class="calorie-value">'+num(macros.kcal)+' <small>kcal</small></div><p class="muted small">Meta: '+num(goals.calories)+' kcal</p></div><div class="calorie-ring" style="--ring-progress:'+kcalPct+'%" role="img" aria-label="'+kcalPct+'% da meta calórica"><strong>'+kcalPct+'%</strong></div></div>'+
+ html+='<section class="panel calorie-overview"><div class="calorie-layout"><div><span class="eyebrow">CALORIAS DO DIA</span><div class="calorie-value">'+num(macros.kcal)+' <small>kcal</small></div><p class="muted small">Meta: '+num(goals.calories)+' kcal</p></div><div class="calorie-ring" style="--ring-progress:'+kcalPct+'%" role="img" aria-label="'+kcalPct+'% da meta calórica"><strong>'+kcalPct+'%</strong></div></div>'+
  pct(macros.kcal,goals.calories)+'<div class="calorie-footer"><span>'+num(Math.max(0,goals.calories-macros.kcal))+' kcal restantes</span>'+button('Ver diário','view-diary','small secondary')+'</div></section>';
  html+='<section class="metric-strip" aria-label="Resumo do dia">'+
  '<div class="mini-metric"><span>PROTEÍNA</span><strong>'+num(macros.p)+' <small>g</small></strong><small>de '+num(goals.protein)+' g</small>'+pct(macros.p,goals.protein)+'</div>'+
@@ -195,10 +195,10 @@ function render(){
    if(active)x.setAttribute('aria-current','page');else x.removeAttribute('aria-current');
  });
  const fab=T.$('fab');
- const hidden=['mais','modelos','ajustes'].includes(tab);
+ const hidden=!['hoje','diario'].includes(tab);
  fab.hidden=hidden;
- fab.textContent=tab==='treinar'?'+':tab==='evolucao'?'+':'🎙';
- const label=tab==='treinar'?'Registrar cardio':tab==='evolucao'?'Atualizar medidas':'Registrar refeição por voz';
+ fab.textContent='🎙';
+ const label='Registrar refeição por voz';
  fab.setAttribute('aria-label',label);fab.title=label;
  const status=C.state(),badge=T.$('sync-badge');
  if(status.connected){badge.textContent=status.blocked?'Conflito':status.enabled?'Nuvem':'Conectado';badge.className='sync-badge '+(status.blocked?'warn':status.enabled?'ok':'')}
@@ -207,11 +207,7 @@ function render(){
 window.TTUI={get date(){return selected},set date(v){selected=v},get tab(){return tab},get trainLetter(){return trainLetter},set trainLetter(v){trainLetter=v},go,render,toast,error,modal,close,MEASURES,button};
 T.toast=toast;
 document.querySelectorAll('[data-go]').forEach(el=>el.addEventListener('click',()=>go(el.dataset.go)));
-T.$('fab').addEventListener('click',()=>{
- if(tab==='treinar'){modal('Registrar cardio', '<div class="stack">'+button('Adicionar atividade','cardio-form','full')+'</div>');return;}
- if(tab==='evolucao'){modal('Atualizar medidas', '<div class="stack">'+button('Registrar medidas','measure-form','full')+'</div>');return;}
- window.TTMealOpen?.('speak');
-});
+T.$('fab').addEventListener('click',()=>window.TTMealOpen?.('speak'));
 document.addEventListener('click',event=>{
  const btn=event.target.closest('button[data-action]');if(!btn)return;
  if(btn.dataset.action==='view-diary')go('diario');
