@@ -26,7 +26,7 @@ function taskRow(x){
  const primary=finished?button('Ver','task','small secondary','data-task="'+esc(x.id)+'"')
    :status==='skipped'?button('Reativar','skip','small secondary','data-task="'+esc(x.id)+'"')
    :(['water','meal','supplement','sleep'].includes(x.type)?button(x.type==='water'?'+ 250 ml':x.type==='meal'?'Registrar':x.type==='sleep'?'Concluir':'Concluir','task-complete','small','data-task="'+esc(x.id)+'"'):button('Abrir','task','small','data-task="'+esc(x.id)+'"'));
- const secondary=!finished&&status!=='skipped'?button('Ignorar','skip','small outline','data-task="'+esc(x.id)+'"'):'';
+ const secondary=finished&&x.type==='sleep'&&!T.dayRead(selected).sleep?button('Desmarcar','task-reset','small outline','data-task="'+esc(x.id)+'"'):(!finished&&status!=='skipped'?button('Ignorar','skip','small outline','data-task="'+esc(x.id)+'"'):'');
  return '<div class="listrow taskrow '+(finished?'done':'')+'"><div class="stamp">'+esc(x.time)+'</div><div class="roundicon">'+taskIcon(x.type)+'</div><div class="content"><b>'+esc(x.label)+'</b><small class="task-quantity">'+esc(T.taskDetail(selected,x))+'</small><span class="pill task-status '+(finished?'good':status==='skipped'?'bad':'')+'">'+(finished?'✓ Feito':status==='skipped'?'Ignorado':'Pendente')+'</span></div><div class="task-actions">'+primary+secondary+'</div></div>';
 }
 function pageToday(){
