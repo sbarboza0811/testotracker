@@ -4,6 +4,15 @@ PWA pessoal para acompanhar alimentação, treino, cronograma, sono, hidrataçã
 
 Aplicativo: https://sbarboza0811.github.io/testotracker/
 
+## Layout simplificado (3.1)
+- **Hoje:** uma ação principal de registro por voz, calorias, proteína, água, treino, próximo compromisso e cronograma completo recolhido.
+- **Diário:** refeições consumidas, água e registro por voz; planos de dieta, macros completos e suplementos aparecem sob demanda.
+- **Treino:** escolha a ficha e inicie; somente depois aparecem todas as séries. Cardio e edição permanecem disponíveis.
+- **Evolução:** peso, cintura, treinos e tendência de peso em destaque; demais medidas e protocolo de 12 semanas em seções recolhidas.
+- **Mais:** modelos e dietas, metas e horários, conta, sincronização e backup. Nenhum recurso antigo foi intencionalmente removido.
+- Navegação inferior fixa de cinco áreas, acessibilidade por teclado e seleção da data nas telas que lidam com registros. O atalho flutuante de voz só aparece em Hoje e Diário.
+- Os registros e catálogos existentes continuam na mesma estrutura de armazenamento local e Supabase.
+
 ## Funcionalidades
 - **Hoje:** cronograma diário com quantidades por tarefa (alimentos em gramas, água em ml, séries, suplementos e meta de sono), marcação visível de concluído/ignorado e registro direto da atividade.
 - **Diário:** refeição planejada ou livre por gramas, macros e fibras, água, suplementos e sono. A busca externa identifica produtos industrializados pelo Open Food Facts (login no Supabase obrigatório), permite ditar o nome em navegadores compatíveis e confirma o rótulo antes de adicionar automaticamente ao catálogo pessoal. Agora também permite **registrar uma refeição inteira por fala ou texto**, identificando cada alimento e quantidade; mostra uma prévia com os produtos selecionados automaticamente e confirma tudo em um único salvamento. Primeiro consulta o catálogo interno; para alimentos ausentes, pesquisa na base Open Food Facts e os cadastra automaticamente. Se a busca não achar correspondência confiável, tenta uma estimativa nutricional identificada como tal. O recurso de voz depende do navegador.
