@@ -288,7 +288,7 @@ function plausibleProducts(term,products){
  if(!key.length)return[];
  const candidates=(Array.isArray(products)?products:[]).filter(p=>{
    const name=M.norm(p?.name),full=M.norm((p?.name||'')+' '+(p?.brand||''));
-   const macros=['kcal','p','c','f'].every(k=>Number.isFinite(Number(p?.[k]))&&Number(p[k])>=0);
+   const macros=['kcal','p','c','f'].every(k=>Number.isFinite(Number(p?.[k]))&&Number(p[k])>=0&&Number(p[k])<=(k==='kcal'?900:100));
    return /^off:\d{8,14}$/.test(String(p?.id||''))&&/^\d{8,14}$/.test(String(p?.code||''))&&
       macros&&key.every(w=>full.split(' ').some(t=>t===w||t===w+'s'))&&name.length>=3;
  });
