@@ -52,28 +52,36 @@ function pageToday(){
 
 function pageDiary(){
  const macros=T.getMacros(selected),goals=T.state.config.goals,water=T.waterTotal(selected),day=T.dayRead(selected);
- let html=heading('ALIMENTAÇÃO','Meu diário','Registre em segundos e acompanhe suas metas.');
- html+='<section class="voice-hero"><div class="voice-hero-copy"><span class="eyebrow">REGISTRO RÁPIDO</span><h2>O que você comeu?</h2><p>Diga a refeição inteira. Eu separo os alimentos, quantidades e calorias para você conferir.</p></div>'+
- '<div class="voice-hero-actions">'+button('🎙 Falar agora','meal-speak','voice-main')+button('⌨ Digitar','meal-text','voice-alt')+'</div>'+
- '<p class="voice-hint">Ex.: “200 g de patinho, 150 g de arroz e 1 Monster”</p></section>';
- html+='<div class="grid3 diet-overview">'+stat('Calorias',num(macros.kcal),'de '+num(goals.calories),'🔥',macros.kcal,goals.calories)+stat('Proteínas',num(macros.p)+' g','de '+num(goals.protein)+' g','🥚',macros.p,goals.protein)+stat('Água',num(water/1000,2)+' L','de '+num(goals.water/1000,2)+' L','💧',water,goals.water)+'</div>';
+ let html=heading('ALIMENTAÇÃO','Diário alimentar','Registre sem procurar alimentos um por um.');
+ html+='<section class="voice-hero"><div class="voice-hero-copy"><span class="eyebrow">UM TOQUE PARA REGISTRAR</span><h2>Fale sua refeição</h2><p>O app reconhece alimentos, quantidades e calorias. Você só confere antes de salvar.</p></div>'+
+ '<div class="voice-hero-actions">'+button('🎙 Falar agora','meal-speak','voice-main')+button('Digitar','meal-text','voice-alt')+'</div>'+
+ '<p class="voice-hint">Exemplo: “100 gramas de arroz, 50 de feijão e 2 ovos”</p></section>';
+ html+='<section class="diary-highlights"><div class="diary-highlight"><small>CALORIAS</small><strong>'+num(macros.kcal)+' <span>/ '+num(goals.calories)+'</span></strong>'+pct(macros.kcal,goals.calories)+'</div>'+
+ '<div class="diary-highlight"><small>PROTEÍNA</small><strong>'+num(macros.p)+' <span>/ '+num(goals.protein)+' g</span></strong>'+pct(macros.p,goals.protein)+'</div></section>';
  const meals=T.state.mealPlans.map(meal=>{
-  const entries=T.foodsForSlot(selected,meal.id),planned=T.plannedMacros(meal.id),actual=T.sum(entries);
-  const present=entries.length>0;
-  const itemText=meal.items.map(item=>(T.foodById(item.foodId)?.name||'Alimento')+' '+item.grams+(T.foodById(item.foodId)?.unit||'g')).join(' · ');
-  return '<article class="meal-tile"><div class="meal-tile-top"><div><small class="muted">'+esc(meal.time)+'</small><h3>'+esc(meal.name)+'</h3></div><span class="pill '+(present?'good':'')+'">'+(present?'✓ Registrada':'○ Pendente')+'</span></div>'+
-  '<div class="meal-tile-bottom"><span class="small '+(present?'':'muted')+'">'+(present?'Consumido: '+num(actual.kcal)+' kcal · '+num(actual.p)+' g proteína':'Planejado: '+num(planned.kcal)+' kcal · '+num(planned.p)+' g proteína')+'</span></div>'+
-  (present?'<div class="meal-tile-actions">'+button('Ver / editar','meal-detail','small secondary','data-slot="'+esc(meal.id)+'"')+button('+ Adicionar','meal-text','small outline','data-slot="'+esc(meal.id)+'"')+'</div>':
-    '<div class="meal-tile-actions">'+button('Registrar plano','register-meal','small','data-slot="'+esc(meal.id)+'"')+button('Falar ou digitar','meal-speak','small secondary','data-slot="'+esc(meal.id)+'"')+'</div>')+
-  '<details class="meal-plan-details"><summary>O que estava planejado?</summary><p class="small muted">'+esc(itemText||'Sem alimentos planejados.')+'</p></details></article>';
+  const entries=T.foodsForSlot(selected,meal.id),actual=T.sum(entries),present=entries.length>0;
+  const summary=entries.map(x=>x.name+' · '+num(x.grams)+' '+(x.unit||'g')).join(' • ');
+  const planned=meal.items.map(item=>(T.foodById(item.foodId)?.name||'Alimento')+' '+num(item.grams)+' g').join(' · ');
+  return '<article class="meal-tile"><div class="meal-tile-top"><div class="meal-meta"><small>'+esc(meal.time)+'</small><h3>'+esc(meal.name)+'</h3><p class="meal-summary">'+(present?esc(summary):'Ainda não registrado')+'</p></div><span class="pill '+(present?'good':'')+'">'+(present?num(actual.kcal)+' kcal':'Pendente')+'</span></div>'+
+  '<div class="meal-tile-actions">'+
+  (present?button('Ver registros','meal-detail','small secondary','data-slot="'+esc(meal.id)+'"')+
+    button('+ Adicionar por voz','meal-speak','small outline','data-slot="'+esc(meal.id)+'"'):
+    button('🎙 Registrar','meal-speak','small','data-slot="'+esc(meal.id)+'"'))+
+  '</div>'+
+  (present?'':'<details class="meal-plan-details"><summary>Usar o cardápio planejado</summary><p class="small muted">'+esc(planned||'Nenhum alimento planejado.')+'</p>'+
+    button('Registrar esse plano','register-meal','small secondary','data-slot="'+esc(meal.id)+'"')+'</details>')+
+  '</article>';
  }).join('');
- html+=panel('Refeições de hoje','<div class="meal-tile-list">'+meals+'</div><div class="actions" style="margin-top:14px">'+button('Trocar minha dieta','models','small secondary')+button('Editar plano','edit-meals','small outline')+'</div>');
- html+=panel('Água','<div class="water-simple"><div><div class="kpi">'+num(water)+' ml</div><small class="muted">Meta: '+num(goals.water)+' ml</small></div><div style="flex:1;min-width:90px">'+pct(water,goals.water)+'</div></div>'+
- '<div class="actions" style="margin-top:12px">'+[250,500].map(x=>button('+'+x+' ml','water','small secondary','data-ml="'+x+'"')).join('')+button('Outro valor','water-form','small outline')+'</div>'+
- (day.water?.length?'<details class="simple-details"><summary>Histórico ('+day.water.length+') e desfazer</summary><div class="actions" style="margin-top:9px">'+button('Desfazer último','undo-water','small secondary')+'</div>'+day.water.map(x=>'<div class="listrow"><div class="content"><b>'+num(x.ml)+' ml</b><small>'+esc(new Date(x.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}))+'</small></div>'+button('Excluir','remove-water','small outline','data-entry="'+esc(x.id)+'"')+'</div>').join('')+'</details>':''));
- html+='<details class="panel diary-extra"><summary>Macros detalhados, suplementos e sono</summary><div style="padding-top:16px"><div class="grid3"><div><b>'+num(macros.p)+' g</b><small class="sup-label">Proteínas</small>'+pct(macros.p,goals.protein)+'</div><div><b>'+num(macros.c)+' g</b><small class="sup-label">Carboidratos</small>'+pct(macros.c,goals.carbs)+'</div><div><b>'+num(macros.f)+' g</b><small class="sup-label">Gorduras</small>'+pct(macros.f,goals.fat)+'</div></div><p class="small muted" style="margin:12px 0">Fibras: '+num(macros.fiber,1)+' g · Valores nutricionais estimados.</p><div class="hr"></div><div class="label-row"><h3>Suplementos</h3>'+button('Configurar','models','small secondary')+'</div>'+
- (T.state.supplements.filter(x=>x.enabled).map(s=>'<div class="listrow"><div class="content"><b>'+esc(s.name)+'</b><small>'+esc(s.dose)+'</small></div><input type="checkbox" class="check" data-supplement="'+esc(s.id)+'" '+(day.supplements?.[s.id]?'checked':'')+' aria-label="Tomei '+esc(s.name)+'"></div>').join('')||'<p class="small muted">Nenhum suplemento ativado.</p>')+
- '<div class="hr"></div><div class="label-row"><h3>Sono</h3>'+button(day.sleep?'Editar':'Registrar','sleep-form','small secondary')+'</div><p class="small muted">'+(day.sleep?num(day.sleep.hours,1)+' horas · qualidade '+num(day.sleep.quality)+'/5':'Ainda não registrado.')+'</p></div></details>';
+ html+=panel('Suas refeições','<div class="meal-tile-list">'+meals+'</div>');
+ html+='<section class="panel water-panel"><div class="label-row"><h2>Água</h2><small class="muted">Meta: '+num(goals.water)+' ml</small></div><div class="water-overview"><strong>'+num(water)+' <span>ml</span></strong><div class="water-progress">'+pct(water,goals.water)+'</div></div>'+
+ '<div class="actions water-buttons">'+button('+250 ml','water','secondary','data-ml="250"')+button('+500 ml','water','secondary','data-ml="500"')+button('Outro','water-form','secondary')+'</div>'+
+ (day.water?.length?'<details class="simple-details"><summary>Ver histórico ('+day.water.length+')</summary><div class="actions" style="margin-top:9px">'+button('Desfazer último','undo-water','small secondary')+'</div>'+day.water.map(x=>'<div class="listrow"><div class="content"><b>'+num(x.ml)+' ml</b><small>'+esc(new Date(x.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}))+'</small></div>'+button('Excluir','remove-water','small outline','data-entry="'+esc(x.id)+'"')+'</div>').join('')+'</details>':'')+'</section>';
+ html+=accordion('Macros, suplementos e sono',
+  '<div class="grid3 macro-mini"><div><b>'+num(macros.p)+' g</b><small>Proteínas</small>'+pct(macros.p,goals.protein)+'</div><div><b>'+num(macros.c)+' g</b><small>Carboidratos</small>'+pct(macros.c,goals.carbs)+'</div><div><b>'+num(macros.f)+' g</b><small>Gorduras</small>'+pct(macros.f,goals.fat)+'</div></div><p class="small muted" style="margin:12px 0">Fibras: '+num(macros.fiber,1)+' g · Valores nutricionais aproximados.</p>'+
+  '<div class="hr"></div><div class="label-row"><h3>Suplementos</h3>'+button('Configurar','models','small secondary')+'</div>'+
+  (T.state.supplements.filter(x=>x.enabled).map(x=>'<div class="listrow"><div class="content"><b>'+esc(x.name)+'</b><small>'+esc(x.dose)+'</small></div><input type="checkbox" class="check" data-supplement="'+esc(x.id)+'" '+(day.supplements?.[x.id]?'checked':'')+' aria-label="Tomei '+esc(x.name)+'"></div>').join('')||'<p class="small muted">Nenhum suplemento ativo.</p>')+
+  '<div class="hr"></div><div class="label-row"><h3>Sono</h3>'+button(day.sleep?'Editar':'Registrar','sleep-form','small secondary')+'</div><p class="small muted">'+(day.sleep?num(day.sleep.hours,1)+' horas registradas':'Ainda não registrado.')+'</p>',false,'Detalhes que você consulta quando precisar');
+ html+='<div class="page-footer-link">'+button('Modelos de dieta e refeições','models','small outline')+'</div>';
  return html;
 }
 function exerciseCard(ex,workout,day){
