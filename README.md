@@ -4,6 +4,20 @@ PWA pessoal para acompanhar alimentação, treino, cronograma, sono, hidrataçã
 
 Aplicativo: https://sbarboza0811.github.io/testotracker/
 
+## Exercícios por voz e gasto calórico diário
+
+Na tela **Treino → Falar meu treino**, grave ou digite uma descrição, por exemplo: “fiz 45 minutos de musculação e 30 minutos de esteira moderada”. O Groq Free transcreve e extrai os exercícios feitos, os tempos e a intensidade. O aplicativo exibe uma prévia e permite corrigir a duração antes de salvar. Exercícios incluídos no tempo total da sessão não devem ser contados outra vez; quando você disser apenas número de séries, o tempo será estimado e identificado como aproximado.
+
+- **Hoje → Gasto de energia:** repouso diário estimado, calorias adicionais dos exercícios e soma parcial desses valores.
+- **Treino:** atividades por voz e cardio anteriormente registrado compõem o histórico, com estimativas de calorias adicionais. Um cardio com mesmo tipo e duração informado pelas duas formas é computado uma vez. Séries sem informações de duração não são somadas automaticamente.
+- **Mais → Ajustes e dados → Meu corpo e metabolismo:** peso, altura, idade e sexo da equação. Peso de Evolução registrado até aquela data tem prioridade; sem parâmetros válidos o gasto aparece como “—”, não como zero inventado.
+- Repouso = equação **Mifflin–St Jeor** com peso, altura, idade e sexo da equação. Estimativa para adultos; não representa calorimetria medida.
+- Exercício extra ≈ **(MET − 1) × peso (kg) × duração (horas)**, com valores MET do **Compêndio de Atividades Físicas de 2024**. A subtração de 1 MET evita contar duas vezes o gasto de repouso da sessão. Os resultados dependem da duração e intensidade descritas.
+- **Atenção:** repouso + exercício extra **não é o gasto energético total diário completo (TDEE)**; atividades casuais, deslocamentos, termogênese dos alimentos e outras parcelas não estão incluídas. A estimativa pode variar da realidade.
+- Registros de atividade têm salvamento e exclusão; tentativas de salvar duas vezes o mesmo relato no mesmo dia são bloqueadas.
+- Os áudios são enviados à transcrição apenas depois do usuário parar; os dados de altura, peso, idade e sexo não são enviados ao Groq para esse cálculo (feito no navegador).
+- Fontes metodológicas: [Mifflin–St Jeor – NCBI Endotext](https://www.ncbi.nlm.nih.gov/sites/books/NBK278991/table/diet-treatment-obes.table12est/?report=objectonly) e [Adult Compendium 2024](https://pacompendium.com/).
+
 ## Acesso à conta
 
 - **Entrar / Criar conta** fica sempre visível no canto superior direito, em todas as telas.
@@ -24,7 +38,7 @@ Aplicativo: https://sbarboza0811.github.io/testotracker/
 ## Funcionalidades
 - **Hoje:** cronograma diário com quantidades por tarefa (alimentos em gramas, água em ml, séries, suplementos e meta de sono), marcação visível de concluído/ignorado e registro direto da atividade.
 - **Diário:** refeição planejada ou livre por gramas, macros e fibras, água, suplementos e sono. A busca externa identifica produtos industrializados pelo Open Food Facts (login no Supabase obrigatório), permite ditar o nome em navegadores compatíveis e confirma o rótulo antes de adicionar automaticamente ao catálogo pessoal. Agora também permite **registrar uma refeição inteira por fala ou texto**, identificando cada alimento e quantidade; mostra uma prévia com os produtos selecionados automaticamente e confirma tudo em um único salvamento. Primeiro consulta o catálogo interno; para alimentos ausentes, pesquisa na base Open Food Facts e os cadastra automaticamente. Se a busca não achar correspondência confiável, tenta uma estimativa nutricional identificada como tal. O recurso de voz depende do navegador.
-- **Treinar:** fichas AB, ABC e ABCD editáveis, séries com carga/repetições, histórico, descanso e cardio.
+- **Treinar:** fichas AB, ABC e ABCD editáveis, séries com carga/repetições, histórico, descanso e cardio; um botão de voz permite contar o treino e estimar o gasto calórico.
 - **Evolução:** medidas corporais, tendência de peso, indicadores semanais e registro de exames.
 - **Modelos:** todas as dietas no mesmo painel **Minhas dietas**, incluindo opções por objetivo e **três cardápios adicionais de 2.000, 2.250 e 2.500 kcal com patinho, ovos, sementes de abóbora e castanhas**; prévia por refeição, gramas e macros antes de aplicar; modelos personalizados e suplementos opcionais.
 - **Ajustes:** metas, horários, dias de treino, backup JSON, autenticação e nuvem.
