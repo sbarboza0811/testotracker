@@ -150,13 +150,13 @@ document.addEventListener('submit',async event=>{
   if(form.dataset.form==='activity-save'){
    if(!items.length||items.some(x=>x.minutes<1))throw Error('Informe a duração das atividades antes de salvar.');
    const saved=T.saveActivities(U.date,items,spoken);
-   cancel();U.close();U.go('treinar');U.toast(saved.length+' atividade(s) registradas.');return;
+   cancel();items=[];spoken='';U.close();U.go('treinar');U.toast(saved.length+' atividade(s) registradas.');return;
   }
   if(form.dataset.form==='energy-profile'){
    const f=new FormData(form),weight=Number(f.get('weight')),height=Number(f.get('height')),age=Number(f.get('age')),sex=String(f.get('sex')||'');
    if(!Number.isFinite(weight)||weight<20||weight>400||height<110||height>230||age<16||age>110||!['male','female'].includes(sex))throw Error('Confira peso, altura, idade e sexo.');
    T.state.config.profile={weightKg:weight,heightCm:height,age,sex};
-   T.save();U.close();U.toast('Metabolismo estimado atualizado.');
+   T.save();if(items.length&&spoken)preview();else U.close();U.toast('Metabolismo estimado atualizado.');
   }
  }catch(err){U.error(err)}
 });
