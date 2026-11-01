@@ -120,11 +120,12 @@ function preview(){
  '<button class="btn full secondary activity-again" type="button" data-action="activity-voice">Refazer fala</button>');
 }
 document.addEventListener('click',event=>{
- const btn=event.target.closest('button[data-action]');if(!btn)return;
+ const btn=event.target.closest('button[data-action], [data-action="close"]');if(!btn)return;
  const a=btn.dataset.action;
+ if(a==='close'){cancel();return}
  if(a==='activity-voice'){open();return}
  if(a==='energy-profile'){profile();return}
- if(a==='activity-start'){start().catch(e=>setStatus(e.message||'Não consegui abrir o microfone.',true));return}
+ if(a==='activity-start'){btn.disabled=true;start().catch(e=>{btn.disabled=false;setStatus(e.message||'Não consegui abrir o microfone.',true)});return}
  if(a==='activity-stop'){finish();return}
  if(a==='activity-remove'){items.splice(Number(btn.dataset.index),1);if(items.length)preview();else open();return}
  if(a==='activity-delete'){
