@@ -89,6 +89,56 @@ async function parseFoodSpeech(transcript:string, key:string, userId:string){
  }
  return answer({items});
 }
+async function parseExerciseSpeech(transcript:string,key:string,userId:string){
+ if(!transcript.trim()||transcript.length>550)return answer({error:"Descreva o treino em até 550 caracteres."},400);
+ if(!acceptUser(userId))return answer({error:"Limite gratuito de análises. Aguarde alguns minutos."},429);
+ const guide=[
+ "Você interpreta relatos em português brasileiro de exercícios físicos QUE A PESSOA EFETIVAMENTE FEZ. Não extraia planos futuros, dúvidas, piadas, comida, suplementos ou palavras isoladas.",
+ "Retorne JSON estrito com activities. O campo kind só aceita musculacao, caminhada, esteira, corrida, bicicleta, eliptico, funcional, natacao, escadas, alongamento, outro.",
+ "intensity apenas leve, moderada, intensa. Se não especificar, moderada. Não invente duração, distância, velocidade, calorias, peso corporal ou exercícios.",
+ "durationMin: converta corretamente 'uma hora e meia' em 90, '45 minutos' em 45. Se só houver séries/repetições, estime 1,5 minuto por série, inclusive pequenas pausas; nesse caso assumed=true. Sem duração e sem séries, durationMin=0 e assumed=true para o usuário preencher.",
+ "Treino completo de musculação com duração global deve ser UM registro, mesmo que cite supino, rosca e agachamento. Nunca conte exercícios individuais de novo quando já estão dentro dessa duração.",
+ "Se mencionar exercícios de musculação separados e tempo/series por exercício SEM uma duração total, junte em uma sessão musculacao, somando minutos das partes, sem sobreposição.",
+ "Aeróbicos distintos como esteira, caminhada, corrida, bicicleta podem ser registros separados quando houver tempos distintos; se um total já os inclui, não repita.",
+ "Ignore nomes repetidos por gaguejo. 'Fiz 40 minutos de musculação e 20 de esteira' => dois itens, não três.",
+ "name é nome curto da atividade, evidence é trecho literal da fala indicando atividade; não invente nomes ou intervalos.",
+ "Se só citar um exercício sem tempo nem séries, retorne esse registro com durationMin=0; o app pede duração antes de salvar.",
+ "Se a fala NÃO contar atividades feitas, retorne activities=[]."
+ ].join(" ");
+ try{
+  const response=await fetch("https://api.groq.com/openai/v1/chat/completions",{
+   method:"POST",headers:{"Authorization":"Bearer "+key,"Content-Type":"application/json"},
+   body:JSON.stringify({model:"openai/gpt-oss-20b",temperature:0,reasoning_effort:"low",max_completion_tokens:1500,
+    messages:[{role:"system",content:guide},{role:"user",content:transcript}],
+    response_format:{type:"json_schema",json_schema:{name:"exercise_log",strict:true,schema:{
+      type:"object",additionalProperties:false,required:["activities"],properties:{
+       activities:{type:"array",items:{type:"object",additionalProperties:false,
+         required:["name","kind","durationMin","intensity","assumed","evidence"],properties:{
+          name:{type:"string"},kind:{type:"string"},durationMin:{type:"number"},intensity:{type:"string"},assumed:{type:"boolean"},evidence:{type:"string"}
+         }}}
+      }
+    }}}
+   }),signal:AbortSignal.timeout(22000)
+  });
+  if(!response.ok)return answer({error:response.status===429?"Limite gratuito de interpretação atingido. Tente mais tarde.":"Não consegui interpretar o treino agora."},response.status===429?429:502);
+  const parsed=await response.json();
+  const obj=JSON.parse(parsed?.choices?.[0]?.message?.content||"{}");
+  const allowed=new Set(["musculacao","caminhada","esteira","corrida","bicicleta","eliptico","funcional","natacao","escadas","alongamento","outro"]);
+  const actual=normalizeTerm(transcript),output:any[]=[];
+  for(const raw of Array.isArray(obj?.activities)?obj.activities.slice(0,12):[]){
+   const name=String(raw.name||"").trim().slice(0,90),kind=String(raw.kind||""),minutes=Number(raw.durationMin);
+   const evidence=normalizeTerm(String(raw.evidence||""));
+   const intensity=["leve","moderada","intensa"].includes(raw.intensity)?raw.intensity:"moderada";
+   if(!name||!allowed.has(kind)||!Number.isFinite(minutes)||minutes<0||minutes>480||!evidence)continue;
+   const tokens=evidence.split(" ").filter(w=>w.length>=4);
+   if(!tokens.some(w=>actual.includes(w)))continue;
+   if(output.some(x=>normalizeTerm(x.name)===normalizeTerm(name)&&x.minutes===minutes))continue;
+   output.push({name,kind,minutes:Math.round(minutes),intensity,assumed:!!raw.assumed,evidence:String(raw.evidence||"").slice(0,160)});
+  }
+  if(output.reduce((acc,x)=>acc+x.minutes,0)>720)return answer({error:"A soma de atividades ficou muito alta. Revise as durações."},422);
+  return answer({activities:output});
+ }catch{return answer({error:"Não foi possível interpretar o treino. Tente novamente."},502)}
+}
 function acceptUser(id:string) {
  const now=Date.now(),old=limit.get(id);
  const next=old && now-old.starts<600000?{count:old.count+1,starts:old.starts}:{count:1,starts:now};
@@ -116,6 +166,10 @@ Deno.serve(async (request:Request)=>{
  if(contentType.includes("application/json")){
    const payload=await request.json().catch(()=>({}));
    if(payload?.check===true)return answer({ready:available});
+   if(typeof payload?.exerciseParse==="string"){
+     if(!available)return answer({error:"A chave gratuita de voz ainda não foi configurada."},503);
+     return await parseExerciseSpeech(payload.exerciseParse,apiKey,user.id);
+   }
    if(typeof payload?.parse==="string"){
      if(!available)return answer({error:"A interpretação gratuita precisa da chave GROQ_API_KEY."},503);
      return await parseFoodSpeech(payload.parse,apiKey,user.id);
@@ -140,7 +194,7 @@ Deno.serve(async (request:Request)=>{
  body.append("model","whisper-large-v3");
  body.append("language","pt");
  body.append("response_format","json");
- body.append("prompt","Transcreva fielmente a fala em português do Brasil sobre alimentos, marcas, quantidades e refeições. Preserve nomes e números.");
+ body.append("prompt","Transcreva fielmente a fala em português do Brasil, incluindo exercícios de musculação, corrida, esteira, bicicleta, quantidades, séries, durações, alimentos e números.");
  let reply:Response;
  try{
    reply=await fetch("https://api.groq.com/openai/v1/audio/transcriptions",{
