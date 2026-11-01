@@ -69,14 +69,14 @@ const SUPPLEMENT_BASE=[
 ];
 function mealPreset(key='emagrecer'){return SLOTS.map((m,i)=>({id:m[0],name:m[1],time:m[2],items:MEAL_TEMPLATES[key].meals[i].map(([foodId,grams])=>({foodId,grams}))}))}
 function routinePreset(split='ABC'){const source=split==='AB'?AB_EXERCISES:EXERCISES;return Object.fromEntries(Object.entries(source).map(([letter,ex])=>[letter,ex.map((e,i)=>({id:letter+'-'+i,name:e[0],sets:e[1],reps:e[2],rest:e[3]}))]))}
-function emptyDay(){return {foods:[],water:[],supplements:{},sleep:null,measures:{},workout:null,cardio:[],tasks:{},notes:'',energy:null,libido:null}}
+function emptyDay(){return {foods:[],water:[],supplements:{},sleep:null,measures:{},workout:null,cardio:[],activities:[],tasks:{},notes:'',energy:null,libido:null}}
 function fresh(){
- return {version:3,config:{goals:{...MEAL_TEMPLATES.emagrecer.goals,water:2500,sleep:8},diet:'emagrecer',split:'ABC',planStart:today(),protocolStart:today(),trainingDays:[1,2,4,5],routine:'treino',times:{wake:'07:00',workout:'12:00',bed:'22:30'},measureDay:0,reminders:false},
+ return {version:3,config:{goals:{...MEAL_TEMPLATES.emagrecer.goals,water:2500,sleep:8},diet:'emagrecer',split:'ABC',planStart:today(),protocolStart:today(),trainingDays:[1,2,4,5],routine:'treino',times:{wake:'07:00',workout:'12:00',bed:'22:30'},measureDay:0,reminders:false,profile:{weightKg:null,heightCm:null,age:null,sex:''}},
  foods:structuredClone(FOODS),mealPlans:mealPreset('emagrecer'),workoutPlans:routinePreset(),splitPlans:{},supplements:structuredClone(SUPPLEMENT_BASE),savedDiets:[],days:{},exams:[],legacyImported:false};
 }
 function normalize(obj){
  const d=fresh();if(!obj||typeof obj!=='object')return d;
- if(obj.config&&typeof obj.config==='object')d.config={...d.config,...obj.config,goals:{...d.config.goals,...obj.config.goals},times:{...d.config.times,...obj.config.times}};
+ if(obj.config&&typeof obj.config==='object')d.config={...d.config,...obj.config,goals:{...d.config.goals,...obj.config.goals},times:{...d.config.times,...obj.config.times},profile:{...d.config.profile,...obj.config.profile}};
  for(const name of ['foods','mealPlans','supplements','exams','savedDiets'])if(Array.isArray(obj[name]))d[name]=obj[name];
  // Make new built-in foods available to existing users without overwriting customized foods.
  if(Array.isArray(d.foods)){const known=new Set(d.foods.map(food=>food.id));for(const food of FOODS)if(!known.has(food.id)){d.foods.push({...food});known.add(food.id)}}
@@ -198,6 +198,96 @@ function workoutSet(s,exerciseId,setNo,weight,reps,done=true){
 }
 function workoutFinish(s){workoutStart(s);day(s).workout.finished=new Date().toISOString();save()}
 function cardioAdd(s,minutes,type,distance){day(s).cardio.push({id:id(),minutes:n(minutes),type,distance:n(distance),at:new Date().toISOString()});save()}
+// Estimated resting expenditure and active energy, never a measured calorie count.
+// Mifflin–St Jeor (RMR) + incremental activity MET, NOT RMR * an activity factor.
+const ACTIVITY_MET={
+ musculacao:{leve:2.5,moderada:3.5,intensa:6},
+ caminhada:{leve:2.8,moderada:3.8,intensa:5},
+ esteira:{leve:3,moderada:4.3,intensa:7},
+ corrida:{leve:7,moderada:8.3,intensa:10},
+ bicicleta:{leve:3.5,moderada:6.8,intensa:9},
+ eliptico:{leve:3.5,moderada:5,intensa:9},
+ funcional:{leve:3.5,moderada:5,intensa:7.5},
+ natacao:{leve:4,moderada:6,intensa:9},
+ escadas:{leve:4,moderada:6,intensa:9},
+ alongamento:{leve:2,moderada:2.3,intensa:2.8},
+ outro:{leve:2.5,moderada:3.5,intensa:5}
+};
+function activityType(text){
+ const t=String(text||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+ if(/(esteira|treadmill)/.test(t))return 'esteira';
+ if(/(corrid|correr|trote|running)/.test(t))return 'corrida';
+ if(/(caminh|passead)/.test(t))return 'caminhada';
+ if(/(bike|bicic|pedal|spinning|ciclismo)/.test(t))return 'bicicleta';
+ if(/(eliptic)/.test(t))return 'eliptico';
+ if(/(natac|nadar|piscina)/.test(t))return 'natacao';
+ if(/(escada)/.test(t))return 'escadas';
+ if(/(yoga|along|mobilidad)/.test(t))return 'alongamento';
+ if(/(circuit|funcional|hiit|crossfit)/.test(t))return 'funcional';
+ if(/(muscul|supino|agach|rosca|remada|puxada|halter|pesos|biceps|triceps|peito|costas|perna|ombro|leg press|levantamento terra)/.test(t))return 'musculacao';
+ return 'outro';
+}
+function weightOn(s){
+ const dates=Object.keys(state.days).filter(k=>k<=s&&Number(state.days[k]?.measures?.weight)>20&&Number(state.days[k]?.measures?.weight)<400).sort().reverse();
+ const latest=dates.length?Number(state.days[dates[0]].measures.weight):null;
+ const stored=Number(state.config.profile?.weightKg);
+ return latest||(stored>=20&&stored<=400?stored:null);
+}
+function restingKcal(s){
+ const p=state.config.profile||{},weight=weightOn(s),height=Number(p.heightCm),age=Number(p.age);
+ if(!weight||height<110||height>230||age<16||age>110||!['male','female'].includes(p.sex))return null;
+ return Math.max(800,Math.round(10*weight+6.25*height-5*age+(p.sex==='male'?5:-161)));
+}
+function metFor(kind,intensity='moderada'){
+ return ACTIVITY_MET[kind]?.[intensity]||ACTIVITY_MET.outro.moderada;
+}
+function exerciseActiveKcal(weight,minutes,met){
+ if(!Number.isFinite(weight)||weight<=0||!Number.isFinite(minutes)||minutes<=0||!Number.isFinite(met)||met<1)return null;
+ return Math.round(Math.max(0,(met-1)*weight*minutes/60));
+}
+function activityEntries(s){
+ const d=dayRead(s);
+ const voice=Array.isArray(d.activities)?d.activities:[];
+ const old=(d.cardio||[]).filter(x=>!x.linkedActivity).map(x=>{
+   const kind=activityType(x.type);
+   return {id:x.id,name:x.type||'Cardio',kind,minutes:Number(x.minutes)||0,intensity:'moderada',met:metFor(kind,'moderada'),source:'cardio',assumed:true};
+ });
+ return [...voice,...old];
+}
+function dayEnergy(s){
+ const resting=restingKcal(s),weight=weightOn(s),list=activityEntries(s);
+ let active=0;
+ const entries=list.map(x=>{
+   const met=metFor(x.kind,x.intensity);
+   const minutes=Number(x.minutes);
+   const kcal=weight&&minutes>0?exerciseActiveKcal(weight,minutes,met):null;
+   if(kcal!==null)active+=kcal;
+   return {...x,met,kcal};
+ });
+ // Existing strength sets intentionally do not add unmeasured calories.
+ return {resting,active:weight?active:null,total:resting!==null&&weight?resting+active:null,weight,entries,
+    complete:resting!==null,formula:'Mifflin-St Jeor + MET adicional (MET − 1)',notTotalTdee:true};
+}
+function saveActivities(s,items,transcript){
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(s)||!Array.isArray(items)||!items.length||items.length>12)throw Error('Registro de treino inválido.');
+ const allowed=['leve','moderada','intensa'],next=[],hash=String(transcript||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim().slice(0,550);
+ if(!hash||hash.length<5)throw Error('Descreva o treino para salvar.');
+ const d=day(s);
+ if((d.activities||[]).some(x=>x.transcript===hash))throw Error('Esse relato já foi registrado neste dia. Para evitar duplicação, não salvei novamente.');
+ for(const item of items){
+  const name=String(item.name||'').trim().slice(0,90),kind=String(item.kind||''),intensity=String(item.intensity||'moderada');
+  const minutes=Number(item.minutes);
+  if(!name||!ACTIVITY_MET[kind]||!allowed.includes(intensity)||!Number.isFinite(minutes)||minutes<1||minutes>480)throw Error('Confira a duração de cada atividade (1 a 480 minutos).');
+  next.push({id:id(),name,kind,intensity,minutes,met:metFor(kind,intensity),assumed:!!item.assumed,source:'voice',transcript:hash,at:new Date().toISOString()});
+ }
+ if(!Array.isArray(d.activities))d.activities=[];
+ d.activities.push(...next);save();return next;
+}
+function removeActivity(s,entryId){
+ const d=day(s);if(!Array.isArray(d.activities))return;
+ const old=d.activities.length;d.activities=d.activities.filter(x=>x.id!==entryId);if(old!==d.activities.length)save();
+}
+
 function taskStatus(s,task){const d=dayRead(s);
  if(task.type==='meal'&&foodsForSlot(s,task.ref).length)return'done';
  if(task.type==='water'&&waterTotal(s)>0)return'done';
@@ -270,5 +360,5 @@ function importLegacy(raw){
 }
 function current(){return state}
 function setState(s){state=normalize(s);save()}
-window.TT={KEY,LEGACY_KEY,$,today,date,parse,addDay,fmt,n,id,esc,money,FOODS,SLOTS,MEAL_TEMPLATES,SUPPLEMENT_BASE,EXERCISES,fresh,normalize,get state(){return state},get dirty(){return dirty},day,dayRead,save,setClean,setState,replaceFromCloud,foodById,calc,sum,getMacros,foodsForSlot,plannedMacros,addFood,addExternalFood,addMealBatch,registerPlan,removeFood,water,waterTotal,waterUndo,waterRemove,setSupplement,setMeasure,setSleep,slots,workoutLetters,isTraining,workoutLetter,workoutFor,lastSet,workoutStart,workoutSet,workoutFinish,cardioAdd,taskStatus,taskDetail,schedule,taskSet,applyDiet,saveDiet,applySavedDiet,applySplit,exportJson,importJson,importLegacy,legacyAvailable};
+window.TT={KEY,LEGACY_KEY,$,today,date,parse,addDay,fmt,n,id,esc,money,FOODS,SLOTS,MEAL_TEMPLATES,SUPPLEMENT_BASE,EXERCISES,fresh,normalize,get state(){return state},get dirty(){return dirty},day,dayRead,save,setClean,setState,replaceFromCloud,foodById,calc,sum,getMacros,foodsForSlot,plannedMacros,addFood,addExternalFood,addMealBatch,registerPlan,removeFood,water,waterTotal,waterUndo,waterRemove,setSupplement,setMeasure,setSleep,slots,workoutLetters,isTraining,workoutLetter,workoutFor,lastSet,workoutStart,workoutSet,workoutFinish,cardioAdd,ACTIVITY_MET,activityType,metFor,weightOn,restingKcal,dayEnergy,exerciseActiveKcal,saveActivities,removeActivity,taskStatus,taskDetail,schedule,taskSet,applyDiet,saveDiet,applySavedDiet,applySplit,exportJson,importJson,importLegacy,legacyAvailable};
 })();
