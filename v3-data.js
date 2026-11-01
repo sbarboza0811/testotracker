@@ -251,7 +251,9 @@ function activityEntries(s){
  const old=(d.cardio||[]).filter(x=>!x.linkedActivity).map(x=>{
    const kind=activityType(x.type);
    return {id:x.id,name:x.type||'Cardio',kind,minutes:Number(x.minutes)||0,intensity:'moderada',met:metFor(kind,'moderada'),source:'cardio',assumed:true};
- });
+ }).filter(x=>!voice.some(v=>v.kind===x.kind&&Number(v.minutes)===x.minutes));
+ // When a matching manual cardio and voice report exist on the same day,
+ // treat them as one possible session instead of counting twice.
  return [...voice,...old];
 }
 function dayEnergy(s){
