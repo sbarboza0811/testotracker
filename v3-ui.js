@@ -33,6 +33,7 @@ function pageToday(){
  const macros=T.getMacros(selected),goals=T.state.config.goals,day=T.dayRead(selected),water=T.waterTotal(selected),tasks=T.schedule(selected);
  const done=tasks.filter(x=>T.taskStatus(selected,x)==='done').length,upcoming=tasks.find(x=>T.taskStatus(selected,x)==='pending');
  const kcalPct=Math.max(0,Math.min(100,Math.round((macros.kcal/Math.max(1,goals.calories))*100)));
+ const burn=T.dayEnergy(selected);
  let html=heading('VISÃO GERAL','Seu dia','O essencial da sua rotina, sem distrações.');
  html+='<section class="dashboard-hero dashboard-hero-calm"><span class="eyebrow">REGISTRO SIMPLES</span><h2>Seu dia, sem complicação</h2><p>Use <strong>🎙 Registrar</strong> para contar tudo o que comeu. O app calcula as quantidades automaticamente.</p></section>';
  html+='<section class="panel calorie-overview"><div class="calorie-layout"><div><span class="eyebrow">CALORIAS DO DIA</span><div class="calorie-value">'+num(macros.kcal)+' <small>kcal</small></div><p class="muted small">Meta: '+num(goals.calories)+' kcal</p></div><div class="calorie-ring" style="--ring-progress:'+kcalPct+'%" role="img" aria-label="'+kcalPct+'% da meta calórica"><strong>'+kcalPct+'%</strong></div></div>'+
@@ -41,6 +42,10 @@ function pageToday(){
  '<div class="mini-metric"><span>PROTEÍNA</span><strong>'+num(macros.p)+' <small>g</small></strong><small>de '+num(goals.protein)+' g</small>'+pct(macros.p,goals.protein)+'</div>'+
  '<div class="mini-metric"><span>ÁGUA</span><strong>'+num(water/1000,1)+' <small>L</small></strong><small>de '+num(goals.water/1000,1)+' L</small>'+pct(water,goals.water)+'</div>'+
  '<div class="mini-metric"><span>TREINO</span><strong>'+(day.workout?.finished?'Feito':T.isTraining(selected)?'Dia '+esc(T.workoutLetter(selected)):'Pausa')+'</strong><small>'+(day.workout?.finished?'Concluído':day.workout?'Em andamento':T.isTraining(selected)?'Programado':'Recuperação')+'</small>'+pct(day.workout?.finished?1:0,1)+'</div></section>';
+ html+='<section class="panel energy-overview"><div class="label-row"><h2>Gasto de energia</h2><span class="pill">Estimativa</span></div>'+
+ '<div class="energy-triple"><div><small>REPOUSO / DIA</small><strong>'+(burn.resting===null?'—':num(burn.resting))+'</strong><span>kcal</span></div><div><small>EXERCÍCIOS EXTRAS</small><strong>'+(burn.active===null?'—':num(burn.active))+'</strong><span>kcal</span></div><div class="energy-total"><small>TOTAL PARCIAL</small><strong>'+(burn.total===null?'—':num(burn.total))+'</strong><span>kcal</span></div></div>'+
+ '<p class="muted micro" style="margin-top:12px">Repouso (Mifflin–St Jeor) + exercícios líquidos (MET − 1). Não inclui toda a movimentação diária nem digestão.</p>'+
+ (burn.resting===null?'<div class="energy-setup">'+button('Informar peso e dados do metabolismo','energy-profile','small secondary')+'</div>':'')+'</section>';
  html+='<section class="panel next-activity"><div class="label-row"><h2>Próxima atividade</h2><span class="pill '+(done===tasks.length?'good':'')+'">'+done+'/'+tasks.length+'</span></div><div class="next-activity-line"><div><strong>'+esc(upcoming?upcoming.label:'Tudo concluído por hoje!')+'</strong><small>'+(upcoming?esc(upcoming.time)+' · '+esc(T.taskDetail(selected,upcoming)):'Suas tarefas estão em dia.')+'</small></div>'+(upcoming?button('Abrir','task','small','data-task="'+esc(upcoming.id)+'"'):'')+'</div></section>';
  html+=accordion('Cronograma completo',tasks.map(taskRow).join(''),false,'Veja e conclua as outras atividades');
  if(T.legacyAvailable()&&!T.state.legacyImported)html+='<div class="tip">Seu histórico antigo está disponível. '+button('Importar','migrate','small secondary')+'</div>';
@@ -95,6 +100,14 @@ function pageTrain(){
  const cards=exercises.map(ex=>exerciseCard(ex,workout,day)).join('');
  if(workout&&!workout.finished)html+='<div class="section-heading"><h2>Exercícios</h2><span class="pill">'+complete+'/'+totalSets+' séries</span></div><div id="exercise-cards">'+cards+'</div>';
  else html+=accordion('Exercícios da ficha',cards,false,workout?.finished?'Ver o treino que você concluiu':'Ver a lista antes de começar');
+ html+='<section class="panel workout-voice"><div><span class="eyebrow">REGISTRO POR VOZ</span><h2>Conte o treino que fez</h2><p>Musculação, caminhada, corrida e outros exercícios — basta falar os tempos e a intensidade.</p></div>'+
+ button('🎙 Falar meu treino','activity-voice','full')+'</section>';
+ const energy=T.dayEnergy(selected);
+ html+='<section class="panel workout-energy"><div class="label-row"><h2>Calorias extras no dia</h2><span class="pill">'+(energy.weight?num(energy.weight,1)+' kg':'Peso necessário')+'</span></div>'+
+ '<div class="workout-kcal">'+(energy.active===null?'—':num(energy.active))+' <small>kcal acima do repouso</small></div>'+
+ '<p class="muted micro">Somadas ao gasto de repouso no painel Hoje. Os cálculos são aproximados.</p>'+
+ (energy.entries.length?'<div class="activity-history">'+energy.entries.map(x=>'<div class="listrow"><div class="content"><b>'+esc(x.name)+'</b><small>'+num(x.minutes)+' min · '+(x.kcal===null?'Aguardando peso':num(x.kcal)+' kcal extras')+(x.assumed?' · tempo aproximado':'')+'</small></div>'+
+ (x.source==='voice'?button('Excluir','activity-delete','small outline','data-id="'+esc(x.id)+'"'):'')+'</div>').join('')+'</div>':'')+'</section>';
  const cardio=day.cardio||[];
  html+=panel('Cardio',(cardio.length?cardio.map(x=>'<div class="listrow"><div class="content"><b>'+esc(x.type)+'</b><small>'+num(x.minutes)+' min'+(x.distance?' · '+num(x.distance,1)+' km':'')+'</small></div></div>').join(''):'<p class="muted small">Nenhum cardio registrado neste dia.</p>')+'<div class="actions" style="margin-top:12px">'+button('+ Registrar cardio','cardio-form','small secondary')+'</div>');
  html+='<div class="page-footer-link">'+button('Editar minha ficha','edit-workout','small outline')+'</div>';
@@ -153,6 +166,11 @@ function pageModels(){
 function pageSettings(){
  const c=T.state.config,g=c.goals,cloud=C.state();
  let html=heading('PREFERÊNCIAS','Ajustes','Organize metas, horários e seus dados.',false);
+ const energy=T.dayEnergy(selected),p=T.state.config.profile||{};
+ html+='<section class="panel energy-settings"><div class="label-row"><h2>Meu corpo e metabolismo</h2></div>'+
+ '<p class="muted small">'+(energy.resting===null?'Informe seus dados para calcular o gasto basal.':'Gasto de repouso estimado: '+num(energy.resting)+' kcal/dia · peso '+num(energy.weight,1)+' kg')+'</p>'+
+ '<div class="actions" style="margin-top:12px">'+button(energy.resting===null?'Informar meus dados':'Atualizar meus dados','energy-profile','small secondary')+'</div></section>';
+
  html+=accordion('Metas e planejamento','<form data-form="settings"><div class="formgrid">'+[['calories','Calorias kcal'],['protein','Proteína g'],['carbs','Carboidratos g'],['fat','Gorduras g'],['water','Água ml'],['sleep','Sono h']].map(([key,label])=>'<div class="field"><label>'+label+'</label><input type="number" min="0" step="'+(key==='sleep'?'0.5':'1')+'" name="'+key+'" value="'+g[key]+'" required></div>').join('')+'<div class="field"><label>Início da sequência de treinos</label><input type="date" name="planStart" value="'+esc(c.planStart)+'"></div><div class="field"><label>Medidas — dia semanal (0=domingo)</label><select name="measureDay">'+['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'].map((d,i)=>'<option value="'+i+'" '+(c.measureDay==i?'selected':'')+'>'+d+'</option>').join('')+'</select></div></div><div class="divider-title">Dias de musculação</div><div class="actions">'+['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map((d,i)=>'<label class="pill"><input type="checkbox" name="train'+i+'" '+(c.trainingDays.includes(i)?'checked':'')+'>'+d+'</label>').join('')+'</div><div class="divider-title">Horários</div><div class="formgrid"><div class="field"><label>Primeira água</label><input type="time" name="wake" value="'+esc(c.times.wake)+'"></div><div class="field"><label>Hora da musculação</label><input type="time" name="workout" value="'+esc(c.times.workout||'12:00')+'"></div><div class="field"><label>Preparar para dormir</label><input type="time" name="bed" value="'+esc(c.times.bed)+'"></div></div><button class="btn" style="margin-top:15px" type="submit">Salvar configurações</button></form>');
  html+=accordion('Lembretes opcionais','<p class="muted small">Alertas para atividades pendentes enquanto o aplicativo estiver aberto. Lembretes com o app fechado exigem notificações push, ainda não incluídas.</p><div style="margin-top:12px">'+button(c.reminders?'Desativar lembretes':'Ativar lembretes','toggle-reminders','small '+(c.reminders?'secondary':''))+'</div>');
  html+=accordion('Início do protocolo','<form data-form="protocol"><div class="field"><label>Data de início do acompanhamento de 12 semanas</label><input type="date" name="protocolStart" value="'+esc(c.protocolStart||T.today())+'" required></div><button class="btn small" type="submit">Salvar data</button></form>');
