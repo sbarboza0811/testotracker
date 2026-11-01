@@ -167,6 +167,17 @@ async function estimateFoods(names){
  if(!Array.isArray(data?.foods))throw Error('Estimativa nutricional inválida.');
  return data.foods;
 }
+async function parseExercise(transcript){
+ if(!sb)await init();
+ if(!sb||!user)throw Error('Entre na sua conta para identificar o treino por voz.');
+ if(!navigator.onLine)throw Error('Conecte-se à internet para interpretar o treino.');
+ if(typeof transcript!=='string'||transcript.trim().length<4||transcript.length>550)throw Error('Descreva seu treino em até 550 caracteres.');
+ const {data,error}=await sb.functions.invoke('testotrack-transcribe',{body:{exerciseParse:transcript.trim()}});
+ if(error)throw await speechError(error,'Não consegui analisar esse treino.');
+ if(data?.error)throw Error(data.error);
+ if(!Array.isArray(data?.activities))throw Error('A análise do treino retornou um formato inválido.');
+ return data.activities.slice(0,12);
+}
 async function transcribeAudio(audio){
  if(!sb)await init();
  if(!sb||!user)throw Error('Entre na sua conta em Ajustes para transcrever o áudio.');
@@ -184,5 +195,5 @@ async function transcribeAudio(audio){
 
 window.addEventListener('tt:change',schedule);
 window.addEventListener('online',()=>{if(user){if(blocked)status('Resolver dados','warn');else if(isEnabled())schedule();else status('Conectado','ok')}});
-window.TTCloud={init,login,logout,state,user:authUser,searchFoods,checkTranscription,transcribeAudio,parseMeal,estimateFoods,enable,push,download,overwriteCloud,backupRemote,connect,importLegacyCloud};
+window.TTCloud={init,login,logout,state,user:authUser,searchFoods,checkTranscription,transcribeAudio,parseMeal,parseExercise,estimateFoods,enable,push,download,overwriteCloud,backupRemote,connect,importLegacyCloud};
 })();
