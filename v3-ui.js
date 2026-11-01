@@ -92,6 +92,9 @@ function pageTrain(){
  const exercises=T.state.workoutPlans[letter]||[],totalSets=exercises.reduce((a,x)=>a+Number(x.sets||0),0);
  const complete=workout?.sets?.filter(x=>x.done).length||0;
  let html=heading('ATIVIDADE FÍSICA','Treino','Seu treino e suas séries, tudo num só lugar.');
+ html+='<section class="panel workout-voice"><div><span class="eyebrow">REGISTRO POR VOZ</span><h2>Conte o treino que fez</h2><p>Musculação, caminhada, corrida e outros exercícios — basta falar os tempos e a intensidade.</p></div>'+
+ button('🎙 Falar meu treino','activity-voice','full')+'</section>';
+
  html+='<section class="panel workout-hero"><div class="workout-summary"><div><span class="eyebrow">FICHA DO DIA</span><h2>Treino '+esc(letter)+'</h2><p>'+exercises.length+' exercícios · '+totalSets+' séries'+(workout?' · '+complete+' concluídas':'')+'</p></div><span class="pill '+(workout?.finished?'good':'')+'">'+(workout?.finished?'✓ Concluído':workout?'Em andamento':T.isTraining(selected)?'Programado':'Dia livre')+'</span></div>'+
  '<div class="chipbar workout-chips">'+T.workoutLetters().map(x=>'<button type="button" class="chip '+(letter===x?'active':'')+'" data-action="choose-workout" data-letter="'+x+'" '+(workout?'disabled':'')+'>Treino '+x+'</button>').join('')+'</div>'+
  (!workout?button('▶ Iniciar treino','start-workout','full','data-letter="'+letter+'"'):workout.finished?'<div class="workout-complete">✓ Treino concluído. Bom trabalho!</div>':button('✓ Finalizar treino','finish-workout','full'))+
@@ -100,8 +103,6 @@ function pageTrain(){
  const cards=exercises.map(ex=>exerciseCard(ex,workout,day)).join('');
  if(workout&&!workout.finished)html+='<div class="section-heading"><h2>Exercícios</h2><span class="pill">'+complete+'/'+totalSets+' séries</span></div><div id="exercise-cards">'+cards+'</div>';
  else html+=accordion('Exercícios da ficha',cards,false,workout?.finished?'Ver o treino que você concluiu':'Ver a lista antes de começar');
- html+='<section class="panel workout-voice"><div><span class="eyebrow">REGISTRO POR VOZ</span><h2>Conte o treino que fez</h2><p>Musculação, caminhada, corrida e outros exercícios — basta falar os tempos e a intensidade.</p></div>'+
- button('🎙 Falar meu treino','activity-voice','full')+'</section>';
  const energy=T.dayEnergy(selected);
  html+='<section class="panel workout-energy"><div class="label-row"><h2>Calorias extras no dia</h2><span class="pill">'+(energy.weight?num(energy.weight,1)+' kg':'Peso necessário')+'</span></div>'+
  '<div class="workout-kcal">'+(energy.active===null?'—':num(energy.active))+' <small>kcal acima do repouso</small></div>'+
