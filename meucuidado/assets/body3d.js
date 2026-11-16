@@ -1,228 +1,255 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 
-// Open Anatomy 3D, male, licensed CC BY 4.0.
-// Sources / credit: https://github.com/MervinR07/open-anatomy-3d/blob/main/ATTRIBUTION.md
-const MODEL_URL='https://cdn.jsdelivr.net/npm/open-anatomy-3d@0.1.0/models/anatomy-male.glb';
+// Model and clothing: MakeHuman CC0, exported by kblood/CharacterCreator.
+// Complete credits and stable source in README.md.
+const REV='852e48f316b90a0937234886630e4fb4cdfd1f78';
+const ASSET_ROOT='https://cdn.jsdelivr.net/gh/kblood/CharacterCreator@'+REV+'/output/';
 const mount=document.getElementById('stage3d');
-const host=document.getElementById('hotspots');
+const hotspots=document.getElementById('hotspots');
 const fallback=document.getElementById('viewer-fallback');
 const loading=document.getElementById('model-loading');
-const app=window.BodyMap;
 const scene=new THREE.Scene();
-const camera=new THREE.PerspectiveCamera(37,1,.05,100);
-let renderer,controls,skinMeshes=[],loaded=false;
-const markerRecords=[],hitTargets=[];
-const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
-const front=new THREE.Vector3(0,0,-1),back=new THREE.Vector3(0,0,1);
-let pointerStart,selected=app?.getSelection().region||'olheiras';
-let currentView=app?.getSelection().view||'body';
-const markers=[
- {id:'olheiras',label:'Olheiras',x:-.095,y:.878,views:['head','body']},
- {id:'visao',label:'Visão',x:.092,y:.883,views:['head']},
- {id:'nariz',label:'Nariz',x:0,y:.847,views:['head','body']},
- {id:'orelhas',label:'Orelhas',x:.275,y:.88,views:['head']},
- {id:'dentes',label:'Dentes',x:0,y:.813,views:['head']},
- {id:'papada',label:'Papada',x:0,y:.783,views:['head']},
- {id:'pele',label:'Pele',x:.16,y:.841,views:['head']},
- {id:'cabelo',label:'Cabelo',x:0,y:.975,views:['head']},
- {id:'pescoco',label:'Pescoço',x:0,y:.755,views:['head']},
- {id:'peitoral',label:'Peitoral',x:.24,y:.685,views:['body']},
- {id:'bracos',label:'Braços',x:.64,y:.612,views:['body']},
- {id:'abdomen',label:'Abdômen',x:0,y:.532,views:['body']},
- {id:'pernas',label:'Pernas',x:.24,y:.238,views:['body']},
- {id:'ombros',label:'Ombros',x:-.47,y:.745,views:['body','back']},
- {id:'costas',label:'Costas',x:0,y:.69,views:['back'],back:true}
+const camera=new THREE.PerspectiveCamera(36,1,.06,100);
+const raycaster=new THREE.Raycaster();
+const mouse=new THREE.Vector2();
+const selectors=[],hitObjects=[],skinSurfaces=[];
+let controls=null,renderer=null,ready=false;
+let view=window.BodyMap?.getSelection()?.view||'body';
+let chosen=window.BodyMap?.getSelection()?.region||'olheiras';
+let startPointer=null;
+const mks=[
+ ['olheiras','Olheiras',-.10,.876,['head','body']],
+ ['visao','Visão',.09,.881,['head']],
+ ['nariz','Nariz',0,.84,['head','body']],
+ ['orelhas','Orelhas',.22,.864,['head']],
+ ['dentes','Dentes',0,.808,['head']],
+ ['papada','Papada',0,.776,['head']],
+ ['pele','Pele',.17,.837,['head']],
+ ['cabelo','Cabelo',0,.969,['head']],
+ ['pescoco','Pescoço',0,.752,['head']],
+ ['peitoral','Peitoral',.20,.681,['body']],
+ ['bracos','Braços',.60,.611,['body']],
+ ['abdomen','Abdômen',0,.519,['body']],
+ ['pernas','Pernas',.22,.227,['body']],
+ ['ombros','Ombros',-.40,.733,['body','back']],
+ ['costas','Costas',0,.681,['back']]
 ];
-scene.add(new THREE.HemisphereLight(0xffffff,0x8da79c,2.25));
-const key=new THREE.DirectionalLight(0xfff6ee,2.2);key.position.set(-3,6,6);scene.add(key);
-const fill=new THREE.DirectionalLight(0xe0f4ed,1.15);fill.position.set(4,3,-3);scene.add(fill);
-const hairline=new THREE.DirectionalLight(0xffffff,.8);hairline.position.set(0,2,-6);scene.add(hairline);
-function makePin(p,point){
- const el=document.createElement('button');
- el.type='button';el.className='marker';el.title=p.label;el.dataset.region=p.id;
- el.setAttribute('aria-label','Ver objetivos de '+p.label);
- const dot=document.createElement('span');dot.className='marker-dot';
- el.append(dot,document.createTextNode(p.label));
- el.addEventListener('click',()=>app?.selectRegion(p.id,false));host.appendChild(el);
- const hit=new THREE.Mesh(new THREE.SphereGeometry(.14,12,8),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));
- hit.position.copy(point);
- hit.userData.region=p.id;
- scene.add(hit);hitTargets.push(hit);
- markerRecords.push({def:p,el,at:point,normal:new THREE.Vector3(0,0,p.back?-1:1)});
+scene.add(new THREE.HemisphereLight(0xffffff,0xa7c4b9,2.1));
+const light=new THREE.DirectionalLight(0xfff7ec,2.35);
+light.position.set(-3,5,7);scene.add(light);
+const side=new THREE.DirectionalLight(0xc5e5d9,1.05);
+side.position.set(4,2,-4);scene.add(side);
+const rim=new THREE.DirectionalLight(0xffffff,.8);
+rim.position.set(0,4,-7);scene.add(rim);
+
+function load(url){
+ return new GLTFLoader().loadAsync(url);
 }
-// The original anatomical male mesh is nude. These fitted opaque shorts and
-// a world-space skin-masking zone keep genital anatomy out of public UI views.
-function addPrivacyShorts(box){
+function mainMesh(group){
+ let match;
+ group.traverse(o=>{if(!match&&o.isSkinnedMesh&&o.geometry?.attributes?.skinIndex)match=o});
+ return match;
+}
+function remapClothToBase(mesh,body){
+ if(!mesh.skeleton||!body.skeleton)throw Error('Arquivo de roupa incompatível com o corpo');
+ const byName=new Map(body.skeleton.bones.map((bone,index)=>[bone.name,index]));
+ const mapping=mesh.skeleton.bones.map(b=>byName.get(b.name));
+ if(mapping.some(i=>i===undefined))throw Error('Os ossos da roupa não correspondem ao modelo');
+ const src=mesh.geometry.attributes.skinIndex;
+ const arr=src.array;
+ for(let i=0;i<arr.length;i++)arr[i]=mapping[arr[i]];
+ src.needsUpdate=true;
+ mesh.bind(body.skeleton,body.bindMatrix);
+}
+// Don't render skin covered by clothing. The CCZONE attribute was generated
+// for exactly this purpose by the source model project.
+function concealCoveredSkin(body){
+ const attr=body.geometry.getAttribute('_cczone');
+ const idx=body.geometry.getIndex();
+ if(!attr||!idx)throw Error('Não foi possível garantir roupa e privacidade');
+ const masks=1|2|4|8|16|32|256|512|1024|2048|4096|8192;
+ const indices=idx.array,zone=attr.array,kept=[];
+ for(let i=0;i<indices.length;i+=3){
+  const a=indices[i],b=indices[i+1],c=indices[i+2];
+  if(((zone[a]&masks)!==0)&&((zone[b]&masks)!==0)&&((zone[c]&masks)!==0))continue;
+  kept.push(a,b,c);
+ }
+ if(kept.length===indices.length||kept.length<150)throw Error('Não foi possível ocultar regiões cobertas');
+ body.geometry.setIndex(kept);
+ body.geometry.computeBoundingSphere();
+}
+// Pose and material remain native to the actual clothing assets, never
+// synthetic cylinders or an overlay covering an anatomical nude model.
+async function buildCharacter(){
+ const core=await load(ASSET_ROOT+'base_body.glb');
+ const base=core.scene;
+ const body=mainMesh(base);
+ if(!body)throw Error('Avatar não disponível');
+ const garments=await Promise.all([
+  'clothing_tshirt.glb','clothing_jeans.glb','clothing_shoes.glb'
+ ].map(name=>load(ASSET_ROOT+name)));
+ const outfit=[];
+ for(const file of garments){
+  const pieces=[];
+  file.scene.traverse(o=>{if(o.isSkinnedMesh)pieces.push(o)});
+  if(!pieces.length)throw Error('Roupa 3D indisponível');
+  for(const piece of pieces){
+   piece.removeFromParent();
+   piece.position.copy(body.position);
+   piece.quaternion.copy(body.quaternion);
+   piece.scale.copy(body.scale);
+   remapClothToBase(piece,body);
+   piece.frustumCulled=false;
+   outfit.push(piece);
+  }
+ }
+ concealCoveredSkin(body);
+ for(const piece of outfit)body.parent.add(piece);
+
+ // Optional pre-made short hair, attached to the same skeleton.
+ try{
+  const hair=await load(ASSET_ROOT+'hair_short04.glb');
+  const pieces=[];
+  hair.scene.traverse(o=>{if(o.isSkinnedMesh)pieces.push(o)});
+  for(const piece of pieces){
+   piece.removeFromParent();
+   piece.position.copy(body.position);
+   piece.quaternion.copy(body.quaternion);
+   piece.scale.copy(body.scale);
+   remapClothToBase(piece,body);
+   piece.frustumCulled=false;
+   body.parent.add(piece);
+  }
+ }catch(e){console.info('Cabelo adicional não carregado:',e.message)}
+
+ // All meshes are assembled and the underlying body is masked before
+ // the avatar is allowed into the visible scene, preventing any nude frame.
+ base.updateMatrixWorld(true);
+ const bounds=new THREE.Box3().setFromObject(base);
+ const dimensions=bounds.getSize(new THREE.Vector3());
+ if(dimensions.y<.5||dimensions.y>4)throw Error('Dimensão do avatar inválida');
+ const center=bounds.getCenter(new THREE.Vector3());
+ const scale=4.7/dimensions.y;
+ base.scale.multiplyScalar(scale);
+ base.position.x-=center.x*scale;
+ base.position.z-=center.z*scale;
+ base.position.y+=(-bounds.min.y*scale-2.35);
+ scene.add(base);
+ base.updateMatrixWorld(true);
+ const box=new THREE.Box3().setFromObject(base);
  const height=box.max.y-box.min.y;
- const y=frac=>box.min.y+height*frac;
- const cloth=new THREE.MeshStandardMaterial({color:0x3d5c56,roughness:.96,metalness:0,side:THREE.DoubleSide});
- const edge=new THREE.MeshStandardMaterial({color:0x263f3b,roughness:.99,metalness:0});
- function sleeve(top,bottom,rTop,rBottom,x,zScale,mat){
-  const geo=new THREE.CylinderGeometry(rTop,rBottom,top-bottom,64,2,false);
-  geo.scale(1,1,zScale);
-  const mesh=new THREE.Mesh(geo,mat);
-  mesh.position.set(x,(top+bottom)/2,0);
-  mesh.castShadow=true;mesh.receiveShadow=true;
-  scene.add(mesh);
-  return mesh;
+ skinSurfaces.push(body);
+
+ for(const [id,label,xf,yf,views] of mks){
+  const back=id==='costas';
+  const y=box.min.y+height*yf;
+  const x=xf;
+  const p0=new THREE.Vector3(x,y,back?-5:5);
+  raycaster.set(p0,back?new THREE.Vector3(0,0,1):new THREE.Vector3(0,0,-1));
+  const hits=raycaster.intersectObjects([body],false);
+  let at=hits[0]?.point.clone()||new THREE.Vector3(x,y,back?-.25:.23);
+  at.z+=back?-.06:.06;
+  createHotspot({id,label,views,back,at});
  }
- const upper=y(.505),join=y(.394),hem=y(.292);
- // Waist/hips plus individual short legs, enclosing the original mesh from
- // all directions (front, side and back), without exposing the groin.
- sleeve(upper,join,.55,.65,0,.91,cloth);
- sleeve(join+.07,hem,.365,.34,-.31,1.22,cloth);
- sleeve(join+.07,hem,.365,.34,.31,1.22,cloth);
- sleeve(upper+.027,upper-.04,.553,.55,0,.94,edge);
- sleeve(hem+.035,hem-.015,.343,.34,-.31,1.23,edge);
- sleeve(hem+.035,hem-.015,.343,.34,.31,1.23,edge);
+ ready=true;
+ window.BodyMap3DReady=true;
+ if(loading)loading.hidden=true;
+ if(fallback)fallback.hidden=true;
+ hotspots.hidden=false;
 }
-async function loadHuman(){
- const loader=new GLTFLoader();
- loader.setMeshoptDecoder(MeshoptDecoder);
- const gltf=await loader.loadAsync(MODEL_URL);
- const body=gltf.scene;
- const skin=body.getObjectByName('skin');
- if(!skin)throw new Error('Modelo sem superfície corporal');
- for(const name of ['skeleton','muscles','organs','vessels','nerves','joints']){
-  const group=body.getObjectByName(name);if(group)group.visible=false;
- }
- const clay=new THREE.MeshStandardMaterial({
-  color:0xdac9bc,metalness:0,roughness:.88,side:THREE.FrontSide
- });
- // Also mask the skin inside the shorts so anatomy cannot protrude when
- // the user rotates the body or zooms. In world units, the body is ~4.7 tall.
- clay.onBeforeCompile=shader=>{
-  shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vPrivacyWorld;');
-  shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvPrivacyWorld=(modelMatrix*vec4(transformed,1.0)).xyz;');
-  shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vPrivacyWorld;');
-  shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nif(vPrivacyWorld.y>-1.12 && vPrivacyWorld.y<0.06 && abs(vPrivacyWorld.x)<0.82 && abs(vPrivacyWorld.z)<1.2) discard;');
- };
- clay.customProgramCacheKey=()=> 'intimate-area-privacy-v1';
- skin.traverse(obj=>{
-  if(obj.isMesh){
-   obj.material=clay;
-   obj.castShadow=false;obj.receiveShadow=false;
-   skinMeshes.push(obj);
-  }
- });
- if(!skinMeshes.length)throw new Error('Modelo sem malha de superfície');
- const natural=new THREE.Box3().setFromObject(body);
- const dims=natural.getSize(new THREE.Vector3());
- const center=natural.getCenter(new THREE.Vector3());
- if(dims.y<.7||dims.y>3)throw new Error('Escala do modelo inválida');
- const scale=4.7/dims.y;
- body.scale.setScalar(scale);
- body.position.set(-center.x*scale,-natural.min.y*scale-2.35,-center.z*scale);
- scene.add(body);
- body.updateMatrixWorld(true);
- const box=new THREE.Box3().setFromObject(body);
- const worldHeight=box.max.y-box.min.y;
- addPrivacyShorts(box);
- for(const p of markers){
-  const y=box.min.y+worldHeight*p.y;
-  const x=p.x;
-  const origin=new THREE.Vector3(x,y,p.back?-5:5);
-  raycaster.set(origin,p.back?back:front);
-  const hits=raycaster.intersectObjects(skinMeshes,false);
-  let point;
-  if(hits.length){
-   point=hits[0].point.clone();
-   point.z+=p.back?-.045:.045;
-  }else{
-   point=new THREE.Vector3(x,y,p.back?-.13:.25);
-  }
-  makePin(p,point);
- }
- loaded=true;window.BodyMap3DReady=true;
- host.hidden=false;fallback.hidden=true;if(loading)loading.hidden=true;
+function createHotspot(p){
+ const btn=document.createElement('button');
+ btn.type='button';btn.className='marker';btn.dataset.region=p.id;
+ btn.title=p.label;btn.setAttribute('aria-label','Abrir '+p.label);
+ const dot=document.createElement('span');dot.className='marker-dot';
+ btn.append(dot,document.createTextNode(p.label));
+ btn.addEventListener('click',()=>window.BodyMap?.selectRegion(p.id,false));
+ hotspots.appendChild(btn);
+ const hit=new THREE.Mesh(new THREE.SphereGeometry(.15,10,8),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));
+ hit.position.copy(p.at);hit.userData.region=p.id;
+ scene.add(hit);hitObjects.push(hit);
+ selectors.push({...p,btn,normal:new THREE.Vector3(0,0,p.back?-1:1)});
 }
-function cameraView(view){
- currentView=view;
+function cameraView(nextView){
+ view=nextView;
  if(view==='head'){
-  camera.position.set(.07,1.79,2.68);
-  controls.target.set(0,1.75,0);
-  controls.minDistance=1.35;controls.maxDistance=6;
+  camera.position.set(.1,1.76,3.1);
+  controls.target.set(0,1.70,0);
+  controls.minDistance=1.2;controls.maxDistance=6;
  }else{
-  camera.position.set(.18,.05,view==='back'?-8.4:8.4);
+  camera.position.set(.12,.04,view==='back'?-8.0:8.0);
   controls.target.set(0,0,0);
-  controls.minDistance=3.3;controls.maxDistance=15;
+  controls.minDistance=3;controls.maxDistance=14;
  }
  controls.update();
 }
 function resize(){
  if(!renderer)return;
- const w=Math.max(100,mount.clientWidth),h=Math.max(100,mount.clientHeight);
- renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
+ const width=Math.max(120,mount.clientWidth),height=Math.max(120,mount.clientHeight);
+ renderer.setSize(width,height,false);
+ camera.aspect=width/height;camera.updateProjectionMatrix();
 }
-function layoutPins(){
- if(!loaded)return;
- const w=mount.clientWidth,h=mount.clientHeight;
- const dir=new THREE.Vector3();
- for(const m of markerRecords){
-  if(!m.def.views.includes(currentView)){m.el.hidden=true;continue}
-  dir.copy(camera.position).sub(m.at).normalize();
-  if(m.normal.dot(dir)<.13){m.el.hidden=true;continue}
-  const p=m.at.clone().project(camera);
-  if(p.z<-1||p.z>1||Math.abs(p.x)>1.02||Math.abs(p.y)>1.02){m.el.hidden=true;continue}
-  m.el.hidden=false;
-  m.el.style.left=((p.x+1)*w/2)+'px';
-  m.el.style.top=((1-p.y)*h/2)+'px';
-  m.el.classList.toggle('chosen',m.def.id===selected);
-  m.el.style.opacity=app?.hasGoal(m.def.id)?'1':'.76';
+function locateHotspots(){
+ if(!ready)return;
+ const width=mount.clientWidth,height=mount.clientHeight;
+ const toCamera=new THREE.Vector3();
+ for(const p of selectors){
+  if(!p.views.includes(view)){p.btn.hidden=true;continue}
+  toCamera.copy(camera.position).sub(p.at).normalize();
+  if(p.normal.dot(toCamera)<.1){p.btn.hidden=true;continue}
+  const location=p.at.clone().project(camera);
+  if(location.z<-1||location.z>1||Math.abs(location.x)>1.07||Math.abs(location.y)>1.05){p.btn.hidden=true;continue}
+  p.btn.hidden=false;
+  p.btn.style.left=((location.x+1)*width/2)+'px';
+  p.btn.style.top=((1-location.y)*height/2)+'px';
+  p.btn.classList.toggle('chosen',p.id===chosen);
+  p.btn.style.opacity=window.BodyMap?.hasGoal(p.id)?'1':'.73';
  }
 }
-function chooseFromClick(e){
- if(!loaded||!pointerStart||Math.hypot(e.clientX-pointerStart.x,e.clientY-pointerStart.y)>7)return;
- const rect=renderer.domElement.getBoundingClientRect();
- pointer.set((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1);
- raycaster.setFromCamera(pointer,camera);
- const targets=hitTargets.filter(m=>markers.find(d=>d.id===m.userData.region)?.views.includes(currentView));
- const hit=raycaster.intersectObjects(targets,false);
- if(hit.length){app?.selectRegion(hit[0].object.userData.region,false);return}
- // Touching anatomical skin also selects its closest marked region.
- const surface=raycaster.intersectObjects(skinMeshes,false);
- if(!surface.length)return;
- let best,dist=Infinity;
- for(const m of markerRecords){
-  if(!m.def.views.includes(currentView))continue;
-  const targetDistance=surface[0].point.distanceTo(m.at);
-  if(targetDistance<dist){dist=targetDistance;best=m;}
- }
- if(best&&dist<(currentView==='head'?.45:.67))app?.selectRegion(best.def.id,false);
+function touchAvatar(e){
+ if(!startPointer||Math.hypot(e.clientX-startPointer.x,e.clientY-startPointer.y)>8||!ready)return;
+ const box=renderer.domElement.getBoundingClientRect();
+ mouse.set(2*(e.clientX-box.left)/box.width-1,1-2*(e.clientY-box.top)/box.height);
+ raycaster.setFromCamera(mouse,camera);
+ const candidates=hitObjects.filter(o=>selectors.find(p=>p.id===o.userData.region)?.views.includes(view));
+ const hit=raycaster.intersectObjects(candidates,false);
+ if(hit.length)window.BodyMap?.selectRegion(hit[0].object.userData.region,false);
 }
-function showError(error){
- console.warn('Falha ao carregar anatomia:',error);
+function fail(err){
+ console.warn('Falha na renderização do avatar 3D:',err.message||err);
  if(loading)loading.hidden=true;
- fallback.hidden=false;host.hidden=true;
- const hint=fallback.querySelector('p');
- if(hint)hint.textContent='Não foi possível carregar o modelo agora. Confira a internet ou selecione a área na lista.';
+ if(fallback){
+  fallback.hidden=false;
+  const hint=fallback.querySelector('p');
+  if(hint)hint.textContent='O personagem não carregou. Confira a conexão; seus objetivos continuam disponíveis na lista.';
+ }
+ hotspots.hidden=true;
 }
 function start(){
  try{
   renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,powerPreference:'high-performance'});
-  renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.65));
+  renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));
   renderer.outputColorSpace=THREE.SRGBColorSpace;
   renderer.toneMapping=THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure=1.30;
+  renderer.toneMappingExposure=1.2;
   mount.appendChild(renderer.domElement);
-  renderer.domElement.setAttribute('aria-label','Corpo humano tridimensional com regiões selecionáveis');
+  renderer.domElement.setAttribute('aria-label','Avatar masculino 3D com camiseta, calça e tênis');
   controls=new OrbitControls(camera,renderer.domElement);
-  controls.enablePan=false;controls.enableDamping=true;controls.dampingFactor=.07;
-  controls.minPolarAngle=.20;controls.maxPolarAngle=Math.PI-.20;
-  controls.rotateSpeed=.65;
-  cameraView(currentView);resize();
-  renderer.domElement.addEventListener('pointerdown',e=>pointerStart={x:e.clientX,y:e.clientY});
-  renderer.domElement.addEventListener('pointerup',chooseFromClick);
+  controls.enablePan=false;controls.enableDamping=true;controls.dampingFactor=.075;
+  controls.minPolarAngle=.2;controls.maxPolarAngle=Math.PI-.2;
+  controls.rotateSpeed=.6;
+  cameraView(view);resize();
+  renderer.domElement.addEventListener('pointerdown',e=>startPointer={x:e.clientX,y:e.clientY});
+  renderer.domElement.addEventListener('pointerup',touchAvatar);
   window.addEventListener('mapa:view',e=>cameraView(e.detail.view));
-  window.addEventListener('mapa:select',e=>{selected=e.detail.region;layoutPins()});
+  window.addEventListener('mapa:select',e=>{chosen=e.detail.region;locateHotspots()});
   if('ResizeObserver'in window)new ResizeObserver(resize).observe(mount);
-  else window.addEventListener('resize',resize);
-  function frame(){requestAnimationFrame(frame);controls.update();renderer.render(scene,camera);layoutPins()}
+  else addEventListener('resize',resize);
+  function frame(){requestAnimationFrame(frame);controls.update();renderer.render(scene,camera);locateHotspots()}
   frame();
-  loadHuman().catch(showError);
- }catch(e){showError(e)}
+  buildCharacter().catch(fail);
+ }catch(e){fail(e)}
 }
 start();
