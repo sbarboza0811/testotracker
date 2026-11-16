@@ -1,53 +1,33 @@
-# MeuCuidado · Saúde & Estética
+# Mapa do Corpo — MeuCuidado 2.0
 
-Aplicativo web instalável (PWA) de organização pessoal para objetivos de saúde e estética, procedimentos, consultas, orçamentos, despesas e histórico.
+Novo aplicativo mobile-first de saúde e estética, sem cadastro, finanças ou assistente.
 
-## O que funciona
-- Gestão de objetivos (área, prioridade, etapa, especialidade, data-alvo, estimativa, anotações).
-- Ideias iniciais editáveis: dentista, visão, obstrução nasal, olheiras, orelhas e papada. São ideias, não recomendações médicas.
-- Agenda de consultas, retornos, locais e profissionais.
-- Financeiro com orçamento estimado, despesas previstas/pagas e total por área.
-- Histórico de exames, avaliações, evolução e referências a documentos privados.
-- Busca e filtros, exportação JSON e importação no modo local.
-- Navegação responsiva, manifesto PWA e cache da interface.
-- Modo local para demonstração; Supabase opcional com autenticação e RLS.
+## O que faz
+- Mapa anatômico **3D verdadeiro** feito com Three.js e WebGL, com rotação, zoom e vistas corpo / cabeça / costas.
+- Seleção de regiões por marcadores no 3D e também por uma lista acessível.
+- Objetivos e checklists ligados às regiões (olheiras, visão, nariz, orelhas, dentes, papada, abdômen etc.).
+- Criar, editar, concluir, excluir objetivos e marcar etapas realizadas.
+- Busca e filtros, lista de áreas disponíveis e marcadores com objetivos.
+- Salvamento automático **somente neste navegador** (localStorage).
+- Exportação/importação de backups JSON.
+- PWA instalável no Android. Arquivos essenciais são armazenados em cache. Three.js é carregado pela CDN jsDelivr, na versão fixada 0.186.1, podendo exigir internet inicialmente.
 
-## Como abrir o protótipo
-1. Hospede a pasta em um servidor estático com HTTPS (por exemplo, GitHub Pages em repositório novo). Para teste no computador, execute `python -m http.server 8000` na pasta e abra `http://localhost:8000`.
-2. Em **Modo local**, o app salva apenas no armazenamento do navegador. Não use o modo local para prontuários ou dados clínicos reais/sensíveis: não há autenticação e os dados podem ser apagados.
-3. No Android, abra o site HTTPS no Chrome e use **Adicionar à tela inicial** / **Instalar aplicativo**.
+## Como usar
+Acesse https://sbarboza0811.github.io/testotracker/meucuidado/ e use o mapa 3D. Para instalar no Android, abra no Chrome e escolha "Instalar aplicativo" no menu.
 
-## Usar o mesmo Supabase que o TestoTracker
-Projeto identificado: `testotrack` (`efcjhktuihnldrddrtat`), URL `https://efcjhktuihnldrddrtat.supabase.co`.
+## Privacidade e limites
+- **Sem login, sem Supabase, sem rastreio, sem envio de dados pessoais a servidores por este aplicativo.**
+- Registros estão limitados ao navegador/aparelho e podem desaparecer se o armazenamento for apagado. Para conservar uma cópia, use **Backup**.
+- Dados de versões anteriores salvos no Supabase não são importados automaticamente; as tabelas antigas não são alteradas ou excluídas.
+- Os 8 objetivos iniciais são itens editáveis para organização e **não são diagnóstico, indicação ou necessidade médica**.
+- O modelo 3D é uma representação humana estilizada, não um exame clínico ou um escaneamento personalizado.
+- A CDN do Three.js é usada apenas para fornecer a biblioteca de renderização, não para guardar os registros do aplicativo.
 
-1. Acesse o **SQL Editor** deste projeto e execute `supabase.sql`. O arquivo cria apenas as quatro tabelas com prefixo `meucuidado_`; não altera tabelas existentes.
-2. Confira se a Data API expõe o schema `public` e se as tabelas estão acessíveis ao papel `authenticated`.
-3. No app, abra **Configurações**, informe a URL (já sugerida) e a **publishable key** do projeto. Não coloque chave `service_role` nem `secret` em frontend, arquivos públicos ou GitHub.
-4. Entre com sua conta Supabase. A autenticação é compartilhada com o TestoTracker, mas os dados deste app ficam em suas próprias tabelas e com políticas RLS por usuário.
-5. Os objetivos de exemplo do modo local **não são enviados automaticamente** para o banco. Isso evita misturar dados de demonstração com dados reais.
+## Arquivos
+- index.html: interface
+- assets/map.css: design responsivo
+- assets/map.js: objetivos, listas, checklists, backup local
+- assets/body3d.js: corpo e cabeça tridimensionais, OrbitControls e hotspots
+- sw.js e manifest.webmanifest: PWA
 
-> Não foi possível executar o SQL automaticamente durante a criação desta versão: o conector Supabase retornou falha de autenticação do banco. O app e o SQL foram preparados, mas as tabelas ainda precisam ser criadas/confirmadas no projeto.
-
-## Estrutura
-
-- `index.html`: interface.
-- `assets/app.css`: design responsivo.
-- `assets/app.js`: funcionalidades e integração Supabase.
-- `supabase.sql`: esquema PostgreSQL e RLS.
-- `manifest.webmanifest`, `icon.svg`, `sw.js`: instalação PWA.
-
-## Privacidade e segurança
-- Saúde e estética podem conter dados pessoais sensíveis. O banco usa RLS baseada no usuário autenticado e acesso somente `authenticated` às tabelas `meucuidado_`.
-- Cada registro relacionado a um objetivo tem chave estrangeira composta `(user_id, plan_id)`, impedindo vinculação a objetivos de outra conta.
-- Links de documentos devem ser privados; o aplicativo não faz upload de anexos nesta versão.
-- As configurações armazenam apenas URL e chave pública; sessões de login são gerenciadas pelo SDK Supabase.
-- Não registre dados clínicos sensíveis no modo local em dispositivos compartilhados.
-- A aplicação é um organizador pessoal, não substitui profissionais de saúde ou prontuários oficiais.
-
-## Referências de implementação
-- Supabase RLS: https://supabase.com/docs/guides/database/postgres/row-level-security
-- Supabase Data API: https://supabase.com/docs/guides/api/securing-your-api
-- SDK JS 2.119.0: https://github.com/supabase/supabase-js/releases/tag/v2.119.0
-
-## Publicação no GitHub Pages
-O aplicativo é publicado na pasta `meucuidado/` do repositório `testotracker`, mantendo arquivos e dados do TestoTracker intactos. O manifesto com `id`, `start_url` e `scope` relativos garante instalação independente. O script `assets/cloud-config.js` contém somente chave **publishable** pública, nunca credenciais privilegiadas.
+As antigas tabelas meucuidado_* no Supabase ficam intactas e não são utilizadas por esta versão.
