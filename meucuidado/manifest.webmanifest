@@ -3,7 +3,7 @@
   "name": "Mapa do Corpo — MeuCuidado",
   "short_name": "Meu Corpo",
   "description": "Organize seus objetivos de saúde e estética em um mapa corporal 3D",
-  "start_url": "./?v=2.0",
+  "start_url": "./?v=2.1",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f5f8f5",

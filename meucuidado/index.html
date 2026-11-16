@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f5f8f5">
 <meta name="description" content="Seus objetivos de saúde e estética ligados às regiões do corpo em um mapa 3D.">
-<title>Mapa do Corpo · MeuCuidado</title>
-<link rel="manifest" href="manifest.webmanifest?v=2.0">
+<title>Mapa do Corpo · MeuCuidado 2.1</title>
+<link rel="manifest" href="manifest.webmanifest?v=2.1">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="assets/map.css?v=2.0">
+<link rel="stylesheet" href="assets/map.css?v=2.1">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>
-<script defer src="assets/map.js?v=2.0"></script>
-<script type="module" src="assets/body3d.js?v=2.0"></script>
+<script defer src="assets/map.js?v=2.1"></script>
+<script type="module" src="assets/body3d.js?v=2.1"></script>
 </head>
 <body>
 <div id="app">
@@ -37,17 +37,17 @@
   <div class="map-header"><div><span class="eyebrow">MAPA CORPORAL</span><h2>Explore seu corpo</h2></div><div class="segmented" aria-label="Selecionar visualização"><button data-view="body" class="selected" type="button">Corpo</button><button data-view="head" type="button">Cabeça</button><button data-view="back" type="button">Costas</button></div></div>
   <div id="viewer" class="viewer">
    <div class="viewer-rings" aria-hidden="true"></div>
-   <div id="stage3d" class="stage3d" aria-label="Modelo tridimensional do corpo. Arraste para girar e use dois dedos para zoom."></div>
+   <div id="stage3d" class="stage3d" aria-label="Modelo anatômico 3D humano. Arraste para girar e use dois dedos para zoom."></div><div id="model-loading" class="model-loading"><div class="model-loading-spinner" aria-hidden="true"></div><strong>Carregando corpo em 3D…</strong><span>Modelo anatômico detalhado</span></div>
    <div id="hotspots" class="hotspots" aria-label="Selecionar regiões do corpo"></div>
    <div id="viewer-fallback" class="viewer-fallback" hidden><div class="fallback-icon">◎</div><strong>Visualização 3D indisponível</strong><p>Você pode continuar escolhendo as regiões na lista ao lado ou abaixo.</p></div>
    <div class="viewer-hint">↔ Girar <span>·</span> ⤢ Zoom <span>·</span> ● Selecionar área</div>
   </div>
-  <div class="map-footer"><span><span class="key-dot"></span> Regiões com objetivos</span><span>Modelo 3D ilustrativo</span><button type="button" id="reset-camera">⟲ Recentralizar</button></div>
+  <div class="map-footer"><span><span class="key-dot"></span> Regiões com objetivos</span><span>Modelo anatômico 3D</span><button type="button" id="reset-camera">⟲ Recentralizar</button></div>
  </section>
 
  <aside class="detail-panel panel" id="detail-panel" aria-label="Objetivo selecionado"><div id="detail" aria-live="polite"></div></aside>
 </main>
-<footer class="foot"><span>Mapa do Corpo v2.0 · Organização pessoal, não diagnóstico médico</span><span>Os registros ficam apenas neste navegador. Salve uma cópia em Backup.</span></footer>
+<footer class="foot"><span>Mapa do Corpo v2.1 · Organização pessoal, não diagnóstico médico</span><span>Os registros ficam apenas neste navegador. Salve uma cópia em Backup.</span><span>Modelo: <a href="https://github.com/MervinR07/open-anatomy-3d/blob/main/ATTRIBUTION.md" target="_blank" rel="noopener noreferrer">Open Anatomy 3D, BodyParts3D e HRA · CC BY 4.0</a> (visualização adaptada)</span></footer>
 <nav class="mobile-nav" aria-label="Acesso rápido"><button type="button" data-scroll="map">◎ <span>Mapa</span></button><button type="button" data-scroll="list">☷ <span>Lista</span></button><button type="button" data-scroll="detail">◈ <span>Detalhes</span></button><button type="button" id="mobile-new">＋ <span>Adicionar</span></button></nav>
 </div>
 <dialog id="goal-dialog" aria-labelledby="dialog-heading">

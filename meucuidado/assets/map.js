@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-const VERSION='2.0';
+const VERSION='2.1';
 const KEY='mapadocorpo_goals_v2';
 const REGIONS=[
  ['cabelo','Cabelo e couro cabeludo','💇','Cabeça','Queda, fios e couro cabeludo'],
@@ -214,6 +214,6 @@ document.addEventListener('change',function(e){
 $('#reset-camera').addEventListener('click',function(){syncScene(true)});
 window.BodyMap={regions:REGIONS,selectRegion:selectRegion,getSelection:function(){return {region:ui.region,view:ui.view}},hasGoal:function(regionId){return goals.some(function(g){return g.region===regionId})}};
 render();
-setTimeout(function(){if(!window.BodyMap3DReady){const f=document.getElementById('viewer-fallback');if(f)f.hidden=false;}},8000);
+
 if('serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(function(){});
 })();

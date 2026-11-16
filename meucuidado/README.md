@@ -1,9 +1,9 @@
-# Mapa do Corpo — MeuCuidado 2.0
+# Mapa do Corpo — MeuCuidado 2.1
 
 Novo aplicativo mobile-first de saúde e estética, sem cadastro, finanças ou assistente.
 
 ## O que faz
-- Mapa anatômico **3D verdadeiro** feito com Three.js e WebGL, com rotação, zoom e vistas corpo / cabeça / costas.
+- Modelo anatômico humano **3D realista**, usando malha de pele Open Anatomy 3D (adaptada de BodyParts3D, HRA e MakeHuman; CC BY 4.0). Malha 3D comprida, renderizada por Three.js/WebGL com rotação, zoom e vistas corpo / cabeça / costas.
 - Seleção de regiões por marcadores no 3D e também por uma lista acessível.
 - Objetivos e checklists ligados às regiões (olheiras, visão, nariz, orelhas, dentes, papada, abdômen etc.).
 - Criar, editar, concluir, excluir objetivos e marcar etapas realizadas.
@@ -31,3 +31,13 @@ Acesse https://sbarboza0811.github.io/testotracker/meucuidado/ e use o mapa 3D. 
 - sw.js e manifest.webmanifest: PWA
 
 As antigas tabelas meucuidado_* no Supabase ficam intactas e não são utilizadas por esta versão.
+
+## Modelo e licença 3D v2.1
+O corpo anterior (formas geométricas construídas manualmente) foi substituído por uma malha anatômica externa:
+- Open Anatomy 3D, por MervinR07 — https://github.com/MervinR07/open-anatomy-3d
+- Modelo em https://cdn.jsdelivr.net/npm/open-anatomy-3d@0.1.0/models/anatomy-male.glb
+- Licença do modelo: CC BY 4.0, derivado de BodyParts3D (DBCLS), Human Reference Atlas / HuBMAP e MakeHuman. Consulte https://github.com/MervinR07/open-anatomy-3d/blob/main/ATTRIBUTION.md
+- Modificações de visualização: apenas superfície da pele visível; material em tom de argila; órgãos e estruturas internas ocultos. O modelo não é um exame nem deve ser usado para diagnóstico.
+- O arquivo de geometria (7,6 MB) é baixado por CDN, necessita de conexão no primeiro carregamento e fica em cache do PWA quando disponível.
+- Em falha de WebGL ou rede, a lista e os checklists continuam funcionais.
+- A chave de armazenamento de objetivos local permanece idêntica à v2.0, preservando os dados no mesmo navegador/origem.
