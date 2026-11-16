@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-const VERSION='2.1';
+const VERSION='2.2';
 const KEY='mapadocorpo_goals_v2';
 const REGIONS=[
  ['cabelo','Cabelo e couro cabeludo','💇','Cabeça','Queda, fios e couro cabeludo'],

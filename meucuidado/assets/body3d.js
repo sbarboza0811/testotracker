@@ -53,6 +53,32 @@ function makePin(p,point){
  scene.add(hit);hitTargets.push(hit);
  markerRecords.push({def:p,el,at:point,normal:new THREE.Vector3(0,0,p.back?-1:1)});
 }
+// The original anatomical male mesh is nude. These fitted opaque shorts and
+// a world-space skin-masking zone keep genital anatomy out of public UI views.
+function addPrivacyShorts(box){
+ const height=box.max.y-box.min.y;
+ const y=frac=>box.min.y+height*frac;
+ const cloth=new THREE.MeshStandardMaterial({color:0x3d5c56,roughness:.96,metalness:0,side:THREE.DoubleSide});
+ const edge=new THREE.MeshStandardMaterial({color:0x263f3b,roughness:.99,metalness:0});
+ function sleeve(top,bottom,rTop,rBottom,x,zScale,mat){
+  const geo=new THREE.CylinderGeometry(rTop,rBottom,top-bottom,64,2,false);
+  geo.scale(1,1,zScale);
+  const mesh=new THREE.Mesh(geo,mat);
+  mesh.position.set(x,(top+bottom)/2,0);
+  mesh.castShadow=true;mesh.receiveShadow=true;
+  scene.add(mesh);
+  return mesh;
+ }
+ const upper=y(.505),join=y(.394),hem=y(.292);
+ // Waist/hips plus individual short legs, enclosing the original mesh from
+ // all directions (front, side and back), without exposing the groin.
+ sleeve(upper,join,.55,.65,0,.91,cloth);
+ sleeve(join+.07,hem,.365,.34,-.31,1.22,cloth);
+ sleeve(join+.07,hem,.365,.34,.31,1.22,cloth);
+ sleeve(upper+.027,upper-.04,.553,.55,0,.94,edge);
+ sleeve(hem+.035,hem-.015,.343,.34,-.31,1.23,edge);
+ sleeve(hem+.035,hem-.015,.343,.34,.31,1.23,edge);
+}
 async function loadHuman(){
  const loader=new GLTFLoader();
  loader.setMeshoptDecoder(MeshoptDecoder);
@@ -66,6 +92,15 @@ async function loadHuman(){
  const clay=new THREE.MeshStandardMaterial({
   color:0xdac9bc,metalness:0,roughness:.88,side:THREE.FrontSide
  });
+ // Also mask the skin inside the shorts so anatomy cannot protrude when
+ // the user rotates the body or zooms. In world units, the body is ~4.7 tall.
+ clay.onBeforeCompile=shader=>{
+  shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vPrivacyWorld;');
+  shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvPrivacyWorld=(modelMatrix*vec4(transformed,1.0)).xyz;');
+  shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vPrivacyWorld;');
+  shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nif(vPrivacyWorld.y>-1.12 && vPrivacyWorld.y<0.06 && abs(vPrivacyWorld.x)<0.82 && abs(vPrivacyWorld.z)<1.2) discard;');
+ };
+ clay.customProgramCacheKey=()=> 'intimate-area-privacy-v1';
  skin.traverse(obj=>{
   if(obj.isMesh){
    obj.material=clay;
@@ -85,6 +120,7 @@ async function loadHuman(){
  body.updateMatrixWorld(true);
  const box=new THREE.Box3().setFromObject(body);
  const worldHeight=box.max.y-box.min.y;
+ addPrivacyShorts(box);
  for(const p of markers){
   const y=box.min.y+worldHeight*p.y;
   const x=p.x;

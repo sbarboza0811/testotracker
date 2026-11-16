@@ -1,4 +1,4 @@
-# Mapa do Corpo — MeuCuidado 2.1
+# Mapa do Corpo — MeuCuidado 2.2
 
 Novo aplicativo mobile-first de saúde e estética, sem cadastro, finanças ou assistente.
 
@@ -41,3 +41,7 @@ O corpo anterior (formas geométricas construídas manualmente) foi substituído
 - O arquivo de geometria (7,6 MB) é baixado por CDN, necessita de conexão no primeiro carregamento e fica em cache do PWA quando disponível.
 - Em falha de WebGL ou rede, a lista e os checklists continuam funcionais.
 - A chave de armazenamento de objetivos local permanece idêntica à v2.0, preservando os dados no mesmo navegador/origem.
+
+## Ajuste de privacidade 2.2
+- O modelo anatômico masculino original incluía genitália externa. A versão 2.2 coloca um short opaco sobre a região íntima e oculta a malha de pele nesta região para evitar que partes apareçam ao girar o corpo.
+- A região íntima não é um objetivo do app. Os demais objetivos e checklists mantêm a mesma chave local de armazenamento.
