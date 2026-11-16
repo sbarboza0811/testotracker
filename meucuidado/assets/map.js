@@ -214,6 +214,12 @@ document.addEventListener('change',function(e){
 $('#reset-camera').addEventListener('click',function(){syncScene(true)});
 window.BodyMap={regions:REGIONS,selectRegion:selectRegion,getSelection:function(){return {region:ui.region,view:ui.view}},hasGoal:function(regionId){return goals.some(function(g){return g.region===regionId})}};
 render();
-
+setTimeout(function(){
+ if(!window.BodyMap3DReady){
+  const load=document.getElementById('model-loading'),fallback=document.getElementById('viewer-fallback');
+  if(load)load.hidden=true;
+  if(fallback)fallback.hidden=false;
+ }
+},30000);
 if('serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(function(){});
 })();
