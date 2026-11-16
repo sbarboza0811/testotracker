@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0b1120" />
+<meta name="description" content="Organize seus objetivos de saúde e estética, consultas, orçamentos, despesas e histórico." />
+<title>MeuCuidado · Saúde & Estética</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<link rel="stylesheet" href="assets/app.css" />
+</head>
+<body>
+<div id="app">
+  <aside class="sidebar" aria-label="Navegação principal">
+    <a class="brand" href="#inicio" data-tab="inicio"><span class="brand-icon">✳</span><span>meu<span class="brand-strong">cuidado</span><small>SAÚDE & ESTÉTICA</small></span></a>
+    <div class="sidebar-label">MENU</div>
+    <nav class="side-nav" id="side-nav">
+      <button class="nav-item active" data-tab="inicio"><span class="nav-glyph">◈</span> Visão geral</button>
+      <button class="nav-item" data-tab="planos"><span class="nav-glyph">▤</span> Meus planos</button>
+      <button class="nav-item" data-tab="agenda"><span class="nav-glyph">▦</span> Agenda</button>
+      <button class="nav-item" data-tab="financeiro"><span class="nav-glyph">◉</span> Financeiro</button>
+      <button class="nav-item" data-tab="historico"><span class="nav-glyph">☷</span> Histórico</button>
+    </nav>
+    <div class="sidebar-bottom">
+      <button class="nav-item" data-tab="config"><span class="nav-glyph">⚙</span> Configurações</button>
+      <div class="profile-mini"><span class="profile-avatar">MC</span><span><strong>Meu espaço</strong><small id="side-mode">Protótipo local</small></span></div>
+    </div>
+  </aside>
+  <main class="main-content" id="main-content">
+    <header class="topbar"><div class="topbar-left"><span class="eyebrow">SEU ESPAÇO DE CUIDADO</span><span id="top-date"></span></div><div class="topbar-actions"><span class="mode-pill" id="mode-pill"><span class="dot"></span> Modo local</span><button class="icon-button" id="top-settings" aria-label="Configurações">⚙</button></div></header>
+    <section id="page" aria-live="polite"></section>
+  </main>
+  <nav class="mobile-nav" aria-label="Navegação mobile">
+    <button class="mobile-item active" data-tab="inicio"><span>◈</span><small>Início</small></button>
+    <button class="mobile-item" data-tab="planos"><span>▤</span><small>Planos</small></button>
+    <button class="mobile-item" data-tab="agenda"><span>▦</span><small>Agenda</small></button>
+    <button class="mobile-item" data-tab="financeiro"><span>◉</span><small>Gastos</small></button>
+    <button class="mobile-item" data-tab="historico"><span>☷</span><small>Histórico</small></button>
+  </nav>
+  <button class="floating-add" id="floating-add" aria-label="Novo registro">+</button>
+</div>
+<div id="overlay" class="overlay hidden" role="presentation"></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.min.js" defer></script>
+<script src="assets/cloud-config.js" defer></script>
+<script src="assets/app.js" defer></script>
+</body>
+</html>
