@@ -1,10 +1,10 @@
 'use strict';
-const VERSION='1.4.0';
+const VERSION='1.5.0';
 const TABLES={plans:'meucuidado_plans',appointments:'meucuidado_appointments',expenses:'meucuidado_expenses',records:'meucuidado_records'};
 const CATEGORIES={Odontologia:['🦷','Odontologia'],Visão:['👁️','Visão'], 'Nariz e respiração':['🌬️','Nariz e respiração'],Olheiras:['✨','Olheiras'],Orelhas:['👂','Orelhas'],Papada:['💠','Papada'],Pele:['🧴','Pele'],Corpo:['💪','Corpo'],Cabelo:['💇','Cabelo'],Outros:['✳','Outros']};
 const STATUSES={ideia:'Ideia',pesquisando:'Pesquisando',avaliacao:'Avaliação marcada',tratamento:'Em tratamento',concluido:'Concluído',pausado:'Pausado'};
 const STATUS_CLASS={ideia:'muted',pesquisando:'blue',avaliacao:'orange',tratamento:'pink',concluido:'',pausado:'muted'};
-const S={tab:'config',data:{plans:[],appointments:[],expenses:[],records:[]},filter:'todos',search:'',category:'todas',client:null,user:null,config:null,loading:false,mode:'local',pendingEmail:''};
+const S={tab:'config',data:{plans:[],appointments:[],expenses:[],records:[]},filter:'todos',search:'',category:'todas',client:null,user:null,config:null,loading:false,mode:'local',pendingEmail:'',recovery:false};
 const STORAGE='meucuidado_v1',CFG='meucuidado_config_v1';
 const AUTH_RETURN_URL=new URL('./',window.location.href).href;
 const $=s=>document.querySelector(s);
@@ -46,11 +46,11 @@ function plansPage(){const p=S.data.plans.filter(x=>(S.filter==='todos'||x.statu
 function agendaPage(){const items=[...S.data.appointments].sort(byDate);return `${head('Minha agenda','Consultas, avaliações e retornos organizados por data.','Nova consulta','appointment')}<div class="two-col"><div class="panel"><h3>Próximos compromissos</h3>${items.filter(a=>a.status!=='cancelado'&&new Date(a.date_time)>=new Date()).length?items.filter(a=>a.status!=='cancelado'&&new Date(a.date_time)>=new Date()).map(apptItem).join(''):'<p class="muted">Não há consultas futuras.</p>'}</div><div class="panel"><h3>Passados e cancelados</h3>${items.filter(a=>a.status==='cancelado'||new Date(a.date_time)<new Date()).length?items.filter(a=>a.status==='cancelado'||new Date(a.date_time)<new Date()).reverse().map(apptItem).join(''):'<p class="muted">Nenhum histórico de consultas.</p>'}</div></div>${foot()}`}
 function financePage(){const paid=S.data.expenses.filter(x=>x.status==='pago').reduce((n,x)=>n+Number(x.amount||0),0);const planned=S.data.expenses.filter(x=>x.status==='previsto').reduce((n,x)=>n+Number(x.amount||0),0);const estimated=S.data.plans.reduce((n,x)=>n+Number(x.estimated_cost||0),0);const rows=[...S.data.expenses].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));const areas=Object.keys(CATEGORIES).map(area=>({name:area,total:rows.filter(x=>S.data.plans.find(p=>p.id===x.plan_id)?.area===area&&x.status==='pago').reduce((n,x)=>n+Number(x.amount||0),0)})).filter(x=>x.total>0).sort((a,b)=>b.total-a.total);return `${head('Financeiro','Acompanhe propostas, custos previstos e pagamentos.','Nova despesa','expense')}<div class="metric-grid">${metric('Estimado dos planos',money(estimated),'Soma das estimativas','◈')}${metric('Despesas previstas',money(planned),'Lançamentos não pagos','◷')}${metric('Despesas pagas',money(paid),'Valores realmente pagos','◉','green')}${metric('Lançamentos',rows.length,'Gastos e previsões','▤')}</div><div class="two-col"><div><div class="subhead"><h2>Todos os lançamentos</h2></div>${rows.length?`<div class="table-wrap"><table><thead><tr><th>DESPESA</th><th>VALOR</th><th>STATUS</th></tr></thead><tbody>${rows.map(x=>`<tr class="clickable" data-action="edit" data-type="expense" data-id="${esc(x.id)}"><td><strong>${esc(x.description)}</strong><small>${dateFmt(x.date)} · ${esc(labelPlan(x.plan_id))}</small></td><td class="amount">${money(x.amount)}</td><td>${pill(x.status==='pago'?'Pago':'Previsto',x.status==='pago'?'':'orange')}</td></tr>`).join('')}</tbody></table></div>`:empty('Sem despesas registradas','Registre estimativas e pagamentos conforme avançar.','Adicionar despesa','new','expense')}</div><div><div class="subhead"><h2>Pagamentos por área</h2></div><div class="panel">${areas.length?`<div class="stat-breakdown">${areas.map(x=>`<div><div class="bar-row"><span>${esc(x.name)}</span><strong>${money(x.total)}</strong></div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(x.total/areas[0].total*100)}%"></div></div></div>`).join('')}</div>`:'<p class="muted">Os gráficos aparecerão após registrar despesas pagas.</p>'}</div></div></div>${foot()}`}
 function historyPage(){const rows=[...S.data.records].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));return `${head('Histórico de cuidados','Guarde avaliações, resultados, exames e observações.','Novo registro','record')}${rows.length?`<div class="card-grid">${rows.map(r=>`<article class="plan-card" data-action="edit" data-type="record" data-id="${esc(r.id)}" role="button" tabindex="0"><div class="plan-card-top"><span class="plan-icon">${r.kind==='exame'?'🔬':r.kind==='foto'?'📷':r.kind==='consulta'?'🩺':'🗂️'}</span>${pill(dateFmt(r.date),'muted')}</div><h3>${esc(r.title)}</h3><p>${esc(labelPlan(r.plan_id))} · ${esc(r.kind)}</p><p>${esc((r.notes||'').slice(0,95))}</p></article>`).join('')}</div>`:empty('Seu histórico começa aqui','Registre consultas, resultados e evolução ao longo do tempo.','Adicionar registro','new','record')}${foot()}`}
-function configPage(){const logged=!!S.user;const email=esc(S.user?.email||'');
-return `<div class="page-head"><div><span class="eyebrow">SEU ESPAÇO PESSOAL</span><h1>${logged?'Minha conta':'Bem-vindo ao MeuCuidado'}</h1><p>${logged?'Tudo organizado em um só lugar.':'Entre para guardar seus planos, consultas e registros com segurança.'}</p></div></div>
-${!S.client?`<div class="settings-box"><h3>Sem conexão</h3><p>Não foi possível conectar agora. Confira sua internet e tente novamente.</p>${btn('Tentar novamente','retry','primary')}</div>`:logged?`<div class="settings-box"><h3>✓ Seus dados estão protegidos</h3><p>Conectado como <strong>${email}</strong>. Seus registros são salvos automaticamente na sua conta.</p><div class="quick-actions">${btn('Voltar aos meus planos','tab','primary','data-tab-target="planos"')}${btn('Sair da conta','logout','secondary')}</div></div>`:`<div class="settings-box"><h3>Entrar na minha conta</h3><form id="auth-form" class="form-grid"><div class="form-group full"><label>E-mail</label><input name="email" type="email" required autocomplete="username" placeholder="seu@email.com" value="${esc(S.pendingEmail||'')}"/></div><div class="form-group full"><label>Senha</label><input name="password" type="password" required minlength="6" autocomplete="current-password" placeholder="Sua senha"/></div><div class="form-group full"><div class="quick-actions"><button class="button primary" type="submit" name="mode" value="login">Entrar</button><button class="button secondary" type="submit" name="mode" value="signup">Criar conta</button></div></div></form><p class="tiny">Após confirmar o e-mail de cadastro, volte aqui e entre normalmente.</p>${S.pendingEmail?`<div class="notice">Enviamos um link para seu e-mail. Confirme e depois entre no aplicativo.</div>`:''}<button type="button" class="linkish" data-action="resend-email">Não recebeu? Reenviar confirmação</button></div>`}
-<div class="settings-box"><h3>📲 Colocar no celular</h3><p>Tenha o MeuCuidado na tela inicial, como um aplicativo.</p>${btn('Instalar aplicativo','install','primary')}</div>
-${logged?`<details class="settings-box"><summary>Mais opções</summary><p>Salve uma cópia dos seus dados no aparelho.</p>${btn('Exportar meus dados','export','secondary')}</details>`:''}
+function configPage(){const logged=!!S.user, recovering=!!S.recovery;const email=esc(S.user?.email||'');
+return `<div class="page-head"><div><span class="eyebrow">SEU ESPAÇO PESSOAL</span><h1>${recovering?'Nova senha':logged?'Minha conta':'Bem-vindo ao MeuCuidado'}</h1><p>${recovering?'Escolha uma senha nova para acessar sua conta.':logged?'Tudo organizado em um só lugar.':'Entre para guardar seus planos, consultas e registros com segurança.'}</p></div></div>
+${!S.client?`<div class="settings-box"><h3>Sem conexão</h3><p>Confira sua internet e tente novamente.</p>${btn('Tentar novamente','retry','primary')}</div>`:recovering?`<div class="settings-box"><h3>Criar uma nova senha</h3><form id="password-form" class="form-grid"><div class="form-group full"><label>Nova senha</label><input name="password" type="password" required minlength="8" autocomplete="new-password" placeholder="No mínimo 8 caracteres"/></div><div class="form-group full"><label>Confirmar nova senha</label><input name="confirmation" type="password" required minlength="8" autocomplete="new-password" placeholder="Digite a senha novamente"/></div><div class="form-group full"><button class="button primary" type="submit">Salvar nova senha</button></div></form></div>`:logged?`<div class="settings-box"><h3>✓ Seus dados estão protegidos</h3><p>Conectado como <strong>${email}</strong>.</p><div class="quick-actions">${btn('Ver meus planos','tab','primary','data-tab-target="planos"')}${btn('Sair da conta','logout','secondary')}</div></div>`:`<div class="settings-box"><h3>Entrar na minha conta</h3><form id="auth-form" class="form-grid"><div class="form-group full"><label>E-mail</label><input name="email" type="email" required autocomplete="username" placeholder="seu@email.com" value="${esc(S.pendingEmail||'')}"/></div><div class="form-group full"><label>Senha</label><input name="password" type="password" required minlength="6" autocomplete="current-password" placeholder="Sua senha"/></div><div class="form-group full"><div class="quick-actions"><button class="button primary" type="submit" name="mode" value="login">Entrar</button><button class="button secondary" type="submit" name="mode" value="signup">Criar conta</button></div></div></form><button class="linkish" data-action="reset-password">Esqueci minha senha</button>${S.pendingEmail?`<p class="tiny">Se o cadastro ainda estiver pendente, procure o e-mail de confirmação.</p><button type="button" class="linkish" data-action="resend-email">Reenviar confirmação</button>`:''}</div>`}
+<div class="settings-box"><h3>📲 Colocar no celular</h3><p>Instale o MeuCuidado na tela inicial, como um aplicativo.</p>${btn('Instalar aplicativo','install','primary')}</div>
+${logged&&!recovering?`<details class="settings-box"><summary>Mais opções</summary>${btn('Exportar meus dados','export','secondary')}</details>`:''}
 ${foot()}`}
 function foot(){return `<footer>MeuCuidado v${VERSION} · Ferramenta de organização pessoal. Não substitui avaliação, orientação ou prontuário de profissionais de saúde.</footer>`}
 function wrapModal(title,body,footer=''){const ov=$('#overlay');ov.innerHTML=`<div class="modal" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="modal-header"><h2>${esc(title)}</h2><button type="button" class="modal-close" aria-label="Fechar" data-action="close">×</button></div><div class="modal-body">${body}</div>${footer?`<div class="modal-footer">${footer}</div>`:''}</div>`;ov.classList.remove('hidden');document.body.style.overflow='hidden';setTimeout(()=>ov.querySelector('input,select,textarea,button')?.focus(),10)}
@@ -77,6 +77,7 @@ async function loadRemote(){if(!S.user)return;S.loading=true;try{const out={};fo
 async function initClient(){
   if(!S.config?.key||!window.supabase?.createClient){S.mode='offline';S.client=null;S.user=null;S.tab='config';render();return}
   S.client=window.supabase.createClient(S.config.url,S.config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'meucuidado_auth_session'}});
+  S.client.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY'){S.recovery=true;S.user=session?.user||null;S.tab='config';setTimeout(()=>render(),0);}});
   S.mode='cloud';
   const callbackHash=new URLSearchParams(window.location.hash.replace(/^#/,'')),
         callbackQuery=new URLSearchParams(window.location.search),
@@ -86,8 +87,8 @@ async function initClient(){
   S.user=error?null:data?.user||null;
   S.data={plans:[],appointments:[],expenses:[],records:[]};
   if(S.user){
-   await loadRemote();S.tab='inicio';render();
-   if(isConfirmationReturn){
+   await loadRemote();S.tab=S.recovery?'config':'inicio';render();
+   if(isConfirmationReturn&&!S.recovery){
     window.history.replaceState({},'',window.location.pathname);
     toast('E-mail confirmado! Você já pode usar o MeuCuidado.');
    }
@@ -99,39 +100,55 @@ async function initClient(){
 }
 
 async function signIn(form,submitter){
- if(!S.client)return;
+ if(!S.client)throw new Error('Sem conexão. Confira a internet.');
  const f=Object.fromEntries(new FormData(form).entries());
  const mode=submitter?.value||'login',email=String(f.email||'').trim(),password=String(f.password||'');
  const result=mode==='signup'
   ?await S.client.auth.signUp({email,password,options:{emailRedirectTo:AUTH_RETURN_URL}})
   :await S.client.auth.signInWithPassword({email,password});
  if(result.error){
-  if(result.error.code==='email_not_confirmed'||/email not confirmed/i.test(result.error.message||'')){
-   S.pendingEmail=email;render();toast('Confirme seu e-mail ou reenvie a mensagem.',true);return
+  if(result.error.code==='email_not_confirmed'){S.pendingEmail=email;render();throw new Error('Confirme o e-mail de cadastro antes de entrar.');}
+  if(result.error.code==='invalid_credentials'||/invalid login credentials/i.test(result.error.message||'')){
+   S.pendingEmail=email;render();throw new Error('E-mail ou senha não conferem. Use “Esqueci minha senha” para recuperar o acesso.');
   }
+  if(result.error.code==='over_email_send_rate_limit'||result.error.code==='over_request_rate_limit')throw new Error('Muitas tentativas seguidas. Tente novamente mais tarde.');
   throw result.error;
  }
  S.user=result.data.session?result.data.user:null;
- if(!result.data.session){
-  S.pendingEmail=email;render();toast('E-mail enviado. Confirme o cadastro e volte aqui para entrar.');return;
- }
- S.pendingEmail='';
- await loadRemote();changeTab('inicio');toast('Conta conectada.');
+ if(!result.data.session){S.pendingEmail=email;render();toast(mode==='signup'?'Se sua conta precisa de confirmação, confira o e-mail recebido.':'Não foi possível entrar. Confira seu e-mail.');return;}
+ S.pendingEmail='';S.recovery=false;
+ await loadRemote();changeTab('inicio');toast('Bem-vindo ao MeuCuidado!');
 }
 async function resendEmail(){
- if(!S.client)throw new Error('Confira sua conexão e tente novamente.');
+ if(!S.client)throw new Error('Confira sua conexão.');
  const email=String(document.querySelector('#auth-form [name="email"]')?.value||S.pendingEmail||'').trim();
- if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new Error('Informe seu e-mail para reenviar.');
+ if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new Error('Informe um e-mail válido.');
  const {error}=await S.client.auth.resend({type:'signup',email,options:{emailRedirectTo:AUTH_RETURN_URL}});
+ if(error)throw error;S.pendingEmail=email;render();toast('Solicitação enviada. Confira o e-mail e a caixa de spam.');
+}
+async function requestPasswordReset(){
+ if(!S.client)throw new Error('Confira sua conexão.');
+ const email=String(document.querySelector('#auth-form [name="email"]')?.value||S.pendingEmail||'').trim();
+ if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new Error('Informe o e-mail da sua conta primeiro.');
+ const {error}=await S.client.auth.resetPasswordForEmail(email,{redirectTo:AUTH_RETURN_URL});
+ if(error){if(error.code==='over_email_send_rate_limit'||error.code==='over_request_rate_limit')throw new Error('Aguarde um pouco antes de solicitar outro e-mail.');throw error;}
+ S.pendingEmail=email;toast('Enviamos um link para trocar sua senha. Confira o e-mail e o spam.');
+}
+async function saveNewPassword(form){
+ if(!S.client||!S.user||!S.recovery)throw new Error('Abra o link de recuperação enviado por e-mail.');
+ const f=Object.fromEntries(new FormData(form).entries());
+ if(String(f.password).length<8)throw new Error('Use pelo menos 8 caracteres.');
+ if(f.password!==f.confirmation)throw new Error('As duas senhas não conferem.');
+ const {error}=await S.client.auth.updateUser({password:f.password});
  if(error)throw error;
- S.pendingEmail=email;
- render();toast('Solicitação enviada. Verifique sua caixa de entrada e o spam.');
+ S.recovery=false;window.history.replaceState({},'',window.location.pathname);
+ changeTab('inicio');toast('Senha alterada. Acesso recuperado!');
 }
 function exportData(){const payload={app:'MeuCuidado',version:VERSION,exported_at:now(),data:S.data};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`meucuidado-backup-${localToday()}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2500)}
 async function importData(file){if(!file||S.mode!=='local')return;try{const parsed=JSON.parse(await file.text());if(parsed.app!=='MeuCuidado'||!parsed.data||!Array.isArray(parsed.data.plans))throw new Error('Arquivo não é um backup válido do MeuCuidado.');if(!confirm('Substituir os dados deste navegador pelos dados do backup?'))return;for(const k of Object.keys(TABLES))S.data[k]=Array.isArray(parsed.data[k])?parsed.data[k]:[];saveLocal();render();toast('Backup importado.')}catch(e){toast('Falha na importação: '+e.message,true)}}
-async function handler(action,e){const el=e.target.closest('[data-action]');const type=el?.dataset.type,id=el?.dataset.id;switch(action){case'close':closeModal();break;case'new':editModal(type||'plan',null,el?.dataset.planId);break;case'edit':editModal(type,id);break;case'detail':detailModal(id);break;case'delete':await deleteItem(type,id);break;case'filter':S.filter=el.dataset.value;render();break;case'tab':changeTab(el.dataset.tabTarget);break;case'export':exportData();break;case'retry':await initClient();break;case'resend-email':await resendEmail();break;case'logout':await S.client?.auth.signOut();S.user=null;S.data={plans:[],appointments:[],expenses:[],records:[]};changeTab('config');break;case'install':if(window.meuCuidadoInstallPrompt){const p=window.meuCuidadoInstallPrompt;window.meuCuidadoInstallPrompt=null;await p.prompt();}else{toast('No Android: abra o menu ⋮ do Chrome e escolha Instalar aplicativo ou Adicionar à tela inicial.');}break;case'clear-local':if(confirm('Excluir TODOS os dados locais do MeuCuidado?')){localStorage.removeItem(STORAGE);S.data={plans:[],appointments:[],expenses:[],records:[]};saveLocal();render();toast('Dados locais apagados.')}break;}}
+async function handler(action,e){const el=e.target.closest('[data-action]');const type=el?.dataset.type,id=el?.dataset.id;switch(action){case'close':closeModal();break;case'new':editModal(type||'plan',null,el?.dataset.planId);break;case'edit':editModal(type,id);break;case'detail':detailModal(id);break;case'delete':await deleteItem(type,id);break;case'filter':S.filter=el.dataset.value;render();break;case'tab':changeTab(el.dataset.tabTarget);break;case'export':exportData();break;case'retry':await initClient();break;case'resend-email':await resendEmail();break;case'reset-password':await requestPasswordReset();break;case'logout':await S.client?.auth.signOut();S.user=null;S.data={plans:[],appointments:[],expenses:[],records:[]};changeTab('config');break;case'install':if(window.meuCuidadoInstallPrompt){const p=window.meuCuidadoInstallPrompt;window.meuCuidadoInstallPrompt=null;await p.prompt();}else{toast('No Android: abra o menu ⋮ do Chrome e escolha Instalar aplicativo ou Adicionar à tela inicial.');}break;case'clear-local':if(confirm('Excluir TODOS os dados locais do MeuCuidado?')){localStorage.removeItem(STORAGE);S.data={plans:[],appointments:[],expenses:[],records:[]};saveLocal();render();toast('Dados locais apagados.')}break;}}
 document.addEventListener('click',async e=>{const tab=e.target.closest('[data-tab]');if(tab){e.preventDefault();changeTab(tab.dataset.tab);return}const el=e.target.closest('[data-action]');if(el){e.preventDefault();try{await handler(el.dataset.action,e)}catch(err){console.error(err);toast(err.message||'Algo deu errado.',true)}}});
-document.addEventListener('submit',async e=>{if(!['item-form','auth-form'].includes(e.target?.id))return;e.preventDefault();const button=e.submitter;if(button)button.disabled=true;try{if(e.target.id==='item-form')await saveItem(e.target.dataset.type,e.target.dataset.id||null,e.target);else if(e.target.id==='auth-form')await signIn(e.target,button)}catch(err){console.error(err);toast(err.message||'Não foi possível salvar.',true)}finally{if(button&&button.isConnected)button.disabled=false}});
+document.addEventListener('submit',async e=>{if(!['item-form','auth-form','password-form'].includes(e.target?.id))return;e.preventDefault();const button=e.submitter;if(button)button.disabled=true;try{if(e.target.id==='item-form')await saveItem(e.target.dataset.type,e.target.dataset.id||null,e.target);else if(e.target.id==='auth-form')await signIn(e.target,button);else if(e.target.id==='password-form')await saveNewPassword(e.target)}catch(err){console.error(err);toast(err.message||'Não foi possível salvar.',true)}finally{if(button&&button.isConnected)button.disabled=false}});
 document.addEventListener('input',e=>{if(e.target.id==='search'){const pos=e.target.selectionStart;S.search=e.target.value;const el=$('#page');const currentScroll=window.scrollY;const html=plansPage();el.innerHTML=html;const x=$('#search');x.focus();x.setSelectionRange(pos,pos);window.scrollTo(0,currentScroll)}});
 document.addEventListener('change',e=>{if(e.target.id==='category-filter'){S.category=e.target.value;render()}if(e.target.id==='import-file')importData(e.target.files[0])});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#overlay').classList.contains('hidden'))closeModal();if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role="button"][data-action]')){e.preventDefault();e.target.click()}});
