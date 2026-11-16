@@ -1,10 +1,10 @@
 'use strict';
-const VERSION='1.5.0';
+const VERSION='1.6.0';
 const TABLES={plans:'meucuidado_plans',appointments:'meucuidado_appointments',expenses:'meucuidado_expenses',records:'meucuidado_records'};
 const CATEGORIES={Odontologia:['🦷','Odontologia'],Visão:['👁️','Visão'], 'Nariz e respiração':['🌬️','Nariz e respiração'],Olheiras:['✨','Olheiras'],Orelhas:['👂','Orelhas'],Papada:['💠','Papada'],Pele:['🧴','Pele'],Corpo:['💪','Corpo'],Cabelo:['💇','Cabelo'],Outros:['✳','Outros']};
 const STATUSES={ideia:'Ideia',pesquisando:'Pesquisando',avaliacao:'Avaliação marcada',tratamento:'Em tratamento',concluido:'Concluído',pausado:'Pausado'};
 const STATUS_CLASS={ideia:'muted',pesquisando:'blue',avaliacao:'orange',tratamento:'pink',concluido:'',pausado:'muted'};
-const S={tab:'config',data:{plans:[],appointments:[],expenses:[],records:[]},filter:'todos',search:'',category:'todas',client:null,user:null,config:null,loading:false,mode:'local',pendingEmail:'',recovery:false};
+const S={tab:'config',data:{plans:[],appointments:[],expenses:[],records:[]},filter:'todos',search:'',category:'todas',client:null,user:null,config:null,loading:false,mode:'local',pendingEmail:'',recovery:false,needsConfirmation:false};
 const STORAGE='meucuidado_v1',CFG='meucuidado_config_v1';
 const AUTH_RETURN_URL=new URL('./',window.location.href).href;
 const $=s=>document.querySelector(s);
@@ -48,7 +48,10 @@ function financePage(){const paid=S.data.expenses.filter(x=>x.status==='pago').r
 function historyPage(){const rows=[...S.data.records].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));return `${head('Histórico de cuidados','Guarde avaliações, resultados, exames e observações.','Novo registro','record')}${rows.length?`<div class="card-grid">${rows.map(r=>`<article class="plan-card" data-action="edit" data-type="record" data-id="${esc(r.id)}" role="button" tabindex="0"><div class="plan-card-top"><span class="plan-icon">${r.kind==='exame'?'🔬':r.kind==='foto'?'📷':r.kind==='consulta'?'🩺':'🗂️'}</span>${pill(dateFmt(r.date),'muted')}</div><h3>${esc(r.title)}</h3><p>${esc(labelPlan(r.plan_id))} · ${esc(r.kind)}</p><p>${esc((r.notes||'').slice(0,95))}</p></article>`).join('')}</div>`:empty('Seu histórico começa aqui','Registre consultas, resultados e evolução ao longo do tempo.','Adicionar registro','new','record')}${foot()}`}
 function configPage(){const logged=!!S.user, recovering=!!S.recovery;const email=esc(S.user?.email||'');
 return `<div class="page-head"><div><span class="eyebrow">SEU ESPAÇO PESSOAL</span><h1>${recovering?'Nova senha':logged?'Minha conta':'Bem-vindo ao MeuCuidado'}</h1><p>${recovering?'Escolha uma senha nova para acessar sua conta.':logged?'Tudo organizado em um só lugar.':'Entre para guardar seus planos, consultas e registros com segurança.'}</p></div></div>
-${!S.client?`<div class="settings-box"><h3>Sem conexão</h3><p>Confira sua internet e tente novamente.</p>${btn('Tentar novamente','retry','primary')}</div>`:recovering?`<div class="settings-box"><h3>Criar uma nova senha</h3><form id="password-form" class="form-grid"><div class="form-group full"><label>Nova senha</label><input name="password" type="password" required minlength="8" autocomplete="new-password" placeholder="No mínimo 8 caracteres"/></div><div class="form-group full"><label>Confirmar nova senha</label><input name="confirmation" type="password" required minlength="8" autocomplete="new-password" placeholder="Digite a senha novamente"/></div><div class="form-group full"><button class="button primary" type="submit">Salvar nova senha</button></div></form></div>`:logged?`<div class="settings-box"><h3>✓ Seus dados estão protegidos</h3><p>Conectado como <strong>${email}</strong>.</p><div class="quick-actions">${btn('Ver meus planos','tab','primary','data-tab-target="planos"')}${btn('Sair da conta','logout','secondary')}</div></div>`:`<div class="settings-box"><h3>Entrar na minha conta</h3><form id="auth-form" class="form-grid"><div class="form-group full"><label>E-mail</label><input name="email" type="email" required autocomplete="username" placeholder="seu@email.com" value="${esc(S.pendingEmail||'')}"/></div><div class="form-group full"><label>Senha</label><input name="password" type="password" required minlength="6" autocomplete="current-password" placeholder="Sua senha"/></div><div class="form-group full"><div class="quick-actions"><button class="button primary" type="submit" name="mode" value="login">Entrar</button><button class="button secondary" type="submit" name="mode" value="signup">Criar conta</button></div></div></form><button class="linkish" data-action="reset-password">Esqueci minha senha</button>${S.pendingEmail?`<p class="tiny">Se o cadastro ainda estiver pendente, procure o e-mail de confirmação.</p><button type="button" class="linkish" data-action="resend-email">Reenviar confirmação</button>`:''}</div>`}
+${!S.client?`<div class="settings-box"><h3>Sem conexão</h3><p>Confira sua internet e tente novamente.</p>${btn('Tentar novamente','retry','primary')}</div>`:recovering?`<div class="settings-box"><h3>Criar uma nova senha</h3><form id="password-form" class="form-grid"><div class="form-group full"><label>Nova senha</label><input name="password" type="password" required minlength="8" autocomplete="new-password" placeholder="No mínimo 8 caracteres"/></div><div class="form-group full"><label>Confirmar nova senha</label><input name="confirmation" type="password" required minlength="8" autocomplete="new-password" placeholder="Digite a senha novamente"/></div><div class="form-group full"><button class="button primary" type="submit">Salvar nova senha</button></div></form></div>`:logged?`<div class="settings-box"><h3>✓ Seus dados estão protegidos</h3><p>Conectado como <strong>${email}</strong>.</p><div class="quick-actions">${btn('Ver meus planos','tab','primary','data-tab-target="planos"')}${btn('Sair da conta','logout','secondary')}</div></div>`:`<div class="settings-box"><h3>Entrar na minha conta</h3><form id="auth-form" class="form-grid"><div class="form-group full"><label>E-mail</label><input name="email" type="email" required autocomplete="username" placeholder="seu@email.com" value="${esc(S.pendingEmail||'')}"/></div><div class="form-group full"><label>Senha</label><input name="password" type="password" required minlength="6" autocomplete="current-password" placeholder="Sua senha"/></div><div class="form-group full"><div class="quick-actions"><button class="button primary" type="submit" name="mode" value="login">Entrar</button></div></div>
+<div class="form-group full"><button type="button" class="button secondary" data-action="reset-password">Não consigo entrar — receber link para trocar a senha</button></div>
+<details class="form-group full"><summary>Não tenho conta ainda</summary><button class="button secondary" type="submit" name="mode" value="signup">Criar uma conta nova</button></details></form>
+${S.needsConfirmation?`<p class="tiny">Você precisa confirmar seu cadastro. Confira o e-mail recebido.</p><button type="button" class="linkish" data-action="resend-email">Reenviar confirmação</button>`:''}</div>`}
 <div class="settings-box"><h3>📲 Colocar no celular</h3><p>Instale o MeuCuidado na tela inicial, como um aplicativo.</p>${btn('Instalar aplicativo','install','primary')}</div>
 ${logged&&!recovering?`<details class="settings-box"><summary>Mais opções</summary>${btn('Exportar meus dados','export','secondary')}</details>`:''}
 ${foot()}`}
@@ -107,16 +110,16 @@ async function signIn(form,submitter){
   ?await S.client.auth.signUp({email,password,options:{emailRedirectTo:AUTH_RETURN_URL}})
   :await S.client.auth.signInWithPassword({email,password});
  if(result.error){
-  if(result.error.code==='email_not_confirmed'){S.pendingEmail=email;render();throw new Error('Confirme o e-mail de cadastro antes de entrar.');}
+  if(result.error.code==='email_not_confirmed'){S.pendingEmail=email;S.needsConfirmation=true;render();throw new Error('Confirme o e-mail de cadastro antes de entrar.');}
   if(result.error.code==='invalid_credentials'||/invalid login credentials/i.test(result.error.message||'')){
-   S.pendingEmail=email;render();throw new Error('E-mail ou senha não conferem. Use “Esqueci minha senha” para recuperar o acesso.');
+   S.pendingEmail=email;S.needsConfirmation=false;render();throw new Error('A senha não foi aceita. Toque em “Não consigo entrar” para receber um link de recuperação.');
   }
   if(result.error.code==='over_email_send_rate_limit'||result.error.code==='over_request_rate_limit')throw new Error('Muitas tentativas seguidas. Tente novamente mais tarde.');
   throw result.error;
  }
  S.user=result.data.session?result.data.user:null;
- if(!result.data.session){S.pendingEmail=email;render();toast(mode==='signup'?'Se sua conta precisa de confirmação, confira o e-mail recebido.':'Não foi possível entrar. Confira seu e-mail.');return;}
- S.pendingEmail='';S.recovery=false;
+ if(!result.data.session){S.pendingEmail=email;S.needsConfirmation=mode==='signup';render();toast(mode==='signup'?'Confira seu e-mail para confirmar o cadastro.':'Não foi possível entrar. Confira seu e-mail.');return;}
+ S.pendingEmail='';S.recovery=false;S.needsConfirmation=false;
  await loadRemote();changeTab('inicio');toast('Bem-vindo ao MeuCuidado!');
 }
 async function resendEmail(){
@@ -132,7 +135,7 @@ async function requestPasswordReset(){
  if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new Error('Informe o e-mail da sua conta primeiro.');
  const {error}=await S.client.auth.resetPasswordForEmail(email,{redirectTo:AUTH_RETURN_URL});
  if(error){if(error.code==='over_email_send_rate_limit'||error.code==='over_request_rate_limit')throw new Error('Aguarde um pouco antes de solicitar outro e-mail.');throw error;}
- S.pendingEmail=email;toast('Enviamos um link para trocar sua senha. Confira o e-mail e o spam.');
+ S.pendingEmail=email;S.needsConfirmation=false;render();toast('Recuperação solicitada. Se a conta existir, confira o e-mail e o spam.');
 }
 async function saveNewPassword(form){
  if(!S.client||!S.user||!S.recovery)throw new Error('Abra o link de recuperação enviado por e-mail.');

@@ -3,7 +3,7 @@
   "name": "MeuCuidado — Saúde & Estética",
   "short_name": "MeuCuidado",
   "description": "Planejamento pessoal de saúde e estética",
-  "start_url": "./?v=1.5.0",
+  "start_url": "./?v=1.6.0",
   "scope": "./",
   "display": "standalone",
   "background_color": "#090e1a",
