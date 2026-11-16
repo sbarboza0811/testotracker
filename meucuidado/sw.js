@@ -1,5 +1,5 @@
-const CACHE='meucuidado-shell-v11';
-const ASSETS=['./','./index.html','./assets/map.css?v=3.0','./assets/map.js?v=3.0','./assets/body3d.js?v=3.0','./manifest.webmanifest?v=3.0','./icon.svg','./icon-192.png','./icon-512.png'];
+const CACHE='meucuidado-shell-v12';
+const ASSETS=['./','./index.html','./assets/map.css?v=3.1','./assets/map.js?v=3.1','./assets/body3d.js?v=3.1','./manifest.webmanifest?v=3.1','./icon.svg','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('meucuidado-shell-')&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{

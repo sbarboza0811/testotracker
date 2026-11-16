@@ -1,4 +1,4 @@
-# Mapa do Corpo — MeuCuidado 3.0
+# Mapa do Corpo — MeuCuidado 3.1
 
 Aplicativo/PWA para organizar objetivos pessoais de saúde e estética por região do corpo, sem cadastro, finanças, IA ou Supabase.
 
@@ -36,3 +36,9 @@ O backup é importante: limpar dados do navegador ou reinstalar o app pode apaga
 As tabelas antigas de Supabase não foram alteradas nem importadas.
 Os modelos vêm por CDN. Dados pessoais não são enviados ao servidor de modelos.
 Se a conexão ou o WebGL falharem, a lista e os checklists permanecem disponíveis.
+
+## Correções de download 3.1
+- Os arquivos GLB são obtidos diretamente do GitHub Raw, com fallback automático para jsDelivr. O download mostra percentual, valida o cabeçalho GLB e controla timeout.
+- Adicionado botão Instalar com instruções quando o navegador não permite instalação direta.
+- Fallback com botão Tentar baixar novamente.
+- Os objetivos preservam a chave localStorage mapadocorpo_goals_v2.

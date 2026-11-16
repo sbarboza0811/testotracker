@@ -5,7 +5,12 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 // Model and clothing: MakeHuman CC0, exported by kblood/CharacterCreator.
 // Complete credits and stable source in README.md.
 const REV='852e48f316b90a0937234886630e4fb4cdfd1f78';
-const ASSET_ROOT='https://cdn.jsdelivr.net/gh/kblood/CharacterCreator@'+REV+'/output/';
+const ASSET_SOURCES=[
+ 'https://raw.githubusercontent.com/kblood/CharacterCreator/'+REV+'/output/',
+ 'https://cdn.jsdelivr.net/gh/kblood/CharacterCreator@'+REV+'/output/'
+];
+const FILE_BYTES={'base_body.glb':7234380,'clothing_tshirt.glb':388104,'clothing_jeans.glb':428704,'clothing_shoes.glb':847684,'hair_short04.glb':1132824};
+let loadedBytes=0;
 const mount=document.getElementById('stage3d');
 const hotspots=document.getElementById('hotspots');
 const fallback=document.getElementById('viewer-fallback');
@@ -44,8 +49,47 @@ side.position.set(4,2,-4);scene.add(side);
 const rim=new THREE.DirectionalLight(0xffffff,.8);
 rim.position.set(0,4,-7);scene.add(rim);
 
-function load(url){
- return new GLTFLoader().loadAsync(url);
+// Use GitHub raw as primary, jsDelivr as fallback. A partially transferred
+// file or CDN error returned as HTTP 200 is rejected by validating GLB magic.
+async function load(filename){
+ const expected=FILE_BYTES[filename]||0;
+ const caption=loading?.querySelector('strong');
+ const detail=loading?.querySelector('span');
+ let lastError=null;
+ for(let origin=0;origin<ASSET_SOURCES.length;origin++){
+  const controller=new AbortController();
+  const deadline=setTimeout(()=>controller.abort(),filename==='base_body.glb'?60000:45000);
+  try{
+   const response=await fetch(ASSET_SOURCES[origin]+filename,{signal:controller.signal,mode:'cors',cache:'default'});
+   if(!response.ok)throw Error('HTTP '+response.status);
+   const size=Number(response.headers.get('Content-Length'))||expected;
+   const buffers=[];let transferred=0;
+   if(caption)caption.textContent='Baixando modelo 3D…';
+   if(detail)detail.textContent=filename==='base_body.glb'?'Corpo e rosto':'Roupas e detalhes';
+   if(response.body?.getReader){
+    const reader=response.body.getReader();
+    while(true){
+     const {value,done}=await reader.read();
+     if(done)break;
+     buffers.push(value);transferred+=value.byteLength;
+     if(detail&&size)detail.textContent=(filename==='base_body.glb'?'Corpo e rosto':'Roupas e detalhes')+' · '+Math.min(99,Math.round(transferred/size*100))+'%';
+    }
+   }else{
+    const b=await response.arrayBuffer();buffers.push(new Uint8Array(b));transferred=b.byteLength;
+   }
+   const bytes=new Uint8Array(transferred);let offset=0;
+   for(const buffer of buffers){bytes.set(buffer,offset);offset+=buffer.byteLength}
+   if(bytes.length<20||new DataView(bytes.buffer).getUint32(0,true)!==0x46546c67)throw Error('Arquivo 3D inválido');
+   if(caption)caption.textContent='Preparando personagem…';
+   const gltf=await new GLTFLoader().parseAsync(bytes.buffer,'');
+   loadedBytes+=transferred;
+   clearTimeout(deadline);return gltf;
+  }catch(error){
+   lastError=error;
+   if(detail)detail.textContent=origin===0?'Tentando segunda origem de download…':'Download indisponível';
+  }finally{clearTimeout(deadline)}
+ }
+ throw Error('Falha ao baixar '+filename+': '+(lastError?.message||'rede indisponível'));
 }
 function mainMesh(group){
  let match;
@@ -69,7 +113,7 @@ function concealCoveredSkin(body){
  const attr=body.geometry.getAttribute('_cczone');
  const idx=body.geometry.getIndex();
  if(!attr||!idx)throw Error('Não foi possível garantir roupa e privacidade');
- const masks=1|2|4|8|16|32|256|512|1024|2048|4096|8192;
+ const masks=1|2|4|8|32; // Shoes, jeans, hips, T-shirt and underwear region
  const indices=idx.array,zone=attr.array,kept=[];
  for(let i=0;i<indices.length;i+=3){
   const a=indices[i],b=indices[i+1],c=indices[i+2];
@@ -83,13 +127,13 @@ function concealCoveredSkin(body){
 // Pose and material remain native to the actual clothing assets, never
 // synthetic cylinders or an overlay covering an anatomical nude model.
 async function buildCharacter(){
- const core=await load(ASSET_ROOT+'base_body.glb');
+ const core=await load('base_body.glb');
  const base=core.scene;
  const body=mainMesh(base);
  if(!body)throw Error('Avatar não disponível');
  const garments=await Promise.all([
   'clothing_tshirt.glb','clothing_jeans.glb','clothing_shoes.glb'
- ].map(name=>load(ASSET_ROOT+name)));
+ ].map(name=>load(name)));
  const outfit=[];
  for(const file of garments){
   const pieces=[];
@@ -110,7 +154,7 @@ async function buildCharacter(){
 
  // Optional pre-made short hair, attached to the same skeleton.
  try{
-  const hair=await load(ASSET_ROOT+'hair_short04.glb');
+  const hair=await load('hair_short04.glb');
   const pieces=[];
   hair.scene.traverse(o=>{if(o.isSkinnedMesh)pieces.push(o)});
   for(const piece of pieces){
@@ -223,9 +267,10 @@ function fail(err){
  if(fallback){
   fallback.hidden=false;
   const hint=fallback.querySelector('p');
-  if(hint)hint.textContent='O personagem não carregou. Confira a conexão; seus objetivos continuam disponíveis na lista.';
+  if(hint)hint.textContent='Não foi possível baixar o avatar. Você ainda pode usar objetivos e checklists. Confira a internet e tente novamente.';
  }
  hotspots.hidden=true;
+ const retry=document.getElementById('retry-3d');if(retry)retry.hidden=false;
 }
 function start(){
  try{
