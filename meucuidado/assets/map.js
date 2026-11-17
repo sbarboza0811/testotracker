@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-const VERSION='4.1';
+const VERSION='4.2';
 const KEY='mapadocorpo_goals_v2';
 const REGIONS=[
  ['cabelo','Cabelo e couro cabeludo','💇','Cabeça','Queda, fios e couro cabeludo'],
@@ -171,16 +171,20 @@ $('#export-btn').addEventListener('click',function(){
 });
 $('#import-btn').addEventListener('click',function(){$('#import-file').click()});
 // PWAs cannot install silently. Use the browser-supported prompt if present.
-// Install directly from the website as a PWA. No APK download.
+// Native-like Android install via the *website*. No APK required.
 const native=!!(window.Capacitor?.isNativePlatform?.());
 const installButton=$('#install-btn');
+const installText=installButton.querySelector('span:last-child');
 const instructions=$('#install-dialog');
 let installEvent=null;
+const hasWebInstall=typeof navigator.install==='function';
 function isInstalled(){
  return native||window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
 }
 function updateInstallButton(){
- installButton.hidden=isInstalled();
+ const installed=isInstalled();
+ installButton.hidden=installed;
+ if(!installed)installText.textContent=hasWebInstall||installEvent?'Instalar app':'Como instalar';
 }
 function showInstallHelp(){
  if(typeof instructions.showModal==='function')instructions.showModal();
@@ -194,7 +198,7 @@ window.addEventListener('beforeinstallprompt',function(e){
 window.addEventListener('appinstalled',function(){
  installEvent=null;
  installButton.hidden=true;
- toast('MeuCuidado instalado. Abra pelo ícone na tela inicial.');
+ toast('MeuCuidado instalado! Abra pelo ícone na lista de aplicativos.');
 });
 $('#install-dialog-close').addEventListener('click',function(){
  if(typeof instructions.close==='function')instructions.close();
@@ -207,21 +211,38 @@ instructions.addEventListener('click',function(e){
  }
 });
 installButton.addEventListener('click',function(){
- if(isInstalled()){installButton.hidden=true;toast('O aplicativo já está instalado.');return;}
- if(installEvent){
-  // The browser's own install confirmation requires a direct user gesture.
-  const prompt=installEvent;
-  installEvent=null;
-  try{
-   prompt.prompt();
-   Promise.resolve(prompt.userChoice).then(function(choice){
-    if(choice?.outcome==='dismissed')toast('Você pode instalar pelo menu do Chrome quando quiser.');
-   }).catch(function(){showInstallHelp()});
-  }catch(e){showInstallHelp()}
+ if(isInstalled()){updateInstallButton();toast('MeuCuidado já está instalado.');return}
+ if(hasWebInstall){
+  // Must be invoked synchronously during the user gesture.
+  navigator.install().then(function(){
+    installButton.hidden=true;
+    toast('MeuCuidado instalado! Procure o ícone nos aplicativos.');
+  }).catch(function(e){
+    if(e?.name==='AbortError')return;
+    console.warn('Instalação pelo navegador indisponível:',e);
+    if(installEvent)installViaPrompt();
+    else showInstallHelp();
+  });
+ }else if(installEvent){
+  installViaPrompt();
  }else{
+  // An in-app browser or Chrome without eligibility cannot be forced to install.
   showInstallHelp();
  }
 });
+function installViaPrompt(){
+ const event=installEvent;
+ if(!event){showInstallHelp();return}
+ installEvent=null;
+ updateInstallButton();
+ try{
+  event.prompt();
+  Promise.resolve(event.userChoice).then(function(choice){
+    if(choice?.outcome==='accepted')toast('Confira o MeuCuidado na lista de aplicativos.');
+    else toast('Você pode instalar pelo menu do Chrome.');
+  }).catch(showInstallHelp);
+ }catch(e){console.warn('Chrome não ofereceu instalação:',e);showInstallHelp();}
+}
 updateInstallButton();
 $('#retry-3d').addEventListener('click',function(){window.location.reload()});
 $('#import-file').addEventListener('change',async function(e){
