@@ -24,3 +24,6 @@
 
 /* Native install action, always clearly labeled (never a "how to" button). */
 @media(max-width:440px){.header-right #export-btn{display:none}.header-right #install-btn{padding:9px 12px;font-size:11px}.header-right #install-btn span:last-child{display:inline}}
+
+/* PWA install action appears only when browser can actually show the native dialog. */
+.header-right #install-btn[hidden]{display:none!important}

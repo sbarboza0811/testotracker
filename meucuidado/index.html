@@ -10,16 +10,24 @@
  <title>MeuCuidado · Mapa do Corpo</title>
  <link rel="manifest" href="./manifest.webmanifest">
  <link rel="icon" href="icon.svg" type="image/svg+xml">
- <link rel="stylesheet" href="assets/map.css?v=4.3">
+ <link rel="stylesheet" href="assets/map.css?v=4.4">
  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>
- <script defer src="assets/map.js?v=4.3"></script>
+ <script>
+ // Retain Chrome's installability event even before deferred scripts finish.
+ window.addEventListener('beforeinstallprompt',function(e){
+  e.preventDefault();
+  window.__meucuidadoInstallPrompt=e;
+ });
+ </script>
+ <script defer src="assets/install.js?v=4.4"></script>
+ <script defer src="assets/map.js?v=4.4"></script>
  <script type="module" src="assets/body3d.js?v=4.3"></script>
 </head>
 <body>
 <div id="app">
  <header class="topbar">
   <div class="brand"><div class="brand-mark"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M14 5v18M5 14h18" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="14" cy="14" r="10.5" stroke="currentColor" stroke-width="1.6" opacity=".5"/></svg></div><div><b>MeuCuidado</b><small>MEU MAPA CORPORAL</small></div></div>
-  <div class="header-right"><button id="install-btn" class="download-button" type="button"><span class="download-icon">↓</span><span>Instalar app</span></button><button id="export-btn" class="soft-button" title="Exportar meus dados" type="button">Backup</button><button id="import-btn" class="soft-button" type="button" title="Restaurar backup">Restaurar</button><input id="import-file" type="file" accept=".json,application/json" hidden></div>
+  <div class="header-right"><button id="install-btn" class="download-button" type="button" hidden><span class="download-icon">↓</span><span>Instalar app</span></button><button id="export-btn" class="soft-button" title="Exportar meus dados" type="button">Backup</button><button id="import-btn" class="soft-button" type="button" title="Restaurar backup">Restaurar</button><input id="import-file" type="file" accept=".json,application/json" hidden></div>
  </header>
  <div class="intro"><div><div class="eyebrow">SEU ESPAÇO DE SAÚDE E ESTÉTICA</div><h1>Seu corpo, seus cuidados.</h1><p>Um lugar para organizar tudo o que deseja avaliar e melhorar, por região do corpo.</p></div><div class="intro-stats"><div><strong id="count-active">8</strong><span>Objetivos</span></div><div><strong id="count-done">0</strong><span>Concluídos</span></div></div></div>
  <main class="workspace">
@@ -47,7 +55,7 @@
   <aside class="panel detail-panel" id="detail-panel" aria-label="Detalhes da região selecionada"><div id="detail" aria-live="polite"></div></aside>
  </main>
  <div class="trust-row"><span>✦ Sem login</span><span>✦ Dados guardados no aparelho</span><span>✦ Sem anúncios ou controle financeiro</span></div>
- <footer class="foot"><span>MeuCuidado 4.3 · Organização pessoal, não substitui avaliação profissional</span><span>Avatar 3D: Microsoft Rocketbox / Avatar Studio (MIT)</span></footer>
+ <footer class="foot"><span>MeuCuidado 4.4 · Organização pessoal, não substitui avaliação profissional</span><span>Avatar 3D: Microsoft Rocketbox / Avatar Studio (MIT)</span></footer>
  <nav class="mobile-nav" aria-label="Navegação"><button type="button" data-scroll="map"><span class="nav-icon">◎</span><span>Meu corpo</span></button><button type="button" data-scroll="list"><span class="nav-icon">☷</span><span>Objetivos</span></button><button type="button" data-scroll="detail"><span class="nav-icon">◈</span><span>Detalhes</span></button><button type="button" id="mobile-new"><span class="nav-icon">＋</span><span>Novo</span></button></nav>
 </div>
 <dialog id="goal-dialog" aria-labelledby="dialog-heading"><form id="goal-form" class="goal-form">

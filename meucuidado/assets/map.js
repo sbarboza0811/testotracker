@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-const VERSION='4.3';
+const VERSION='4.4';
 const KEY='mapadocorpo_goals_v2';
 const REGIONS=[
  ['cabelo','Cabelo e couro cabeludo','💇','Cabeça','Queda, fios e couro cabeludo'],
@@ -170,77 +170,7 @@ $('#export-btn').addEventListener('click',function(){
  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='mapa-do-corpo-backup.json';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},3000);toast('Backup preparado. Guarde o arquivo em local seguro.');
 });
 $('#import-btn').addEventListener('click',function(){$('#import-file').click()});
-// PWAs cannot install silently. Use the browser-supported prompt if present.
-// Real PWA installation: this button calls the native browser confirmation.
-// Browsers prohibit silent installation and do not always expose the prompt.
-const native=!!(window.Capacitor?.isNativePlatform?.());
-const installButton=$('#install-btn');
-let installEvent=null;
-const hasWebInstall=typeof navigator.install==='function';
-const isInstalled=()=>native||window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
-function updateInstallButton(){
- installButton.hidden=isInstalled();
- installButton.setAttribute('aria-label','Instalar MeuCuidado no celular');
-}
-function androidInAppBrowser(){
- const agent=navigator.userAgent||'';
- return /Android/i.test(agent)&&(/\bwv\b|ChatGPT|Instagram|FBAN|FBAV|Line\/|GSA\//i.test(agent)||(!/Chrome\/\d+/i.test(agent)&&!/EdgA\//i.test(agent)));
-}
-function handoffToChrome(){
- // This handoff is requested by the user's click. It cannot silently install:
- // Chrome must still grant PWA installation after opening the site.
- const url='intent://sbarboza0811.github.io/testotracker/meucuidado/index.html#Intent;scheme=https;package=com.android.chrome;end';
- window.location.href=url;
-}
-window.addEventListener('beforeinstallprompt',e=>{
- e.preventDefault();
- installEvent=e;
- updateInstallButton();
-});
-window.addEventListener('appinstalled',()=>{
- installEvent=null;
- installButton.hidden=true;
- toast('MeuCuidado instalado! Abra pelo ícone entre os aplicativos.');
-});
-installButton.addEventListener('click',()=>{
- if(isInstalled()){updateInstallButton();toast('O MeuCuidado já está instalado.');return}
- if(hasWebInstall){
-  // The Web Install API must be started directly by a user gesture.
-  try{
-   Promise.resolve(navigator.install()).then(()=>{
-    installButton.hidden=true;toast('Aplicativo instalado!');
-   }).catch(e=>{
-    if(e?.name==='AbortError')return;
-    if(installEvent)requestChromeInstall();
-    else toast('Este navegador não disponibilizou a instalação agora.');
-   });
-  }catch(e){
-   if(installEvent)requestChromeInstall();
-   else toast('Este navegador não disponibilizou a instalação agora.');
-  }
-  return;
- }
- if(installEvent){requestChromeInstall();return}
- if(androidInAppBrowser()){handoffToChrome();return}
- toast('O Chrome ainda não liberou a instalação deste site. Tente novamente quando disponível.');
-});
-function requestChromeInstall(){
- const event=installEvent;
- if(!event)return;
- installEvent=null;
- try{
-  // Must be called in the click event, not from an async continuation.
-  event.prompt();
-  Promise.resolve(event.userChoice).then(result=>{
-   if(result?.outcome==='accepted')toast('Confirme a instalação no Android.');
-   // If dismissed, another beforeinstallprompt event is needed.
-  }).catch(e=>console.warn('Solicitação de instalação rejeitada:',e));
- }catch(e){
-  console.warn('O Chrome recusou o diálogo de instalação:',e);
-  toast('A instalação não está disponível neste momento.');
- }
-}
-updateInstallButton();
+// Installation is managed independently by assets/install.js, as in MoneyTracker.
 $('#retry-3d').addEventListener('click',function(){window.location.reload()});
 $('#import-file').addEventListener('change',async function(e){
  const f=e.target.files?.[0];e.target.value='';if(!f)return;
@@ -293,5 +223,5 @@ setTimeout(function(){
   if(fallback)fallback.hidden=false;
  }
 },95000);
-if(!native&&'serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(function(){});
+// PWA service worker and installation are handled by install.js.
 })();
