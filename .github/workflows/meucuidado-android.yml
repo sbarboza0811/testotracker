@@ -26,7 +26,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - uses: android-actions/setup-android@v3
+      # Ubuntu runner already includes Android SDK; setup-android v3 tries to install deprecated 'tools'.
+      - name: Android SDK availability
+        run: | 
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" || test -x "$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager"
       - name: Install Capacitor
         working-directory: mobile
         run: npm install --no-audit --no-fund
