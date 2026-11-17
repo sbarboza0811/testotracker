@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-const VERSION='4.0';
+const VERSION='4.1';
 const KEY='mapadocorpo_goals_v2';
 const REGIONS=[
  ['cabelo','Cabelo e couro cabeludo','💇','Cabeça','Queda, fios e couro cabeludo'],
@@ -171,12 +171,58 @@ $('#export-btn').addEventListener('click',function(){
 });
 $('#import-btn').addEventListener('click',function(){$('#import-file').click()});
 // PWAs cannot install silently. Use the browser-supported prompt if present.
+// Install directly from the website as a PWA. No APK download.
 const native=!!(window.Capacitor?.isNativePlatform?.());
-if(native){$('#install-btn').hidden=true;document.documentElement.classList.add('native-android')}
-$('#install-btn').addEventListener('click',function(){
-  const asset='https://github.com/sbarboza0811/testotracker/releases/download/mapa-do-corpo-v4.0/Mapa-do-Corpo-v4.0.apk';
-  window.location.assign(asset);
+const installButton=$('#install-btn');
+const instructions=$('#install-dialog');
+let installEvent=null;
+function isInstalled(){
+ return native||window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+}
+function updateInstallButton(){
+ installButton.hidden=isInstalled();
+}
+function showInstallHelp(){
+ if(typeof instructions.showModal==='function')instructions.showModal();
+ else instructions.setAttribute('open','');
+}
+window.addEventListener('beforeinstallprompt',function(e){
+ e.preventDefault();
+ installEvent=e;
+ updateInstallButton();
 });
+window.addEventListener('appinstalled',function(){
+ installEvent=null;
+ installButton.hidden=true;
+ toast('MeuCuidado instalado. Abra pelo ícone na tela inicial.');
+});
+$('#install-dialog-close').addEventListener('click',function(){
+ if(typeof instructions.close==='function')instructions.close();
+ else instructions.removeAttribute('open');
+});
+instructions.addEventListener('click',function(e){
+ if(e.target===instructions){
+  if(typeof instructions.close==='function')instructions.close();
+  else instructions.removeAttribute('open');
+ }
+});
+installButton.addEventListener('click',function(){
+ if(isInstalled()){installButton.hidden=true;toast('O aplicativo já está instalado.');return;}
+ if(installEvent){
+  // The browser's own install confirmation requires a direct user gesture.
+  const prompt=installEvent;
+  installEvent=null;
+  try{
+   prompt.prompt();
+   Promise.resolve(prompt.userChoice).then(function(choice){
+    if(choice?.outcome==='dismissed')toast('Você pode instalar pelo menu do Chrome quando quiser.');
+   }).catch(function(){showInstallHelp()});
+  }catch(e){showInstallHelp()}
+ }else{
+  showInstallHelp();
+ }
+});
+updateInstallButton();
 $('#retry-3d').addEventListener('click',function(){window.location.reload()});
 $('#import-file').addEventListener('change',async function(e){
  const f=e.target.files?.[0];e.target.value='';if(!f)return;

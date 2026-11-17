@@ -3,7 +3,7 @@
   "name": "MeuCuidado — Mapa do Corpo",
   "short_name": "MeuCuidado",
   "description": "Organize seus objetivos de saúde e estética em um mapa corporal 3D",
-  "start_url": "./?v=4.0",
+  "start_url": "./?v=4.1",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f5f8f5",
@@ -14,13 +14,13 @@
       "src": "icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "icon.svg",
@@ -28,5 +28,9 @@
       "type": "image/svg+xml",
       "purpose": "any"
     }
+  ],
+  "categories": [
+    "health",
+    "lifestyle"
   ]
 }

@@ -2,12 +2,6 @@ name: MeuCuidado Android APK
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'meucuidado/**'
-      - 'mobile/**'
-      - '.github/workflows/meucuidado-android.yml'
 
 permissions:
   contents: write

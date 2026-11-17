@@ -1,48 +1,37 @@
-# MeuCuidado 4.0 — Mapa do Corpo
+# MeuCuidado 4.1 — site instalável (PWA)
 
-## Novo conceito
+O MeuCuidado é um site que pode ser instalado como aplicativo no Android **diretamente pelo navegador**, sem baixar arquivos APK.
 
-Aplicativo Android instalável por APK, além da versão Web. O foco é acompanhar objetivos pessoais de saúde e estética ligados a partes do corpo.
+Site: https://sbarboza0811.github.io/testotracker/meucuidado/?v=4.1
 
-- Navegação simples e mobile-first: Corpo 3D, Objetivos e Detalhes.
-- Corpo e cabeça realmente 3D, zoom, rotação e seleção de regiões.
-- Lista de melhorias por região: olheiras, visão, nariz/respiração, orelhas, dentes, papada, cintura, postura etc.
-- Objetivos próprios, checklists e status, sem qualquer recomendação automática de procedimentos.
-- Sem assistente, orçamento, conta ou Supabase.
-- Registros locais, backup/importação JSON.
+## Como instalar
 
-## Novo modelo profissional
+1. Abra o site no Chrome do Android.
+2. Toque em **Instalar app** na barra superior do site.
+3. Confirme no diálogo do Chrome. Se o navegador ainda não oferecer a instalação, use **⋮ > Instalar aplicativo** ou **Adicionar à tela inicial**.
+4. O app aparece com ícone no celular e abre em modo standalone (sem a barra do navegador).
 
-Substituído o modelo anatômico nu e o avatar criado com peças improvisadas.
-Novo avatar vem do projeto profissional [Avatar Studio](https://github.com/memoriesrohit/avatar-studio), com personagem da [Microsoft Rocketbox Avatar Library](https://github.com/microsoft/Microsoft-Rocketbox), sob licença MIT.
-Personagem padrão: Ethan (casual), com roupas, cabelo, rosto e texturas integrados em um único arquivo glTF.
-Arquivo de 13,1 MB carregado de CDN para a Web; **empacotado dentro do APK**, que não depende de download do avatar quando instalado.
+O evento JavaScript \`beforeinstallprompt\` só é emitido quando o navegador determina que o site está pronto para instalação; o botão oferece instruções caso o evento não esteja disponível.
 
-## Aplicativo Android
+## Funcionalidades
 
-Projeto nativo gerado com Capacitor 8, compilado automaticamente via GitHub Actions.
-Fonte do APK: workflow `.github/workflows/meucuidado-android.yml`, diretório `mobile/`.
-Quando a compilação for concluída, o APK é publicado em:
-https://github.com/sbarboza0811/testotracker/releases/download/mapa-do-corpo-v4.0/Mapa-do-Corpo-v4.0.apk
+- Avatar profissional 3D Microsoft Rocketbox / Avatar Studio em vistas Corpo, Rosto e Costas.
+- Objetivos de saúde e estética vinculados às regiões do corpo.
+- Checklists, registro de status, adição e edição de objetivos, busca e filtros.
+- Sem cadastro, banco de dados, assistente e controle financeiro.
+- Armazenamento local no navegador e exportação/importação de backup JSON.
 
-A distribuição inicial é via **APK assinado com chave de depuração** para instalação direta. Não é um app publicado na Play Store. Atualizações futuras podem exigir reinstalação caso a chave de assinatura mude; a versão final deverá ser assinada com chave própria e estável, guardada como segredo do GitHub.
-Usuários Android podem precisar habilitar permissão de instalação de fontes externas para instalar o arquivo.
+A instalação PWA utiliza o armazenamento da origem do site; registros locais existentes são preservados quando o navegador usa a mesma origem. Faça backup antes de limpar dados do navegador.
 
-## Licenças
+## Técnica
 
-Personagem e movimentos: Microsoft Rocketbox Avatar Library (MIT), © Microsoft. Consulte `THIRD_PARTY_NOTICES.md` do projeto Avatar Studio.
-Conversão e uso: Avatar Studio (MIT), © Rohit Biradar.
-Three.js (MIT), Capacitor (MIT).
+- Manifest com ícones PNG 192/512, display standalone, start_url e scope dentro de /meucuidado.
+- Service worker versionado para recursos locais e cache de bibliotecas e avatar 3D.
+- Three.js 0.186.1.
+- Avatar derivado da Microsoft Rocketbox Avatar Library (MIT), adaptado por Avatar Studio (MIT).
 
-## Privacidade / migração
+O personagem 3D é baixado na primeira abertura e pode ser armazenado em cache para uso posterior, dependendo do navegador. O site exige conexão para a instalação e algumas operações iniciais.
 
-O app não usa login, anúncios ou banco de dados. Salva objetivos apenas neste dispositivo.
-Chave local na Web: `mapadocorpo_goals_v2`, preservada desde a versão anterior.
-O APK tem armazenamento local próprio e **não lê automaticamente registros do navegador**. Use Exportar Backup no site e Restaurar no app se precisar migrar seus objetivos.
-As antigas tabelas Supabase não foram excluídas nem utilizadas.
+## Android nativo histórico
 
-## Limites
-
-O personagem é um avatar genérico, não representa medidas ou anatomia pessoais.
-Os objetivos iniciais são exemplos de organização, não diagnósticos ou indicação médica.
-Na Web é preciso internet para carregar o personagem pela primeira vez. No Android, o arquivo 3D faz parte do APK.
+A compilação Android via Capacitor permanece arquivada no repositório, mas **não é mais oferecida no site nem executada automaticamente**. Esta versão prioriza exclusivamente a instalação via navegador (PWA). Os arquivos anteriores do usuário e as tabelas Supabase não foram alterados.
