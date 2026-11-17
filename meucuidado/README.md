@@ -1,31 +1,15 @@
-# MeuCuidado 4.2 — Aplicativo instalável diretamente do site
+# MeuCuidado 4.3 — botão nativo de instalação do PWA
 
-É um PWA (Progressive Web App), como o TestoTrack: ícone próprio, tela própria, instalação a partir do Chrome e sem APK.
-Site: https://sbarboza0811.github.io/testotracker/meucuidado/
+O site oferece exclusivamente um botão **Instalar app**, sem APK e sem instruções no lugar da instalação.
 
-## Android (Chrome)
+Quando o Chrome envia `beforeinstallprompt`, o botão dispara imediatamente `prompt()` ao ser tocado: a confirmação de instalação é do Android/Chrome e não pode ser evitada. Quando `navigator.install()` estiver disponível, a mesma ação usa essa API.
 
-- Abra o endereço acima no Chrome, fora de navegadores internos de apps.
-- Quando o Chrome habilitar a instalação, o botão do site muda para **Instalar app** e chama o diálogo de instalação do navegador.
-- Se a instalação ainda não for disponibilizada pelo navegador, aparece **Como instalar**, com instruções para o menu ⋮ do Chrome.
-- O Chrome decide quando oferecer a instalação; o site não pode instalá-lo silenciosamente.
-- Após instalar, o MeuCuidado aparece com ícone na lista de aplicativos e abre em modo standalone, sem barra de endereço.
+Se o site estiver aberto em navegador interno de um aplicativo Android, o botão tenta abrir o endereço diretamente no Chrome por Intent; depois, o Chrome precisa determinar se pode oferecer a instalação. Sem evento ou suporte do navegador, nenhuma página da web consegue iniciar a instalação forçada.
 
-## Arquitetura de instalação
+O PWA mantém HTTPS, manifest com URL de início estável, ícones de 192 e 512 pixels, `display: standalone` e service worker para a interface básica offline. A chave de armazenamento `mapadocorpo_goals_v2` não foi alterada.
 
-- Manifest com id `./` e início estável `./index.html` (sem parâmetros de versão); `display: standalone`, orientação retrato, ícones 192 e 512.
-- Service worker `meucuidado-shell-v15` guarda a interface básica em cache e controla acesso offline.
-- Compatível com `navigator.install()` quando disponível e com `beforeinstallprompt` no Chrome tradicional.
-- Cabeçalho e marca própria, navegação inferior responsiva e ícone distinto do TestoTrack.
-- Não existe fluxo de download de APK nesta aplicação web.
+Endereço: https://sbarboza0811.github.io/testotracker/meucuidado/
 
-## Dados e 3D
-
-- Objetivos, etapas e estados guardados localmente sob a mesma chave `mapadocorpo_goals_v2`.
-- Os dados da versão web permanecem nesta mesma origem e podem ser exportados como JSON.
-- Avatar Rocketbox, preparado pelo projeto Avatar Studio sob licença MIT. Requer internet no primeiro carregamento; a interface básica funciona sem ele.
-- O avatar é genérico, não é uma representação pessoal ou diagnóstico.
-
-## Fontes
-- https://developer.chrome.com/docs/modern-web-guidance/guides/pwa/install-web-app
+Fontes:
+- https://web.dev/learn/pwa/installation-prompt?hl=pt-br
 - https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Making_PWAs_installable

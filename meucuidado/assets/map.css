@@ -14,18 +14,7 @@
 @media(max-width:740px){.topbar{height:66px;padding:0 15px}.brand-mark{height:37px;width:37px}.brand b{font-size:16px}.header-right #import-btn{display:none}.header-right .download-button{padding:9px 10px;font-size:10px}.header-right .soft-button{padding:8px 9px}.intro{padding:18px 17px 16px;align-items:center}.intro h1{font-size:29px}.intro p{font-size:11.5px;max-width:365px}.intro-stats{gap:13px}.intro-stats strong{font-size:21px}.workspace{padding:0 12px 17px;display:grid;grid-template-columns:1fr;grid-template-areas:"map" "list" "detail";gap:12px}.map-panel{min-height:0}.map-header{padding:14px 13px 10px}.map-header h2{font-size:16px}.segmented button{font-size:10px;padding:8px 10px}.viewer{flex:none;height:calc(min(60vh,535px));min-height:345px}.viewer-hint{font-size:9px;bottom:10px}.map-footer{padding:11px 13px}.list-panel{min-height:0}.goal-list{max-height:none}.detail-panel{min-height:0}.detail-inner{max-width:none}.mobile-nav{display:flex;position:fixed;bottom:0;left:0;right:0;justify-content:space-around;align-items:center;background:#fff;border-top:1px solid #e2eee3;box-shadow:0 -6px 30px #1b3c200f;z-index:20;padding:8px 6px max(8px,env(safe-area-inset-bottom))}.mobile-nav button{border:0;background:transparent;display:flex;flex-direction:column;align-items:center;min-width:65px;gap:0;color:#729c7a;font-size:10px;font-weight:800}.mobile-nav .nav-icon{font-size:21px;font-weight:500}.foot{padding:5px 16px 95px;display:block}.foot span{display:block}.trust-row{gap:12px;flex-wrap:wrap;font-size:9px}}
 @media(max-width:420px){.brand small{font-size:7px}.brand b{font-size:14px}.header-right .download-button span:last-child{display:inline}.header-right .download-button{padding:8px 12px}.header-right .download-icon{font-size:21px}.intro h1{font-size:26px}.intro-stats strong{font-size:19px}.intro-stats span{font-size:9px}.intro p{max-width:265px}.viewer{height:410px}.segmented button{padding:7px 8px}.marker{font-size:9px;padding-right:7px}}
 /* Instalação PWA pela Web, versão 4.1 */
-.install-dialog{width:min(92vw,420px);border:0;border-radius:22px;padding:0;background:#fff;box-shadow:0 20px 80px rgba(0,0,0,.23);color:#1b3929}
-.install-dialog::backdrop{background:rgba(19,47,31,.57)}
-.install-dialog-content{padding:25px;display:flex;flex-direction:column;gap:13px}
-.install-dialog-icon{display:grid;place-items:center;width:50px;height:50px;background:#e3f5e9;border-radius:15px;font-size:30px;color:#1e7851}
-.install-dialog h2{margin:0;font-size:24px;line-height:1.15;letter-spacing:-.7px}
-.install-dialog-content>p{margin:0;color:#748d7b;line-height:1.55;font-size:12.5px}
-.install-steps{border:1px solid #e2eee6;border-radius:13px;padding:5px 14px}
-.install-steps>div{display:flex;align-items:flex-start;gap:12px;padding:11px 0}
-.install-steps>div+div{border-top:1px solid #edf3ee}
-.install-steps span{display:grid;place-items:center;background:#e4f4e9;color:#226f4f;border-radius:50%;width:24px;height:24px;flex:0 0 auto;font-weight:800;font-size:12px}
-.install-steps p{margin:1px 0 0;font-size:12px;line-height:1.5;color:#5c7365}
-.install-dialog .main-button{width:100%;margin-top:3px}
+
 @media(max-width:420px){
  .header-right #install-btn span:last-child{display:inline}
  .header-right #install-btn{padding:8px 10px;font-size:10.5px;gap:5px}
@@ -33,5 +22,5 @@
  .header-right #export-btn{padding:7px}
 }
 
-/* Keep Android website installation prominent on small screens. */
-@media(max-width:440px){.header-right #export-btn{display:none}.header-right .download-button{padding:9px 12px;font-size:11px}.header-right .download-button span:last-child{display:inline}}
+/* Native install action, always clearly labeled (never a "how to" button). */
+@media(max-width:440px){.header-right #export-btn{display:none}.header-right #install-btn{padding:9px 12px;font-size:11px}.header-right #install-btn span:last-child{display:inline}}

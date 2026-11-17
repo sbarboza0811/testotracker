@@ -10,10 +10,10 @@
  <title>MeuCuidado · Mapa do Corpo</title>
  <link rel="manifest" href="./manifest.webmanifest">
  <link rel="icon" href="icon.svg" type="image/svg+xml">
- <link rel="stylesheet" href="assets/map.css?v=4.2">
+ <link rel="stylesheet" href="assets/map.css?v=4.3">
  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>
- <script defer src="assets/map.js?v=4.2"></script>
- <script type="module" src="assets/body3d.js?v=4.2"></script>
+ <script defer src="assets/map.js?v=4.3"></script>
+ <script type="module" src="assets/body3d.js?v=4.3"></script>
 </head>
 <body>
 <div id="app">
@@ -47,7 +47,7 @@
   <aside class="panel detail-panel" id="detail-panel" aria-label="Detalhes da região selecionada"><div id="detail" aria-live="polite"></div></aside>
  </main>
  <div class="trust-row"><span>✦ Sem login</span><span>✦ Dados guardados no aparelho</span><span>✦ Sem anúncios ou controle financeiro</span></div>
- <footer class="foot"><span>MeuCuidado 4.2 · Organização pessoal, não substitui avaliação profissional</span><span>Avatar 3D: Microsoft Rocketbox / Avatar Studio (MIT)</span></footer>
+ <footer class="foot"><span>MeuCuidado 4.3 · Organização pessoal, não substitui avaliação profissional</span><span>Avatar 3D: Microsoft Rocketbox / Avatar Studio (MIT)</span></footer>
  <nav class="mobile-nav" aria-label="Navegação"><button type="button" data-scroll="map"><span class="nav-icon">◎</span><span>Meu corpo</span></button><button type="button" data-scroll="list"><span class="nav-icon">☷</span><span>Objetivos</span></button><button type="button" data-scroll="detail"><span class="nav-icon">◈</span><span>Detalhes</span></button><button type="button" id="mobile-new"><span class="nav-icon">＋</span><span>Novo</span></button></nav>
 </div>
 <dialog id="goal-dialog" aria-labelledby="dialog-heading"><form id="goal-form" class="goal-form">
@@ -58,18 +58,5 @@
  <label>Anotações<textarea id="edit-notes" rows="3" maxlength="1500" placeholder="Se desejar, escreva o que quer lembrar"></textarea></label>
  <div class="dialog-actions"><button id="dialog-cancel" type="button" class="cancel-button">Cancelar</button><button type="submit" class="main-button">Salvar</button></div>
 </form></dialog>
-<dialog id="install-dialog" class="install-dialog" aria-labelledby="install-heading">
- <div class="install-dialog-content">
-  <div class="install-dialog-icon">✳</div>
-  <h2 id="install-heading">Instalar MeuCuidado</h2>
-  <p>O MeuCuidado é um aplicativo do próprio site. Depois de instalado, ele aparece com ícone na tela inicial e abre sem a barra do navegador.</p>
-  <div class="install-steps">
-   <div><span>1</span><p>Abra este endereço diretamente no <strong>Google Chrome</strong> do celular, se estiver em um navegador dentro de outro aplicativo.</p></div>
-   <div><span>2</span><p>Toque no menu <strong>⋮</strong> do Chrome.</p></div>
-   <div><span>3</span><p>Selecione <strong>Instalar aplicativo</strong> ou <strong>Adicionar à tela inicial</strong> e confirme.</p></div>
-  </div>
-  <button id="install-dialog-close" class="main-button" type="button">Entendi</button>
- </div>
-</dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 </body></html>
