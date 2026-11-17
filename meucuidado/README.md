@@ -1,44 +1,48 @@
-# Mapa do Corpo — MeuCuidado 3.1
+# MeuCuidado 4.0 — Mapa do Corpo
 
-Aplicativo/PWA para organizar objetivos pessoais de saúde e estética por região do corpo, sem cadastro, finanças, IA ou Supabase.
+## Novo conceito
 
-## Modelo 3D
+Aplicativo Android instalável por APK, além da versão Web. O foco é acompanhar objetivos pessoais de saúde e estética ligados a partes do corpo.
 
-O antigo corpo anatômico masculino nu e a bermuda artificial foram inteiramente substituídos.
-O novo personagem usa ativos MakeHuman CC0 do projeto CharacterCreator: corpo masculino 3D e roupas reais (camiseta, calça jeans, tênis), mais cabelo curto opcional.
-É possível girar, ampliar e visualizar o corpo, a cabeça e as costas.
-Os marcadores estão vinculados a olhos, nariz, orelhas, dentes, papada, cabelo, tronco, braços, abdômen, pernas e costas.
+- Navegação simples e mobile-first: Corpo 3D, Objetivos e Detalhes.
+- Corpo e cabeça realmente 3D, zoom, rotação e seleção de regiões.
+- Lista de melhorias por região: olheiras, visão, nariz/respiração, orelhas, dentes, papada, cintura, postura etc.
+- Objetivos próprios, checklists e status, sem qualquer recomendação automática de procedimentos.
+- Sem assistente, orçamento, conta ou Supabase.
+- Registros locais, backup/importação JSON.
 
-O renderizador oculta na própria malha do personagem as regiões cobertas pelas roupas usando o atributo _CCZONE.
-Corpo e vestuário são carregados e montados antes de a cena mostrar o personagem. Se alguma peça indispensável falhar, aparece um fallback sem exibir o modelo nu.
+## Novo modelo profissional
 
-## Funcionalidades
-- Objetivos editáveis por região, checklist, status e anotações.
-- Busca, filtros e exportação/importação de backup JSON.
-- Armazenamento automático local no navegador, sem login e sem banco de dados.
-- PWA instalável no Android. Primeiro download dos modelos requer internet.
+Substituído o modelo anatômico nu e o avatar criado com peças improvisadas.
+Novo avatar vem do projeto profissional [Avatar Studio](https://github.com/memoriesrohit/avatar-studio), com personagem da [Microsoft Rocketbox Avatar Library](https://github.com/microsoft/Microsoft-Rocketbox), sob licença MIT.
+Personagem padrão: Ethan (casual), com roupas, cabelo, rosto e texturas integrados em um único arquivo glTF.
+Arquivo de 13,1 MB carregado de CDN para a Web; **empacotado dentro do APK**, que não depende de download do avatar quando instalado.
 
-## Licenças e créditos
-Ativos 3D MakeHuman CC0 exportados pelo projeto CharacterCreator:
-https://github.com/kblood/CharacterCreator
-Créditos detalhados e declaração de licença dos arquivos output/*.glb (CC0):
-https://github.com/kblood/CharacterCreator/blob/master/LICENSE-NOTES.md
-Three.js: MIT.
-O código deste visualizador é próprio; não incorpora arquivos de código GPL do CharacterCreator.
+## Aplicativo Android
 
-Arquivos do modelo usam este commit fixo pela CDN:
-https://cdn.jsdelivr.net/gh/kblood/CharacterCreator@852e48f316b90a0937234886630e4fb4cdfd1f78/output/
+Projeto nativo gerado com Capacitor 8, compilado automaticamente via GitHub Actions.
+Fonte do APK: workflow `.github/workflows/meucuidado-android.yml`, diretório `mobile/`.
+Quando a compilação for concluída, o APK é publicado em:
+https://github.com/sbarboza0811/testotracker/releases/download/mapa-do-corpo-v4.0/Mapa-do-Corpo-v4.0.apk
 
-## Privacidade e compatibilidade
-Os oito objetivos iniciais são exemplos editáveis, não diagnósticos ou indicação de tratamento.
-A chave de armazenamento mapadocorpo_goals_v2 foi mantida para preservar registros anteriores salvos no mesmo navegador.
-O backup é importante: limpar dados do navegador ou reinstalar o app pode apagar objetivos locais.
-As tabelas antigas de Supabase não foram alteradas nem importadas.
-Os modelos vêm por CDN. Dados pessoais não são enviados ao servidor de modelos.
-Se a conexão ou o WebGL falharem, a lista e os checklists permanecem disponíveis.
+A distribuição inicial é via **APK assinado com chave de depuração** para instalação direta. Não é um app publicado na Play Store. Atualizações futuras podem exigir reinstalação caso a chave de assinatura mude; a versão final deverá ser assinada com chave própria e estável, guardada como segredo do GitHub.
+Usuários Android podem precisar habilitar permissão de instalação de fontes externas para instalar o arquivo.
 
-## Correções de download 3.1
-- Os arquivos GLB são obtidos diretamente do GitHub Raw, com fallback automático para jsDelivr. O download mostra percentual, valida o cabeçalho GLB e controla timeout.
-- Adicionado botão Instalar com instruções quando o navegador não permite instalação direta.
-- Fallback com botão Tentar baixar novamente.
-- Os objetivos preservam a chave localStorage mapadocorpo_goals_v2.
+## Licenças
+
+Personagem e movimentos: Microsoft Rocketbox Avatar Library (MIT), © Microsoft. Consulte `THIRD_PARTY_NOTICES.md` do projeto Avatar Studio.
+Conversão e uso: Avatar Studio (MIT), © Rohit Biradar.
+Three.js (MIT), Capacitor (MIT).
+
+## Privacidade / migração
+
+O app não usa login, anúncios ou banco de dados. Salva objetivos apenas neste dispositivo.
+Chave local na Web: `mapadocorpo_goals_v2`, preservada desde a versão anterior.
+O APK tem armazenamento local próprio e **não lê automaticamente registros do navegador**. Use Exportar Backup no site e Restaurar no app se precisar migrar seus objetivos.
+As antigas tabelas Supabase não foram excluídas nem utilizadas.
+
+## Limites
+
+O personagem é um avatar genérico, não representa medidas ou anatomia pessoais.
+Os objetivos iniciais são exemplos de organização, não diagnósticos ou indicação médica.
+Na Web é preciso internet para carregar o personagem pela primeira vez. No Android, o arquivo 3D faz parte do APK.

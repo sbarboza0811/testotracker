@@ -1,64 +1,60 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#f5f8f5">
-<meta name="description" content="Seus objetivos de saúde e estética ligados às regiões do corpo em um mapa 3D.">
-<title>Mapa do Corpo · MeuCuidado 3.1</title>
-<link rel="manifest" href="manifest.webmanifest?v=3.1">
-<link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="assets/map.css?v=3.1">
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>
-<script defer src="assets/map.js?v=3.1"></script>
-<script type="module" src="assets/body3d.js?v=3.1"></script>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+ <meta name="theme-color" content="#f6faf7">
+ <meta name="description" content="Mapa visual do corpo para acompanhar seus objetivos de saúde e estética.">
+ <title>MeuCuidado · Mapa do Corpo 4</title>
+ <link rel="manifest" href="manifest.webmanifest?v=4.0">
+ <link rel="icon" href="icon.svg" type="image/svg+xml">
+ <link rel="stylesheet" href="assets/map.css?v=4.0">
+ <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>
+ <script defer src="assets/map.js?v=4.0"></script>
+ <script type="module" src="assets/body3d.js?v=4.0"></script>
 </head>
 <body>
 <div id="app">
-<header class="topbar">
- <div class="brand"><span class="brand-mark">✳</span><span><b>Mapa do Corpo</b><small>MEUCUIDADO · SAÚDE & ESTÉTICA</small></span></div>
- <div class="header-right"><span class="save-status"><span class="status-dot"></span> Neste dispositivo</span><button id="install-btn" class="soft-button" type="button" title="Instalar aplicativo no celular"><span>Instalar</span></button><button id="export-btn" class="soft-button" title="Salvar uma cópia dos seus objetivos" type="button"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg><span>Backup</span></button><button id="import-btn" class="soft-button" type="button" title="Restaurar backup">Restaurar</button><input id="import-file" type="file" accept="application/json,.json" hidden></div>
-</header>
-<div class="intro">
- <div><div class="eyebrow">SUA JORNADA DE CUIDADOS</div><h1>Seu corpo. Seus objetivos.</h1><p>Explore uma região, organize o que deseja melhorar e acompanhe os próximos passos.</p></div>
- <div class="intro-stats"><div><strong id="count-active">8</strong><span>Objetivos</span></div><div><strong id="count-done">0</strong><span>Concluídos</span></div></div>
-</div>
-<main class="workspace">
- <aside class="list-panel panel" aria-label="Meus objetivos">
-  <div class="panel-top"><div><span class="eyebrow">MINHA LISTA</span><h2>O que quero melhorar</h2></div><button id="new-goal" class="round-add" type="button" aria-label="Adicionar objetivo">+</button></div>
-  <label class="search"><span aria-hidden="true">⌕</span><input id="goal-search" placeholder="Buscar objetivo ou região" autocomplete="off" aria-label="Buscar objetivo"></label>
-  <div class="filters" aria-label="Filtrar objetivos"><button class="filter active" data-filter="all" type="button">Todos</button><button class="filter" data-filter="active" type="button">Pendentes</button><button class="filter" data-filter="done" type="button">Concluídos</button></div>
-  <div class="goal-list" id="goal-list" aria-live="polite"></div>
-  <div class="explore"><div class="eyebrow">EXPLORAR OUTRAS ÁREAS</div><div class="explore-grid" id="explore-regions"></div></div>
- </aside>
+ <header class="topbar">
+  <div class="brand"><div class="brand-mark"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M14 5v18M5 14h18" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="14" cy="14" r="10.5" stroke="currentColor" stroke-width="1.6" opacity=".5"/></svg></div><div><b>MeuCuidado</b><small>MEU MAPA CORPORAL</small></div></div>
+  <div class="header-right"><button id="install-btn" class="download-button" type="button"><span class="download-icon">↓</span><span>Baixar app Android</span></button><button id="export-btn" class="soft-button" title="Exportar meus dados" type="button">Backup</button><button id="import-btn" class="soft-button" type="button" title="Restaurar backup">Restaurar</button><input id="import-file" type="file" accept=".json,application/json" hidden></div>
+ </header>
+ <div class="intro"><div><div class="eyebrow">SEU ESPAÇO DE SAÚDE E ESTÉTICA</div><h1>Seu corpo, seus cuidados.</h1><p>Um lugar para organizar tudo o que deseja avaliar e melhorar, por região do corpo.</p></div><div class="intro-stats"><div><strong id="count-active">8</strong><span>Objetivos</span></div><div><strong id="count-done">0</strong><span>Concluídos</span></div></div></div>
+ <main class="workspace">
+  <section class="panel map-panel" id="map" aria-label="Corpo em 3D">
+   <div class="map-header"><div><span class="eyebrow">MAPA INTERATIVO</span><h2>Escolha uma região</h2></div><div class="segmented"><button data-view="body" class="selected" type="button">Corpo</button><button data-view="head" type="button">Rosto</button><button data-view="back" type="button">Costas</button></div></div>
+   <div class="viewer" id="viewer">
+    <div class="viewer-rings" aria-hidden="true"></div>
+    <div class="stage3d" id="stage3d" aria-label="Avatar humano 3D; arraste para girar"></div>
+    <div id="hotspots" class="hotspots" aria-label="Partes do corpo"></div>
+    <div id="model-loading" class="model-loading"><div class="model-loading-spinner" aria-hidden="true"></div><strong>Preparando o avatar 3D</strong><span>Corpo e rosto detalhados</span></div>
+    <div id="viewer-fallback" class="viewer-fallback" hidden><div class="fallback-icon">◎</div><strong>Modelo 3D indisponível</strong><p>Suas informações seguem acessíveis. Selecione as regiões na lista.</p><button id="retry-3d" class="soft-button" type="button">Tentar novamente</button></div>
+    <div class="viewer-hint">Arraste para girar <span>·</span> Aproxime com dois dedos</div>
+   </div>
+   <div class="map-footer"><div><span class="key-dot"></span> Áreas com objetivos marcados</div><button type="button" id="reset-camera">⟲ Centralizar modelo</button></div>
+  </section>
 
- <section class="map-panel panel" aria-label="Mapa 3D do corpo">
-  <div class="map-header"><div><span class="eyebrow">MAPA CORPORAL</span><h2>Explore seu corpo</h2></div><div class="segmented" aria-label="Selecionar visualização"><button data-view="body" class="selected" type="button">Corpo</button><button data-view="head" type="button">Cabeça</button><button data-view="back" type="button">Costas</button></div></div>
-  <div id="viewer" class="viewer">
-   <div class="viewer-rings" aria-hidden="true"></div>
-   <div id="stage3d" class="stage3d" aria-label="Avatar 3D vestido humano. Arraste para girar e use dois dedos para zoom."></div><div id="model-loading" class="model-loading"><div class="model-loading-spinner" aria-hidden="true"></div><strong>Carregando corpo em 3D…</strong><span>Personagem com camiseta, jeans e tênis</span></div>
-   <div id="hotspots" class="hotspots" aria-label="Selecionar regiões do corpo"></div>
-   <div id="viewer-fallback" class="viewer-fallback" hidden><div class="fallback-icon">◎</div><strong>Visualização 3D indisponível</strong><p>Você pode continuar escolhendo as regiões na lista ao lado ou abaixo.</p><button id="retry-3d" type="button" class="soft-button">Tentar baixar novamente</button></div>
-   <div class="viewer-hint">↔ Girar <span>·</span> ⤢ Zoom <span>·</span> ● Selecionar área</div>
-  </div>
-  <div class="map-footer"><span><span class="key-dot"></span> Regiões com objetivos</span><span>Modelo anatômico 3D</span><button type="button" id="reset-camera">⟲ Recentralizar</button></div>
- </section>
+  <aside class="panel list-panel" id="list" aria-label="Lista de objetivos">
+   <div class="panel-top"><div><span class="eyebrow">MEUS CUIDADOS</span><h2>O que quero melhorar</h2></div><button id="new-goal" class="round-add" type="button" aria-label="Adicionar objetivo">+</button></div>
+   <label class="search"><span aria-hidden="true">⌕</span><input id="goal-search" placeholder="Pesquisar área ou objetivo" autocomplete="off" aria-label="Pesquisar objetivos"></label>
+   <div class="filters" aria-label="Filtrar objetivos"><button class="filter active" data-filter="all" type="button">Todos</button><button class="filter" data-filter="active" type="button">Em aberto</button><button class="filter" data-filter="done" type="button">Concluídos</button></div>
+   <div class="goal-list" id="goal-list" aria-live="polite"></div>
+   <div class="explore"><div class="eyebrow">OUTRAS REGIÕES DO CORPO</div><div class="explore-grid" id="explore-regions"></div></div>
+  </aside>
 
- <aside class="detail-panel panel" id="detail-panel" aria-label="Objetivo selecionado"><div id="detail" aria-live="polite"></div></aside>
-</main>
-<footer class="foot"><span>Mapa do Corpo v3.1 · Organização pessoal, não diagnóstico médico</span><span>Os registros ficam apenas neste navegador. Salve uma cópia em Backup.</span><span>Modelo: <a href="https://github.com/kblood/CharacterCreator/blob/master/LICENSE-NOTES.md" target="_blank" rel="noopener noreferrer">Modelo MakeHuman / CharacterCreator · CC0 1.0</a> (visualização adaptada)</span></footer>
-<nav class="mobile-nav" aria-label="Acesso rápido"><button type="button" data-scroll="map">◎ <span>Mapa</span></button><button type="button" data-scroll="list">☷ <span>Lista</span></button><button type="button" data-scroll="detail">◈ <span>Detalhes</span></button><button type="button" id="mobile-new">＋ <span>Adicionar</span></button></nav>
+  <aside class="panel detail-panel" id="detail-panel" aria-label="Detalhes da região selecionada"><div id="detail" aria-live="polite"></div></aside>
+ </main>
+ <div class="trust-row"><span>✦ Sem login</span><span>✦ Dados guardados no aparelho</span><span>✦ Sem anúncios ou controle financeiro</span></div>
+ <footer class="foot"><span>MeuCuidado 4.0 · Organização pessoal, não substitui avaliação profissional</span><span>Avatar 3D: Microsoft Rocketbox / Avatar Studio (MIT)</span></footer>
+ <nav class="mobile-nav" aria-label="Navegação"><button type="button" data-scroll="map"><span class="nav-icon">◎</span><span>Meu corpo</span></button><button type="button" data-scroll="list"><span class="nav-icon">☷</span><span>Objetivos</span></button><button type="button" data-scroll="detail"><span class="nav-icon">◈</span><span>Detalhes</span></button><button type="button" id="mobile-new"><span class="nav-icon">＋</span><span>Novo</span></button></nav>
 </div>
-<dialog id="goal-dialog" aria-labelledby="dialog-heading">
- <form id="goal-form" class="goal-form">
-  <div class="dialog-head"><div><span class="eyebrow">MEU OBJETIVO</span><h2 id="dialog-heading">Adicionar objetivo</h2></div><button class="dialog-close" id="dialog-close" type="button" aria-label="Fechar">×</button></div>
-  <label>O que você quer melhorar? <input required id="edit-title" maxlength="110" placeholder="Ex.: Tratamento de olheiras"></label>
-  <label>Região do corpo <select id="edit-region" required></select></label>
-  <label>Próximo passo <input id="edit-next" maxlength="180" placeholder="Ex.: Agendar avaliação"></label>
-  <label>Anotações <textarea id="edit-notes" rows="3" maxlength="1500" placeholder="O que deseja lembrar?"></textarea></label>
-  <div class="dialog-actions"><button class="cancel-button" id="dialog-cancel" type="button">Cancelar</button><button class="main-button" type="submit">Salvar objetivo</button></div>
- </form>
-</dialog>
+<dialog id="goal-dialog" aria-labelledby="dialog-heading"><form id="goal-form" class="goal-form">
+ <div class="dialog-head"><div><div class="eyebrow">MEU CUIDADO</div><h2 id="dialog-heading">Novo objetivo</h2></div><button id="dialog-close" class="dialog-close" type="button" aria-label="Fechar">×</button></div>
+ <label>O que você quer melhorar?<input id="edit-title" maxlength="110" placeholder="Ex.: Melhorar as olheiras" required></label>
+ <label>Em qual parte do corpo?<select id="edit-region" required></select></label>
+ <label>Próximo passo<input id="edit-next" maxlength="180" placeholder="Ex.: Marcar avaliação"></label>
+ <label>Anotações<textarea id="edit-notes" rows="3" maxlength="1500" placeholder="Se desejar, escreva o que quer lembrar"></textarea></label>
+ <div class="dialog-actions"><button id="dialog-cancel" type="button" class="cancel-button">Cancelar</button><button type="submit" class="main-button">Salvar</button></div>
+</form></dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 </body></html>

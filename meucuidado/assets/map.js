@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-const VERSION='3.1';
+const VERSION='4.0';
 const KEY='mapadocorpo_goals_v2';
 const REGIONS=[
  ['cabelo','Cabelo e couro cabeludo','💇','Cabeça','Queda, fios e couro cabeludo'],
@@ -171,19 +171,12 @@ $('#export-btn').addEventListener('click',function(){
 });
 $('#import-btn').addEventListener('click',function(){$('#import-file').click()});
 // PWAs cannot install silently. Use the browser-supported prompt if present.
-let installPrompt=null;
-window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();installPrompt=e});
-$('#install-btn').addEventListener('click',async function(){
- if(window.matchMedia('(display-mode: standalone)').matches){toast('O aplicativo já está instalado.');return}
- if(installPrompt){
-  const evt=installPrompt;installPrompt=null;
-  try{await evt.prompt();await evt.userChoice}catch(e){toast('Não foi possível abrir a instalação. Use o menu do Chrome.')}
- }else{
-  toast('Abra este site no Chrome, toque em ⋮ e escolha "Instalar app" ou "Adicionar à tela inicial".');
- }
+const native=!!(window.Capacitor?.isNativePlatform?.());
+if(native){$('#install-btn').hidden=true;document.documentElement.classList.add('native-android')}
+$('#install-btn').addEventListener('click',function(){
+  const asset='https://github.com/sbarboza0811/testotracker/releases/download/mapa-do-corpo-v4.0/Mapa-do-Corpo-v4.0.apk';
+  window.location.assign(asset);
 });
-window.addEventListener('appinstalled',function(){toast('Aplicativo instalado!');$('#install-btn').hidden=true});
-if(window.matchMedia('(display-mode: standalone)').matches)$('#install-btn').hidden=true;
 $('#retry-3d').addEventListener('click',function(){window.location.reload()});
 $('#import-file').addEventListener('change',async function(e){
  const f=e.target.files?.[0];e.target.value='';if(!f)return;
@@ -235,6 +228,6 @@ setTimeout(function(){
   if(load)load.hidden=true;
   if(fallback)fallback.hidden=false;
  }
-},30000);
-if('serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(function(){});
+},95000);
+if(!native&&'serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(function(){});
 })();

@@ -1,0 +1,18 @@
+import {cpSync,copyFileSync,existsSync,mkdirSync,readFileSync,writeFileSync} from 'node:fs';
+import {join,resolve} from 'node:path';
+const root=resolve('../');
+const app=join(root,'meucuidado'),dest=join(process.cwd(),'www');
+if(!existsSync(join(app,'index.html')))throw Error('Missing MeuCuidado');
+mkdirSync(dest,{recursive:true});
+cpSync(app,dest,{recursive:true,force:true,filter(path){return !path.endsWith('.sql')&&!path.endsWith('README.md')}});
+mkdirSync(join(dest,'vendor','jsm'),{recursive:true});
+copyFileSync(join(process.cwd(),'node_modules','three','build','three.module.js'),join(dest,'vendor','three.module.js'));
+cpSync(join(process.cwd(),'node_modules','three','examples','jsm'),join(dest,'vendor','jsm'),{recursive:true,force:true});
+let html=readFileSync(join(dest,'index.html'),'utf8');
+html=html.replace('https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js','./vendor/three.module.js').replace('https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/','./vendor/jsm/');
+writeFileSync(join(dest,'index.html'),html);
+const model=join(dest,'models','avatar.glb');
+if(!existsSync(model))throw Error('Missing bundled avatar model');
+const bytes=readFileSync(model);
+if(bytes.length<1000000||bytes.toString('ascii',0,4)!=='glTF')throw Error('Invalid GLB model');
+console.log('Bundled GLB model:',bytes.length,'bytes. Three.js is local.');

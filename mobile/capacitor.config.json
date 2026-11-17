@@ -1,0 +1,9 @@
+{
+  "appId": "com.meucuidado.mapadocorpo",
+  "appName": "MeuCuidado",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {}
+}
