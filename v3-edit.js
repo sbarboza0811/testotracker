@@ -215,6 +215,22 @@ document.addEventListener('click',async ev=>{
   U.toast(T.state.config.reminders?'Lembretes ativados enquanto o app estiver aberto.':'Lembretes desativados.');
   return
  }
+ if(a==='update-app'){
+  if(!navigator.onLine){U.toast('Sem internet. Os dados continuam salvos no aparelho.');return}
+  U.toast('Buscando a versão mais recente…');
+  try{
+   if('serviceWorker' in navigator){
+    const registration=await navigator.serviceWorker.getRegistration('./');
+    await registration?.update();
+    if(registration?.waiting)registration.waiting.postMessage({type:'SKIP_WAITING'});
+   }
+  }catch(ex){console.warn('Atualização PWA:',ex)}
+  // A navegação versionada não reutiliza a cópia anterior do HTML.
+  const url=new URL(window.location.href);
+  url.searchParams.set('apprev','20261122-sapphire-2');
+  window.location.replace(url.toString());
+  return
+ }
  if(a==='export'){T.exportJson();return}
  if(a==='import'){document.getElementById('backup-file')?.click();return}
  if(a==='migrate-cloud'){T.exportJson();const success=await C.importLegacyCloud();if(success)U.toast('Histórico anterior importado sem apagar a versão 2.1.');return}
