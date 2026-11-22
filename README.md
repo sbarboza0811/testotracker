@@ -1,5 +1,14 @@
 # TestoTrack 3.0
 
+## Atualização da dieta e interface (22/11/2026)
+
+- **Minha dieta** configurada como plano inicial e aplicada uma única vez nas instalações existentes, preservando os dias já registrados. O usuário pode trocar de dieta depois sem que ela seja reimposta.
+- **Quatro refeições fixas:** café da manhã (banana, ovo, aveia, whey Growth zero lactose, mamão, leite zero lactose); almoço (patinho, batata inglesa, azeite, pera); café da tarde (pão integral, ovos, leite zero lactose, café sem açúcar); jantar (frango, arroz, azeite, banana). Os pesos foram preservados no código do modelo.
+- **Meta:** 2.450 kcal/dia e pelo menos 139,2 g de proteína. O catálogo atual estima cerca de **2.519 kcal e 147,7 g de proteína** para as porções escolhidas; por serem referências nutricionais aproximadas, o total calculado não é apresentado como exatamente 2.450 kcal.
+- **Visual:** novo tema minimalista em `minimal.css`, visão Hoje focada em consumo, proteína, água, treino e cardápio, sem apagar ferramentas de evolução, modelos ou registros.
+- **Registro rápido:** cada refeição planejada pode ser registrada com um toque; o Diário também exibe todos os itens e suas unidades em g/ml.
+- **PWA:** cache da aplicação atualizado para incluir a folha de estilo nova.
+
 PWA pessoal para acompanhar alimentação, treino, cronograma, sono, hidratação, suplementos e evolução.
 
 Aplicativo: https://sbarboza0811.github.io/testotracker/
