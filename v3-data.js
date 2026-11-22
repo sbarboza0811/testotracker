@@ -24,11 +24,28 @@ const FOOD_BASE=[
 ['queijo','Queijo sem lactose (exemplo)',285,21,2,21,0],['amendoim','Amendoim',567,25.8,16.1,49.2,8.5],
 ['macarrao','Macarrão cozido',158,5.8,30.9,.9,1.8],['atum','Atum em água',116,26,0,.8,0],
 ['sementes-abobora','Sementes de abóbora torradas',559,30.2,10.7,49,6],
-['castanha-caju','Castanha-de-caju sem sal',553,18.2,30.2,43.8,3.3]
+['castanha-caju','Castanha-de-caju sem sal',553,18.2,30.2,43.8,3.3],
+// Alimentos específicos da dieta pessoal; porções em g ou ml conforme a unidade.
+['whey-growth-sl','Whey Growth zero lactose',393.33,73.33,18,6.67,0],
+['leite-zero-lactose','Leite integral zero lactose',68,3.15,4.8,3.5,0,'ml'],
+['batata-inglesa','Batata inglesa cozida',76,1.9,17.4,.1,1.8],
+['cafe-sem-acucar','Café sem açúcar',2,.2,.4,0,0,'ml']
 ];
-const FOODS=FOOD_BASE.map(f=>({id:f[0],name:f[1],kcal:f[2],p:f[3],c:f[4],f:f[5],fiber:f[6]}));
-const SLOTS=[['cafe','Café da manhã','09:00'],['almoco','Almoço','13:00'],['lanche','Lanche','17:00'],['jantar','Jantar','21:00']];
+const FOODS=FOOD_BASE.map(f=>({id:f[0],name:f[1],kcal:f[2],p:f[3],c:f[4],f:f[5],fiber:f[6],...(f[7]?{unit:f[7]}:{})}));
+const SLOTS=[['cafe','Café da manhã','09:00'],['almoco','Almoço','13:00'],['lanche','Café da tarde','17:00'],['jantar','Jantar','21:00']];
+const PERSONAL_DIET='minha-dieta-2450';
 const MEAL_TEMPLATES={
+ 'minha-dieta-2450':{
+  label:'Minha dieta · meta de 2.450 kcal',
+  description:'Suas quatro refeições, com alimentos e quantidades definidos em 22/11/2026. Os totais são recalculados pelo catálogo nutricional do app e podem diferir de tabelas anteriores.',
+  goals:{calories:2450,protein:139.2,carbs:294,fat:74},
+  meals:[
+   [['banana',100],['ovo',50],['aveia',15],['whey-growth-sl',15],['mamao',150],['leite-zero-lactose',200]],
+   [['patinho',130],['batata-inglesa',400],['azeite',15],['pera',180]],
+   [['pao',60],['ovo',100],['leite-zero-lactose',200],['cafe-sem-acucar',100]],
+   [['frango',130],['arroz',320],['azeite',15],['banana',100]]
+  ]
+ },
  'testo-2000':{"label":"Carne, ovos e sementes · 2.000 kcal","description":"Modelo com patinho, ovos, sementes de abóbora e castanhas. Valores nutricionais aproximados.","goals":{"calories":2000,"protein":169,"carbs":187,"fat":66},"meals":[[["ovo",150],["pao",80],["mamao",150]],[["patinho",160],["arroz",150],["pepino",200],["azeite",10]],[["whey",30],["banana",140],["sementes-abobora",20]],[["frango",160],["arroz",150],["castanha-caju",20],["pepino",100]]]},
  'testo-2250':{"label":"Carne, ovos e sementes · 2.250 kcal","description":"Mesmos alimentos com mais arroz, para uma meta energética intermediária.","goals":{"calories":2250,"protein":174,"carbs":243,"fat":66},"meals":[[["ovo",150],["pao",80],["mamao",150]],[["patinho",160],["arroz",250],["pepino",200],["azeite",10]],[["whey",30],["banana",140],["sementes-abobora",20]],[["frango",160],["arroz",250],["castanha-caju",20],["pepino",100]]]},
  'testo-2500':{"label":"Carne, ovos e sementes · 2.500 kcal","description":"Inclui aveia no lanche para maior oferta energética.","goals":{"calories":2500,"protein":184,"carbs":283,"fat":70},"meals":[[["ovo",150],["pao",80],["mamao",150]],[["patinho",160],["arroz",250],["pepino",200],["azeite",10]],[["whey",30],["banana",140],["sementes-abobora",20],["aveia",60]],[["frango",160],["arroz",250],["castanha-caju",20],["pepino",100]]]},
@@ -71,8 +88,8 @@ function mealPreset(key='emagrecer'){return SLOTS.map((m,i)=>({id:m[0],name:m[1]
 function routinePreset(split='ABC'){const source=split==='AB'?AB_EXERCISES:EXERCISES;return Object.fromEntries(Object.entries(source).map(([letter,ex])=>[letter,ex.map((e,i)=>({id:letter+'-'+i,name:e[0],sets:e[1],reps:e[2],rest:e[3]}))]))}
 function emptyDay(){return {foods:[],water:[],supplements:{},sleep:null,measures:{},workout:null,cardio:[],activities:[],tasks:{},notes:'',energy:null,libido:null}}
 function fresh(){
- return {version:3,config:{goals:{...MEAL_TEMPLATES.emagrecer.goals,water:2500,sleep:8},diet:'emagrecer',split:'ABC',planStart:today(),protocolStart:today(),trainingDays:[1,2,4,5],routine:'treino',times:{wake:'07:00',workout:'12:00',bed:'22:30'},measureDay:0,reminders:false,profile:{weightKg:null,heightCm:null,age:null,sex:''}},
- foods:structuredClone(FOODS),mealPlans:mealPreset('emagrecer'),workoutPlans:routinePreset(),splitPlans:{},supplements:structuredClone(SUPPLEMENT_BASE),savedDiets:[],days:{},exams:[],legacyImported:false};
+ return {version:3,config:{goals:{...MEAL_TEMPLATES[PERSONAL_DIET].goals,water:2500,sleep:8},diet:PERSONAL_DIET,personalDietVersion:1,split:'ABC',planStart:today(),protocolStart:today(),trainingDays:[1,2,4,5],routine:'treino',times:{wake:'07:00',workout:'12:00',bed:'22:30'},measureDay:0,reminders:false,profile:{weightKg:null,heightCm:null,age:null,sex:''}},
+ foods:structuredClone(FOODS),mealPlans:mealPreset(PERSONAL_DIET),workoutPlans:routinePreset(),splitPlans:{},supplements:structuredClone(SUPPLEMENT_BASE),savedDiets:[],days:{},exams:[],legacyImported:false};
 }
 function normalize(obj){
  const d=fresh();if(!obj||typeof obj!=='object')return d;
@@ -83,6 +100,15 @@ function normalize(obj){
  if(obj.workoutPlans&&typeof obj.workoutPlans==='object')d.workoutPlans=obj.workoutPlans;
  if(obj.splitPlans&&typeof obj.splitPlans==='object')d.splitPlans=obj.splitPlans;
  if(obj.days&&typeof obj.days==='object'&&!Array.isArray(obj.days))d.days=obj.days;
+ // Atualização aplicada uma única vez a instalações já existentes, sem apagar registros.
+ // A marca impede que futuras escolhas de dieta do usuário sejam substituídas.
+ if(obj.config?.personalDietVersion!==1){
+   const preserved={water:d.config.goals.water,sleep:d.config.goals.sleep};
+   d.config.goals={...MEAL_TEMPLATES[PERSONAL_DIET].goals,...preserved};
+   d.config.diet=PERSONAL_DIET;
+   d.config.personalDietVersion=1;
+   d.mealPlans=mealPreset(PERSONAL_DIET);
+ }
  d.legacyImported=!!obj.legacyImported;return d;
 }
 let state;try{state=normalize(JSON.parse(localStorage.getItem(KEY)))}catch{state=fresh()}
@@ -157,7 +183,7 @@ function addMealBatch(s,slot,items){
  save();
  return prepared;
 }
-function registerPlan(s,slot){const plan=state.mealPlans.find(x=>x.id===slot);if(!plan)throw Error('Refeição não encontrada');if(foodsForSlot(s,slot).length)throw Error('Essa refeição já tem registros.');for(const it of plan.items){const f=foodById(it.foodId);if(f)day(s).foods.push({id:id(),slot,foodId:it.foodId,name:f.name,grams:n(it.grams),...calc(f,it.grams),at:new Date().toISOString()})}save()}
+function registerPlan(s,slot){const plan=state.mealPlans.find(x=>x.id===slot);if(!plan)throw Error('Refeição não encontrada');if(foodsForSlot(s,slot).length)throw Error('Essa refeição já tem registros.');for(const it of plan.items){const f=foodById(it.foodId);if(f)day(s).foods.push({id:id(),slot,foodId:it.foodId,name:f.name,grams:n(it.grams),unit:f.unit||'g',...calc(f,it.grams),at:new Date().toISOString()})}save()}
 function removeFood(s,eid){day(s).foods=day(s).foods.filter(x=>x.id!==eid);save()}
 function water(s,ml){
  const amount=Number(ml);
