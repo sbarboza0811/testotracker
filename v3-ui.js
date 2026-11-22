@@ -225,8 +225,9 @@ function pageMore(){
  let html=heading('PERSONALIZE','Mais','Configurações e opções que você usa ocasionalmente.',false);
  html+='<section class="more-list">'+
  '<article class="more-card"><div class="more-card-icon">▦</div><div><h2>Modelos e dietas</h2><p>Cardápios, fichas e suplementos.</p></div>'+button('Abrir','models','small secondary')+'</article>'+
- '<article class="more-card"><div class="more-card-icon">⚙</div><div><h2>Ajustes e dados</h2><p>Metas, horários e backups.</p></div>'+button('Abrir','settings','small secondary')+'</article></section>';
- html+='<p class="muted micro more-footnote">'+(cloud.connected?'Sua conta está conectada.':'Os registros continuam salvos neste aparelho.')+'</p>';
+ '<article class="more-card"><div class="more-card-icon">⚙</div><div><h2>Ajustes e dados</h2><p>Metas, horários e backups.</p></div>'+button('Abrir','settings','small secondary')+'</article>'+
+ '<article class="more-card"><div class="more-card-icon">↻</div><div><h2>Atualizar aplicativo</h2><p>Buscar nova versão sem apagar seus registros.</p></div>'+button('Atualizar','update-app','small secondary')+'</article></section>';
+ html+='<p class="muted micro more-footnote">Versão 3.4 · Azul-safira · '+(cloud.connected?'Sua conta está conectada.':'Os registros continuam salvos neste aparelho.')+'</p>';
  return html;
 }
 function updateAccountButton(){
@@ -269,5 +270,15 @@ setInterval(()=>{const counter=document.getElementById('rest-counter');if(counte
 setInterval(()=>{if(!T.state.config.reminders)return;const now=new Date(),current=T.today(),time=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');for(const task of T.schedule(current)){if(task.time!==time||T.taskStatus(current,task)!=='pending')continue;const k='testotrack-reminded-'+current+'-'+task.id;if(localStorage.getItem(k))continue;localStorage.setItem(k,'1');if('Notification'in window&&Notification.permission==='granted'){new Notification('TestoTrack: '+task.label,{body:'Atividade planejada para '+task.time,tag:k})}else toast('Lembrete: '+task.label)}},30000);
 render();
 C.init().catch(error);
-if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+if('serviceWorker'in navigator&&location.protocol.startsWith('http')){
+ const previouslyControlled=!!navigator.serviceWorker.controller;
+ let refreshed=false;
+ navigator.serviceWorker.addEventListener('controllerchange',()=>{
+  // Recarregamento automático apenas quando já existia uma versão instalada.
+  if(!previouslyControlled||refreshed)return;
+  refreshed=true;
+  window.location.reload();
+ });
+ navigator.serviceWorker.register('./service-worker.js',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
+}
 })();
