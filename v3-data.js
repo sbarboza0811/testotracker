@@ -343,7 +343,7 @@ function taskDetail(s,task){
  if(task.type==='meal'){
   const plan=state.mealPlans.find(x=>x.id===task.ref);if(!plan)return 'Refeição planejada';
   const actual=foodsForSlot(s,task.ref),tot=plannedMacros(task.ref);
-  const contents=plan.items.map(item=>(foodById(item.foodId)?.name||'Alimento')+' '+money(item.grams)+' g').join(' · ');
+  const contents=plan.items.map(item=>(foodById(item.foodId)?.name||'Alimento')+' '+money(item.grams)+' '+(foodById(item.foodId)?.unit||'g')).join(' · ');
   return (actual.length?'Registrado: '+money(sum(actual).kcal)+' kcal':'Planejado: '+money(tot.kcal)+' kcal · P '+money(tot.p)+' g')+' · '+contents;
  }
  if(task.type==='workout'){const ex=state.workoutPlans[task.ref]||[],sets=ex.reduce((a,x)=>a+n(x.sets),0);const completed=d.workout?.sets?.filter(x=>x.done).length||0;return ex.length+' exercícios · '+(d.workout?(completed+' / '+sets+' séries registradas'):(sets+' séries planejadas'))}
