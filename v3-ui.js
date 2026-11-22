@@ -29,26 +29,45 @@ function taskRow(x){
  const secondary=finished&&x.type==='sleep'&&!T.dayRead(selected).sleep?button('Desmarcar','task-reset','small outline','data-task="'+esc(x.id)+'"'):(!finished&&status!=='skipped'?button('Ignorar','skip','small outline','data-task="'+esc(x.id)+'"'):'');
  return '<div class="listrow taskrow '+(finished?'done':'')+'"><div class="stamp">'+esc(x.time)+'</div><div class="roundicon">'+taskIcon(x.type)+'</div><div class="content"><b>'+esc(x.label)+'</b><small class="task-quantity">'+esc(T.taskDetail(selected,x))+'</small><span class="pill task-status '+(finished?'good':status==='skipped'?'bad':'')+'">'+(finished?'✓ Feito':status==='skipped'?'Ignorado':'Pendente')+'</span></div><div class="task-actions">'+primary+secondary+'</div></div>';
 }
+
+function mealCard(meal){
+ const entries=T.foodsForSlot(selected,meal.id),done=entries.length>0;
+ const planned=T.plannedMacros(meal.id),actual=T.sum(entries);
+ const ingredients=(meal.items||[]).map(item=>{
+   const food=T.foodById(item.foodId);
+   return (food?.name||'Alimento')+' · '+num(item.grams)+' '+(food?.unit||'g');
+ }).join('  ·  ');
+ const registered=entries.map(item=>item.name+' '+num(item.grams)+' '+(item.unit||'g')).join(' · ');
+ return '<article class="simple-meal'+(done?' is-done':'')+'">'+
+  '<div class="simple-meal-top"><div><small>'+esc(meal.time)+'</small><h3>'+esc(meal.name)+'</h3></div>'+
+  '<span class="simple-meal-kcal">'+(done?'✓ '+num(actual.kcal):num(planned.kcal))+' kcal</span></div>'+
+  '<p class="simple-meal-foods">'+esc(ingredients||'Sem alimentos planejados')+'</p>'+
+  (done?'<p class="simple-meal-logged">Registrado: '+esc(registered)+'</p>':'')+
+  '<div class="simple-meal-bottom"><span>'+(done?'Concluído':'Planejado')+' · '+num(planned.p,1)+' g de proteína</span>'+
+  (done?button('Ver registro','meal-detail','small secondary','data-slot="'+esc(meal.id)+'"'):
+   button('Registrar refeição','register-meal','small','data-slot="'+esc(meal.id)+'"'))+'</div>'+
+  '</article>';
+}
 function pageToday(){
  const macros=T.getMacros(selected),goals=T.state.config.goals,day=T.dayRead(selected),water=T.waterTotal(selected),tasks=T.schedule(selected);
- const done=tasks.filter(x=>T.taskStatus(selected,x)==='done').length,upcoming=tasks.find(x=>T.taskStatus(selected,x)==='pending');
- const kcalPct=Math.max(0,Math.min(100,Math.round((macros.kcal/Math.max(1,goals.calories))*100)));
- const burn=T.dayEnergy(selected);
- let html=heading('VISÃO GERAL','Seu dia','O essencial da sua rotina, sem distrações.');
- html+='<section class="dashboard-hero dashboard-hero-calm"><span class="eyebrow">REGISTRO SIMPLES</span><h2>Seu dia, sem complicação</h2><p>Use <strong>🎙 Registrar</strong> para contar tudo o que comeu. O app calcula as quantidades automaticamente.</p></section>';
- html+='<section class="panel calorie-overview"><div class="calorie-layout"><div><span class="eyebrow">CALORIAS DO DIA</span><div class="calorie-value">'+num(macros.kcal)+' <small>kcal</small></div><p class="muted small">Meta: '+num(goals.calories)+' kcal</p></div><div class="calorie-ring" style="--ring-progress:'+kcalPct+'%" role="img" aria-label="'+kcalPct+'% da meta calórica"><strong>'+kcalPct+'%</strong></div></div>'+
- pct(macros.kcal,goals.calories)+'<div class="calorie-footer"><span>'+num(Math.max(0,goals.calories-macros.kcal))+' kcal restantes</span></div></section>';
- html+='<section class="metric-strip" aria-label="Resumo do dia">'+
- '<div class="mini-metric"><span>PROTEÍNA</span><strong>'+num(macros.p)+' <small>g</small></strong><small>de '+num(goals.protein)+' g</small>'+pct(macros.p,goals.protein)+'</div>'+
- '<div class="mini-metric"><span>ÁGUA</span><strong>'+num(water/1000,1)+' <small>L</small></strong><small>de '+num(goals.water/1000,1)+' L</small>'+pct(water,goals.water)+'</div>'+
- '<div class="mini-metric"><span>TREINO</span><strong>'+(day.workout?.finished?'Feito':T.isTraining(selected)?'Dia '+esc(T.workoutLetter(selected)):'Pausa')+'</strong><small>'+(day.workout?.finished?'Concluído':day.workout?'Em andamento':T.isTraining(selected)?'Programado':'Recuperação')+'</small>'+pct(day.workout?.finished?1:0,1)+'</div></section>';
- html+='<section class="panel energy-overview"><div class="label-row"><h2>Gasto de energia</h2><span class="pill">Estimativa</span></div>'+
- '<div class="energy-triple"><div><small>REPOUSO / DIA</small><strong>'+(burn.resting===null?'—':num(burn.resting))+'</strong><span>kcal</span></div><div><small>EXERCÍCIOS EXTRAS</small><strong>'+(burn.active===null?'—':num(burn.active))+'</strong><span>kcal</span></div><div class="energy-total"><small>TOTAL PARCIAL</small><strong>'+(burn.total===null?'—':num(burn.total))+'</strong><span>kcal</span></div></div>'+
- '<p class="muted micro" style="margin-top:12px">Repouso (Mifflin–St Jeor) + exercícios líquidos (MET − 1). Não inclui toda a movimentação diária nem digestão.</p>'+
- (burn.resting===null?'<div class="energy-setup">'+button('Informar peso e dados do metabolismo','energy-profile','small secondary')+'</div>':'')+'</section>';
- html+='<section class="panel next-activity"><div class="label-row"><h2>Próxima atividade</h2><span class="pill '+(done===tasks.length?'good':'')+'">'+done+'/'+tasks.length+'</span></div><div class="next-activity-line"><div><strong>'+esc(upcoming?upcoming.label:'Tudo concluído por hoje!')+'</strong><small>'+(upcoming?esc(upcoming.time)+' · '+esc(T.taskDetail(selected,upcoming)):'Suas tarefas estão em dia.')+'</small></div>'+(upcoming?button('Abrir','task','small','data-task="'+esc(upcoming.id)+'"'):'')+'</div></section>';
- html+=accordion('Cronograma completo',tasks.map(taskRow).join(''),false,'Veja e conclua as outras atividades');
- if(T.legacyAvailable()&&!T.state.legacyImported)html+='<div class="tip">Seu histórico antigo está disponível. '+button('Importar','migrate','small secondary')+'</div>';
+ const burned=T.dayEnergy(selected);
+ const kcalPct=Math.max(0,Math.min(100,Math.round(100*macros.kcal/Math.max(1,goals.calories))));
+ let html=heading('MINHA ROTINA','Hoje','Alimentação e treino, sem complicação.');
+ html+='<section class="today-hero"><div class="today-hero-top"><span>Calorias consumidas</span><span class="today-goal">Meta '+num(goals.calories)+' kcal</span></div>'+
+  '<div class="today-energy"><strong>'+num(macros.kcal)+'</strong><span>kcal</span><div class="today-energy-percent">'+kcalPct+'%</div></div>'+
+  pct(macros.kcal,goals.calories)+'</section>';
+ html+='<section class="today-metrics" aria-label="Resumo do dia">'+
+  '<div class="today-metric"><span>Proteína</span><strong>'+num(macros.p,1)+' g</strong><small>Meta '+num(goals.protein,1)+' g</small></div>'+
+  '<div class="today-metric"><span>Água</span><strong>'+num(water/1000,2)+' L</strong><small>Meta '+num(goals.water/1000,2)+' L</small></div>'+
+  '<div class="today-metric"><span>Treino</span><strong>'+(day.workout?.finished?'Concluído':T.isTraining(selected)?'Programado':'Descanso')+'</strong><small>'+(T.isTraining(selected)?'Ficha '+esc(T.workoutLetter(selected)):'Hoje')+'</small></div></section>';
+ html+='<section class="panel mydiet-section"><div class="label-row"><div><span class="eyebrow">CARDÁPIO DO DIA</span><h2>Minha dieta</h2></div>'+button('Editar','edit-meals','small secondary')+'</div>'+
+  '<div class="simple-meal-list">'+T.state.mealPlans.map(mealCard).join('')+'</div>'+
+  '<p class="diet-disclaimer">Porções da dieta personalizada. Calorias e macros estimados com base no catálogo do app.</p></section>';
+ html+='<div class="today-extra">'+
+   accordion('Cronograma',tasks.map(taskRow).join(''),false,'Acompanhar tarefas e horários')+
+   accordion('Gasto de energia (estimativa)','<div class="energy-triple"><div><small>REPOUSO</small><strong>'+(burned.resting===null?'—':num(burned.resting))+'</strong><span>kcal</span></div><div><small>EXERCÍCIOS</small><strong>'+(burned.active===null?'—':num(burned.active))+'</strong><span>kcal</span></div><div><small>TOTAL PARCIAL</small><strong>'+(burned.total===null?'—':num(burned.total))+'</strong><span>kcal</span></div></div><p class="muted micro" style="margin-top:12px">Repouso + exercício adicional não representam o gasto energético total diário.</p>'+(burned.resting===null?button('Informar meus dados','energy-profile','small secondary'):''));
+ html+='</div>';
+ if(T.legacyAvailable()&&!T.state.legacyImported)html+='<div class="tip">Histórico anterior disponível. '+button('Importar','migrate','small secondary')+'</div>';
  return html;
 }
 
@@ -57,16 +76,7 @@ function pageDiary(){
  let html=heading('ALIMENTAÇÃO','Diário alimentar','Registre sem procurar alimentos um por um.');
  html+='<section class="diary-highlights"><div class="diary-highlight"><small>CALORIAS</small><strong>'+num(macros.kcal)+' <span>/ '+num(goals.calories)+'</span></strong>'+pct(macros.kcal,goals.calories)+'</div>'+
  '<div class="diary-highlight"><small>PROTEÍNA</small><strong>'+num(macros.p)+' <span>/ '+num(goals.protein)+' g</span></strong>'+pct(macros.p,goals.protein)+'</div></section>';
- const meals=T.state.mealPlans.map(meal=>{
-  const entries=T.foodsForSlot(selected,meal.id),actual=T.sum(entries),present=entries.length>0;
-  const summary=entries.map(x=>x.name+' · '+num(x.grams)+' '+(x.unit||'g')).join(' • ');
-  const planned=meal.items.map(item=>(T.foodById(item.foodId)?.name||'Alimento')+' '+num(item.grams)+' g').join(' · ');
-  return '<article class="meal-tile"><div class="meal-tile-top"><div class="meal-meta"><small>'+esc(meal.time)+'</small><h3>'+esc(meal.name)+'</h3><p class="meal-summary">'+(present?esc(summary):'Ainda não registrado')+'</p></div><span class="pill '+(present?'good':'')+'">'+(present?num(actual.kcal)+' kcal':'Pendente')+'</span></div>'+
-  (present?'<div class="meal-tile-actions">'+button('Ver detalhes','meal-detail','small secondary','data-slot="'+esc(meal.id)+'"')+'</div>':'')+
-  (present?'':'<details class="meal-plan-details"><summary>Usar o cardápio planejado</summary><p class="small muted">'+esc(planned||'Nenhum alimento planejado.')+'</p>'+
-    button('Registrar esse plano','register-meal','small secondary','data-slot="'+esc(meal.id)+'"')+'</details>')+
-  '</article>';
- }).join('');
+ const meals=T.state.mealPlans.map(mealCard).join('');
  html+=panel('Suas refeições','<div class="meal-tile-list">'+meals+'</div>');
  html+='<section class="panel water-panel"><div class="label-row"><h2>Água</h2><small class="muted">Meta: '+num(goals.water)+' ml</small></div><div class="water-overview"><strong>'+num(water)+' <span>ml</span></strong><div class="water-progress">'+pct(water,goals.water)+'</div></div>'+
  '<div class="actions water-buttons">'+button('+250 ml','water','secondary','data-ml="250"')+button('Outra quantidade','water-form','secondary')+'</div>'+
