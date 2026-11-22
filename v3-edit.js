@@ -88,7 +88,7 @@ function previewDiet(key){
  const rows=template.meals.map((meal,i)=>{
    const macros=T.sum(meal.map(([foodId,grams])=>T.calc(T.foodById(foodId),grams)));
    totals.push(macros);
-   return '<div class="listrow"><div class="stamp">'+esc(T.SLOTS[i]?.[2]||'')+'</div><div class="content"><b>'+esc(T.SLOTS[i]?.[1]||'Refeição')+'</b><small>'+esc(meal.map(([foodId,grams])=>(T.foodById(foodId)?.name||foodId)+' · '+grams+' g').join(' | '))+'</small><small>'+num(macros.kcal)+' kcal · P '+num(macros.p)+' g · C '+num(macros.c)+' g · G '+num(macros.f)+' g</small></div></div>';
+   return '<div class="listrow"><div class="stamp">'+esc(T.SLOTS[i]?.[2]||'')+'</div><div class="content"><b>'+esc(T.SLOTS[i]?.[1]||'Refeição')+'</b><small>'+esc(meal.map(([foodId,grams])=>(T.foodById(foodId)?.name||foodId)+' · '+grams+' '+(T.foodById(foodId)?.unit||'g')).join(' | '))+'</small><small>'+num(macros.kcal)+' kcal · P '+num(macros.p)+' g · C '+num(macros.c)+' g · G '+num(macros.f)+' g</small></div></div>';
  }).join('');
  const all=T.sum(totals);
  U.modal(title,'<p class="small muted">'+esc(template.description||'Cardápio de referência personalizável.')+'</p><div class="grid3" style="margin:14px 0"><div class="measurebox"><span>Calorias estimadas</span><strong>'+num(all.kcal)+' kcal</strong></div><div class="measurebox"><span>Proteína</span><strong>'+num(all.p)+' g</strong></div><div class="measurebox"><span>Carboidratos</span><strong>'+num(all.c)+' g</strong></div></div>'+rows+'<p class="muted small" style="margin:12px 0">Valores estimados por porção. Carnes e arroz considerados após o preparo. Confirme os rótulos do whey e dos alimentos.</p>'+btn('Aplicar este cardápio','apply-diet','full','data-key="'+esc(key)+'"'));
@@ -97,13 +97,13 @@ function editMeals(slot){
  const meal=T.state.mealPlans.find(x=>x.id===(slot||T.state.mealPlans[0].id));
  const rows=(meal?.items||[]).map((item,i)=>{
   const food=T.foodById(item.foodId);
-  return '<div class="listrow"><div class="content"><b>'+esc(food?.name||'Alimento')+'</b><small>'+num(item.grams)+' g · '+num(T.calc(food,item.grams).kcal)+' kcal</small></div>'+btn('Editar','edit-meal-item','small secondary','data-slot="'+esc(meal.id)+'" data-i="'+i+'"')+btn('Remover','remove-meal-item','small outline','data-slot="'+esc(meal.id)+'" data-i="'+i+'"')+'</div>';
+  return '<div class="listrow"><div class="content"><b>'+esc(food?.name||'Alimento')+'</b><small>'+num(item.grams)+' '+(food?.unit||'g')+' · '+num(T.calc(food,item.grams).kcal)+' kcal</small></div>'+btn('Editar','edit-meal-item','small secondary','data-slot="'+esc(meal.id)+'" data-i="'+i+'"')+btn('Remover','remove-meal-item','small outline','data-slot="'+esc(meal.id)+'" data-i="'+i+'"')+'</div>';
  }).join('');
  U.modal('Editar dieta e horários','<div class="chipbar">'+T.state.mealPlans.map(x=>btn(x.name,'edit-meals','small '+(x.id===meal?.id?'':'secondary'),'data-slot="'+esc(x.id)+'"')).join('')+'</div><form data-form="meal-time"><input type="hidden" name="slot" value="'+esc(meal.id)+'">'+field('Horário','time',meal.time,'time','required')+'<button class="btn small" type="submit">Salvar horário</button></form><div class="divider-title">Alimentos planejados</div>'+rows+'<div style="margin-top:12px">'+btn('+ Adicionar alimento ao modelo','add-meal-item','small secondary','data-slot="'+esc(meal.id)+'"')+'</div>');
 }
 function editMealItem(slot,index){
  const meal=T.state.mealPlans.find(x=>x.id===slot),it=index===null?null:meal?.items[index];
- U.modal(it?'Editar porção':'Adicionar alimento ao modelo','<form data-form="meal-item"><input type="hidden" name="slot" value="'+esc(slot)+'"><input type="hidden" name="index" value="'+(index===null?-1:index)+'"><div class="field"><label>Alimento</label><select name="foodId">'+T.state.foods.map(f=>'<option value="'+esc(f.id)+'" '+(it?.foodId===f.id?'selected':'')+'>'+esc(f.name)+'</option>').join('')+'</select></div>'+field('Porção (g)','grams',it?.grams??100,'number','min="1" max="5000" required')+'<button class="btn full">Salvar</button></form>');
+ U.modal(it?'Editar porção':'Adicionar alimento ao modelo','<form data-form="meal-item"><input type="hidden" name="slot" value="'+esc(slot)+'"><input type="hidden" name="index" value="'+(index===null?-1:index)+'"><div class="field"><label>Alimento</label><select name="foodId">'+T.state.foods.map(f=>'<option value="'+esc(f.id)+'" '+(it?.foodId===f.id?'selected':'')+'>'+esc(f.name)+'</option>').join('')+'</select></div>'+field('Porção (g ou ml)','grams',it?.grams??100,'number','min="1" max="5000" required')+'<button class="btn full">Salvar</button></form>');
 }
 function editWorkout(){
  const letter=U.trainLetter||T.dayRead(U.date).workout?.letter||T.workoutLetter(U.date);
@@ -132,7 +132,7 @@ function taskComplete(taskId){
  if(task.type==='meal'){
   const plan=T.state.mealPlans.find(x=>x.id===task.ref);
   if(!plan)throw Error('Refeição não encontrada.');
-  const mealList=plan.items.map(x=>(T.foodById(x.foodId)?.name||x.foodId)+' · '+num(x.grams)+' g').join('\n');
+  const mealList=plan.items.map(x=>(T.foodById(x.foodId)?.name||x.foodId)+' · '+num(x.grams)+' '+(T.foodById(x.foodId)?.unit||'g')).join('\n');
   if(!confirm('Registrar como consumida a refeição planejada?\n\n'+mealList+'\n\nSe comeu quantidades diferentes, cancele e registre pelo Diário.'))return;
   T.registerPlan(d,task.ref);
   U.toast('Refeição registrada e atividade concluída.');
