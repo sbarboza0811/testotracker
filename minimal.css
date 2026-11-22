@@ -97,3 +97,5 @@ body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-s
 }
 @media(max-width:350px){.today-metrics{grid-template-columns:1fr 1fr}.today-metric:last-child{grid-column:span 2}.simple-meal-bottom{align-items:stretch;flex-direction:column}.simple-meal-bottom .btn{align-self:flex-end}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+
+.fab[hidden]{display:none!important}
