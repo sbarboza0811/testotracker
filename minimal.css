@@ -1,18 +1,18 @@
 /* TestoTrack · refinamento minimalista — preserva as funcionalidades existentes */
 :root{
- color-scheme:dark;--bg:#0e1113;--panel:#191d20;--panel2:#202529;
- --border:#2d3337;--text:#f5f7f5;--muted:#9da8a8;--green:#b9e994;
- --mint:#98e1c8;--warn:#e9c589;--radius:18px
+ color-scheme:dark;--bg:#0b1020;--panel:#151e30;--panel2:#1b263b;
+ --border:#2a3852;--text:#f5f7ff;--muted:#9eafc8;--green:#85b5ff;
+ --mint:#79d9c0;--warn:#e9c589;--radius:18px
 }
 html{background:var(--bg)}
 body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
 .shell{width:min(100%,800px);padding:0 20px 140px}
 .top{height:75px;border-bottom:1px solid #ffffff0e;margin-bottom:12px}
-.logo{background:var(--green);color:#18291c;width:38px;height:38px;border-radius:12px;letter-spacing:-1px}
+.logo{background:var(--green);color:#0b1731;width:38px;height:38px;border-radius:12px;letter-spacing:-1px}
 .brand strong{font-size:17px;letter-spacing:-.5px}
 .brand small{display:none}
 .top-right .account-entry{background:transparent;color:var(--muted);border:1px solid var(--border);font-size:11px;font-weight:650;border-radius:11px;padding:8px 11px;min-height:37px}
-.top-right .account-entry.connected{color:var(--green);border-color:#46604b}
+.top-right .account-entry.connected{color:var(--green);border-color:#3d6297}
 .page-head{margin:14px 0 21px}
 .page-head h1{font-size:27px;font-weight:750;letter-spacing:-.9px;line-height:1.15;margin:5px 0 7px}
 .page-head .subline{font-size:12px;color:var(--muted)}
@@ -21,23 +21,23 @@ body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-s
 .panel.soft{background:var(--panel2)}
 .panel .label-row h2{font-size:17px;letter-spacing:-.35px}
 .btn{border-radius:11px;font-weight:700;box-shadow:none;min-height:41px;padding:10px 14px}
-.btn.secondary{background:#292f32;color:var(--text)}
+.btn.secondary{background:#25334c;color:var(--text)}
 .btn.outline{border-color:var(--border)}
 .btn:active{transform:scale(.985)}
-.pill{background:transparent;border-color:#3b4345}
+.pill{background:transparent;border-color:#32435e}
 .date-line{margin-top:13px;gap:6px}
-.date-line button,.date-line input{background:#1c2224;border-color:#343a3e;border-radius:10px}
+.date-line button,.date-line input{background:#182237;border-color:#32415b;border-radius:10px}
 .date-line .small{color:var(--muted)}
-.progress{height:6px;background:#323a37;border-radius:99px}
+.progress{height:6px;background:#2b3d5b;border-radius:99px}
 .progress>span{background:var(--green)}
 /* Visão do dia */
-.today-hero{background:#1d2520;border:1px solid #344437;border-radius:22px;padding:23px 22px 20px;margin-bottom:12px}
-.today-hero-top{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;color:#c0ccc2}
+.today-hero{background:#15243f;border:1px solid #365483;border-radius:22px;padding:23px 22px 20px;margin-bottom:12px}
+.today-hero-top{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;color:#c1d2ed}
 .today-goal{font-size:11px;color:var(--muted);white-space:nowrap}
 .today-energy{display:flex;align-items:baseline;gap:7px;margin:14px 0 19px}
 .today-energy>strong{font-size:clamp(41px,7vw,58px);line-height:1;letter-spacing:-2.6px;font-weight:800}
 .today-energy>span{font-size:16px;color:var(--muted)}
-.today-energy-percent{margin-left:auto;border-radius:100px;background:#364638;color:#cfefc0;padding:7px 10px;font-size:12px;font-weight:750}
+.today-energy-percent{margin-left:auto;border-radius:100px;background:#263f65;color:#d0e3ff;padding:7px 10px;font-size:12px;font-weight:750}
 .today-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 14px}
 .today-metric{min-width:0;padding:16px 13px;background:var(--panel);border:1px solid var(--border);border-radius:16px;display:flex;flex-direction:column;gap:5px}
 .today-metric>span{font-size:11px;color:var(--muted)}
@@ -46,41 +46,41 @@ body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-s
 .mydiet-section>.label-row{align-items:center;margin-bottom:5px}
 .mydiet-section .label-row h2{font-size:20px;margin:3px 0 0}
 .simple-meal-list{display:grid;gap:0}
-.simple-meal{padding:17px 0;border-bottom:1px solid #343b3e}
+.simple-meal{padding:17px 0;border-bottom:1px solid #303f58}
 .simple-meal:last-child{border-bottom:0;padding-bottom:2px}
 .simple-meal-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .simple-meal-top small{display:block;color:var(--muted);font-size:11px;margin-bottom:3px}
 .simple-meal-top h3{font-size:15px;line-height:1.3;font-weight:720}
-.simple-meal-kcal{white-space:nowrap;color:#dbe8da;background:#28362c;border-radius:9px;padding:6px 9px;font-size:11px;font-weight:700}
+.simple-meal-kcal{white-space:nowrap;color:#dce9ff;background:#213756;border-radius:9px;padding:6px 9px;font-size:11px;font-weight:700}
 .simple-meal.is-done .simple-meal-kcal{color:var(--mint)}
-.simple-meal-foods{font-size:12px;line-height:1.65;color:#b0bcba;margin:9px 0 11px;overflow-wrap:anywhere}
+.simple-meal-foods{font-size:12px;line-height:1.65;color:#abbcd5;margin:9px 0 11px;overflow-wrap:anywhere}
 .simple-meal-logged{font-size:11px;color:var(--mint);line-height:1.5;margin:-4px 0 10px}
 .simple-meal-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .simple-meal-bottom>span{font-size:11px;color:var(--muted)}
 .simple-meal-bottom .btn{font-size:11px;min-height:35px;padding:7px 11px;white-space:nowrap}
 .diet-disclaimer{font-size:10px;line-height:1.5;color:var(--muted);margin-top:14px}
 .today-extra{margin-top:8px}
-.today-extra .energy-triple>div{background:#232a2b;border-color:#353d3e}
+.today-extra .energy-triple>div{background:#1c2b44;border-color:#364763}
 /* Diário */
 .diary-highlights{gap:10px}
 .diary-highlight{background:var(--panel);border-color:var(--border);border-radius:16px}
 .diary-highlight strong{font-size:22px}
 .diary-highlight>small{color:var(--muted);letter-spacing:.3px}
 .water-panel .water-overview{align-items:center}
-.water-buttons .btn{background:#293230}
+.water-buttons .btn{background:#223551}
 .app-accordion,details.panel{border-color:var(--border);box-shadow:none}
 .app-accordion>summary,.simple-details>summary{font-size:13px}
 .more-card,.measurebox,.review-food,.meal-tile{background:var(--panel2);border-color:var(--border)}
-.field input,.field select,.field textarea,input.control,select.control{background:#14191b;border-color:#3a4244;border-radius:11px}
-.bottom-nav{background:#151a1ced;border-top:1px solid #343b3e;height:74px;box-shadow:none}
-.bottom-nav button{color:#94a19d;gap:4px;font-size:10px}
+.field input,.field select,.field textarea,input.control,select.control{background:#10192a;border-color:#354967;border-radius:11px}
+.bottom-nav{background:#10182cee;border-top:1px solid #303f58;height:74px;box-shadow:none}
+.bottom-nav button{color:#93a7c6;gap:4px;font-size:10px}
 .bottom-nav button span{font-size:10px;line-height:1.2}
 .bottom-nav button svg{width:20px;height:20px}
 .bottom-nav button.active{color:var(--green)}
-.fab{background:var(--green);color:#17251b;border-radius:15px;box-shadow:0 7px 24px #0008;right:max(17px,calc((100vw - 760px)/2));min-width:137px;height:48px;font-size:12px;bottom:calc(87px + env(safe-area-inset-bottom))}
+.fab{background:var(--green);color:#0b1731;border-radius:15px;box-shadow:0 7px 24px #0008;right:max(17px,calc((100vw - 760px)/2));min-width:137px;height:48px;font-size:12px;bottom:calc(87px + env(safe-area-inset-bottom))}
 .fab span:first-child{font-size:18px}
-.dialog{background:#1b2023;border:1px solid #343b3e}
-#toast{background:var(--green);color:#142018}
+.dialog{background:#152039;border:1px solid #303f58}
+#toast{background:var(--green);color:#0b1731}
 @media(min-width:740px){.shell{padding:0 24px 145px}.page-head{margin-top:25px}}
 @media(max-width:480px){
  .shell{padding-inline:14px}
@@ -99,3 +99,58 @@ body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-s
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 
 .fab[hidden]{display:none!important}
+
+
+/* Paleta safira | acabamento consistente em telas auxiliares */
+:root{
+ --bg:#0b1020;--panel:#151e30;--panel2:#1b263b;--border:#2a3852;
+ --text:#f5f7ff;--muted:#9eafc8;--green:#85b5ff;--mint:#79d9c0;
+ --warn:#f2c77f;--red:#ff94a5
+}
+body{background:var(--bg)}
+.logo{background:#85b5ff;color:#0b1731;box-shadow:none}
+.btn{background:var(--green);color:#0b1731}
+.btn.secondary{background:#25334c;color:var(--text)}
+.btn.outline{background:transparent;color:var(--text)}
+.btn.danger{background:#4b263a;color:#ffbac9}
+.btn.voice-main,.btn.voice-capture{background:var(--green);color:#0b1731}
+.btn.voice-alt{background:#243b5c;color:#e2edff;border-color:#456ba2}
+.btn:focus-visible,.chip:focus-visible{outline-color:#d4e4ff}
+.top-right .account-entry.connected{color:#a9caff;border-color:#486f9c}
+.eyebrow,.bottom-nav button.active{color:var(--green)}
+.today-hero{background:linear-gradient(145deg,#172a4a 0%,#142139 100%);border-color:#365483}
+.today-energy-percent{background:#263f65;color:#d0e3ff}
+.simple-meal-kcal{background:#213756;color:#dce9ff}
+.progress{background:#293b59}
+.progress>span{background:var(--green)}
+.fab{background:#85b5ff;color:#0b1731;box-shadow:0 9px 26px #0007}
+.bottom-nav{background:#10182cf0;border-top-color:#2a3852}
+.pill.good{color:#79d9c0;border-color:#3b736b}
+.pill.selected{background:#20395d;border-color:#4b7cbd;color:#dceaff}
+.chip.active{background:#213c64;border-color:#4a79b6;color:#a9caff}
+.tabs button.active{background:#223d62;border-color:#4b75b3;color:#d4e5ff}
+.taskrow.done .roundicon{background:#204f55}
+.tip{background:#1c2c47;border-color:#37537d;color:#d5e5ff}
+.voice-hero{background:linear-gradient(135deg,#1e365d,#182944);border-color:#3c6096;box-shadow:none}
+.voice-hero:after{border-color:#85b5ff32}
+.voice-hero .eyebrow{color:#a9ceff}
+.voice-hero p{color:#c7d5e9}
+.home-capture{background:#1e3150;border-color:#385b8b}
+.home-capture p{color:#bfcde2}
+.capture-round{background:#294567;box-shadow:0 0 0 8px #3c6da12c}
+.review-food-number{background:#2a456c;color:#e0ecff}
+.review-total{background:#203b5b;border-color:#466d9d}
+.review-total small{color:#c5ddff}
+.review-food{background:#1a2940;border-color:#354a68}
+.voice-capture{background:#85b5ff}
+.water-buttons .btn{background:#253c60;color:#e6efff}
+.iconbtn{background:var(--panel2);border-color:var(--border)}
+.roundicon{background:#263652}
+.chip{background:#1c2940;border-color:#344762}
+.tabs button{background:#24344e;border-color:var(--border)}
+.field input,.field select,.field textarea,input.control,select.control{background:#0f192a;border-color:#354967;color:var(--text)}
+.measurebox,.meal-tile,.more-card,.diary-highlight{background:var(--panel2);border-color:var(--border)}
+.macro-mini,.energy-triple>div{border-color:var(--border)}
+.dialog{background:#172239;border-color:#364865}
+#toast{background:#85b5ff;color:#0b1731}
+input[type=checkbox]{accent-color:var(--green)}
